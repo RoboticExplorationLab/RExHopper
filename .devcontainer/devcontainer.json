@@ -4,7 +4,7 @@
 		"dockerfile": "Dockerfile"
 	},
 	"containerEnv": {
-		"DOCKER_CONTAINER_NAME": "RExHopperDocker"
+		"DOCKER_CONTAINER_NAME": "Docker"
 	},
 	"runArgs": [
 		"--cap-add=SYS_PTRACE",
@@ -12,7 +12,8 @@
 		"seccomp=unconfined"
 	],
 	"settings": {
-		"terminal.integrated.defaultProfile.linux": "zsh"
+		"terminal.integrated.defaultProfile.linux": "zsh",
+		"editor.tabSize": 2
 	},
 	"extensions": [
 		"ms-vscode.cpptools",

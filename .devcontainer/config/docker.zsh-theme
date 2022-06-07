@@ -1,7 +1,7 @@
 PROMPT="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ )"
 if [ ! -z "$DOCKER_CONTAINER_NAME" ]
 then
-    PROMPT+=' %{$fg[green]%}(🐳%{$fg[blue]%}%$DOCKER_CONTAINER_NAME%{$fg[green]%})%{$reset_color%}'
+    PROMPT+=' %{$fg[green]%}(🐳%{$fg[blue]%}%{$DOCKER_CONTAINER_NAME%}%{$fg[green]%})%{$reset_color%}'
 fi
 PROMPT+=' %{$fg[cyan]%}%c%{$reset_color%} $(git_prompt_info)'
 

@@ -16,9 +16,10 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
     curl \
     git \
-    python3-catkin-tools
+    python3-catkin-tools \
+    clang-format
 
-RUN git clone https://github.com/ANYbotics/cmake_clang_tools.git /tmp/clang_tool
+RUN git clone https://github.com/Huoleit/cmake_clang_tools.git /tmp/clang_tool
 RUN cd /tmp/clang_tool && mkdir build && cd build \
     && cmake .. && make && make install
 
