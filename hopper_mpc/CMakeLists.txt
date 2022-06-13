@@ -6,10 +6,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(
-  -std=c++17
+  -std=c++17 
   -pthread
   -Wfatal-errors
-  -Wl,--no-as-needed
+  -Wl,--no-as-needed  
 )
 find_package(catkin REQUIRED)
 
