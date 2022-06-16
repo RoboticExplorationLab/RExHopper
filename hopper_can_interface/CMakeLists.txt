@@ -21,7 +21,11 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/can_interface.cpp
+  src/ODrivePCAN.cpp
 )
+# add_executable(test_odrive
+  
+# )
 
 #############
 ## Install ##

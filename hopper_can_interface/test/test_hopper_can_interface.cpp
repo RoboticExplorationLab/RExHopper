@@ -3,5 +3,5 @@
 #include <gtest/gtest.h>
 
 TEST(can_interface, mockTest) {
-  EXPECT_EQ(can_interface::helloWorld(), std::string("Hello"));
+  EXPECT_EQ(can_interface::helloWorld(), std::string("Hello"));  // arguments 1 and 2 must be equal
 }
