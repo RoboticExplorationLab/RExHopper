@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(hopper_can_interface)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wfatal-errors")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfatal-errors")
 find_package(catkin REQUIRED)
 
 catkin_package(
@@ -28,6 +30,10 @@ add_executable(test_odrive
   src/can_run_example.cpp
 )
 
+target_link_libraries(test_odrive
+  ${PROJECT_NAME}
+  -lpcanfd
+  )
 #############
 ## Install ##
 #############

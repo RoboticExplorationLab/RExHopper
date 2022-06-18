@@ -21,14 +21,15 @@ typedef struct CAN_message_t { // From FlexCAN_T4
 } CAN_message_t;
 
 
-class can_interface {  // Wrapper for interfacing PCAN and ODrive
+class CanInterface {  // Wrapper for interfacing PCAN and ODrive
   public:
-   void begin();
-   void setBaudRate(int CANBaudRate);
-   void write(CAN_message_t msg);
-   int read(CAN_message_t return_msg);
-   void close();
+    void begin();
+    void setBaudRate(int CANBaudRate);
+    void write(CAN_message_t msg);
+    int read(CAN_message_t return_msg);
+    void close();
   private:
-   pcanfd_msg convert_msg_to_pcan(CAN_message_t msg);
+    pcanfd_init fd_;
+    pcanfd_msg convert_msg_to_pcan(CAN_message_t msg);
 };
 // }  // namespace can_interface
