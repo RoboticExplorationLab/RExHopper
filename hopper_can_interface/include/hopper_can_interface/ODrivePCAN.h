@@ -75,7 +75,7 @@ public:
 	
 	int CANBaudRate = 250000;  //250,000 is odrive default
 
-    void sendMessage(int axis_id, int cmd_id, bool remote_transmission_request, int length, byte *signal_bytes);
+    void sendMessage(int axis_id, int cmd_id, bool remote_transmission_request, int length, uint8_t *signal_bytes);
 	
 	// Heartbeat
 	int Heartbeat();
@@ -124,4 +124,4 @@ public:
 
 };
 
-#endif@
+#endif //@

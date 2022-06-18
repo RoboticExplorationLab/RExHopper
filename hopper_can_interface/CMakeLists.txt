@@ -23,9 +23,10 @@ add_library(${PROJECT_NAME}
   src/can_interface.cpp
   src/ODrivePCAN.cpp
 )
-# add_executable(test_odrive
-  
-# )
+
+add_executable(test_odrive
+  src/can_run_example.cpp
+)
 
 #############
 ## Install ##

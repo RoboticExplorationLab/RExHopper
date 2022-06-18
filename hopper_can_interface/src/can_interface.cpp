@@ -1,6 +1,6 @@
 
 #include "hopper_can_interface/can_interface.h"
-#include <libpcanfd.h> 
+#include "hopper_can_interface/libpcanfd.h" 
 
 class can_interface {  // Wrapper for interfacing PCAN and ODrive
   public:
@@ -20,7 +20,8 @@ class can_interface {  // Wrapper for interfacing PCAN and ODrive
     }
 
     int read(CAN_message_t return_msg){ // probably can't be void
-      err = pcanfd_recv_msg(fd_);
+      pcan_msg = convert_msg_to_pcan(return_msg)
+      err = pcanfd_recv_msg(fd_, pcan_msg);
       return err;
     }
 
