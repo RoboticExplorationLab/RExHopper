@@ -1,24 +1,8 @@
 #pragma once
+#include <memory>
 #include "Eigen/Dense"
-
-struct Model {
-  std::string name;
-  std::string csvpath;
-  std::string urdfpath;
-  std::string aname[5];
-  int n_a;
-  int spol;
-  double h0;
-  double ks;
-  double kwbc;
-  double mu;
-  Eigen::VectorXd init_q;
-  Eigen::VectorXd linklen;
-  Eigen::VectorXd a_kt;
-  Eigen::Vector3d rh;
-  Eigen::Matrix3d inertia;
-  Eigen::MatrixXd S;
-};
+#include "hopper_mpc/bridge_mujoco.h"
+#include "hopper_mpc/model.h"
 
 class Runner {  // The class
  public:        // Access specifier
@@ -26,11 +10,20 @@ class Runner {  // The class
 
   void Run();
 
-  int n_X;
-  int n_U;
-  Eigen::VectorXd X_0;
-  Eigen::VectorXd X_f;
-  Eigen::VectorXd u_;
+  int N_run_;         // number of timesteps in sim
+  double dt_;         // timestep size
+  std::string ctrl_;  // controller
+  bool plot_;
+  bool fixed_;
+  bool spr_;
+  bool record_;
+  double g;  // gravitational constant
+
+  int n_X;              // number of sim states
+  int n_U;              // number of sim controls
+  Eigen::VectorXd X_0;  // init state
+  Eigen::VectorXd X_f;  // final state
+  Eigen::VectorXd u_;   // controls
 
   double t_p;         // gait period, seconds
   double phi_switch;  // switching phase, must be between 0 and 1. Percentage of gait spent in contact.
@@ -43,16 +36,10 @@ class Runner {  // The class
   double t_st;        // time spent in stance
   int N_c;            // number of timesteps spent in contact
 
-  int N_run_;
-  double dt_;
-  std::string ctrl_;
-  bool plot_;
-  bool fixed_;
-  bool spr_;
-  bool record_;
-
   Eigen::VectorXd L_;
   double h0_;
   Eigen::Matrix3d J_;
   double mu_;
+
+  std::unique_ptr<MujocoBridge> bridgePtr_;
 };
