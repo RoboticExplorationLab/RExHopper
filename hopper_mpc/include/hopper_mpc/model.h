@@ -7,15 +7,18 @@ struct Model {
   std::string urdfpath;
   std::string aname[5];
   int n_a;
-  int spol;
+  int s_pol;
+  double m;  // leg masses
   double h0;
-  double ks;
-  double kwbc;
+  double K_s;
+  double K;
   double mu;
-  Eigen::VectorXd init_q;
-  Eigen::VectorXd linklen;
-  Eigen::VectorXd a_kt;
+  Eigen::Vector4d init_q;
+  Eigen::Vector4d init_dq;
+  Eigen::Vector4d cl;
+  Eigen::Matrix<double, 6, 1> leg_dim;  // leg dimensions
+  Eigen::Matrix<double, 5, 1> a_kt;
   Eigen::Vector3d rh;
   Eigen::Matrix3d inertia;
-  Eigen::MatrixXd S;
+  Eigen::Matrix<double, 7, 5> S;  // actuator selection matrix
 };

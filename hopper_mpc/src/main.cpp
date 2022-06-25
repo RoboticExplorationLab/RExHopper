@@ -68,21 +68,18 @@ int main(int argc, char* argv[]) {
   hopper.aname[3] = "rw2";
   hopper.aname[4] = "rw3";
   hopper.n_a = 5;
-  hopper.spol = 1;
+  hopper.s_pol = 1;
   hopper.h0 = 0.27;
   hopper.ks = 996;
   hopper.kwbc = 5000;
   hopper.mu = 0.5;
-  hopper.init_q.resize(4);  // four leg links
   hopper.init_q << -30 * M_PI / 180, -120 * M_PI / 180, -150 * M_PI / 180, 120 * M_PI / 180;
-  hopper.linklen.resize(6);
-  hopper.linklen << .1, .27, .27, .1, .17, .0205;
-  hopper.a_kt.resize(hopper.n_a);
+  hopper.init_dq << 0, 0, 0, 0;
+  hopper.leg_dim << .1, .27, .27, .1, .17, .0205;
   hopper.a_kt << 1.73, 1.73, 0.106, 0.106, 0.0868;
   hopper.inertia << 0.07542817, 0.00016327, 0.00222099,  // clang-format off
                     0.00016327, 0.04599064,  -0.00008321,
-                    0.00222099, -0.00008321, 0.07709692;  // clang-format on
-  hopper.S.resize(7, hopper.n_a);
+                    0.00222099, -0.00008321, 0.07709692;                  // clang-format on
   hopper.S << 1, 0, 0, 0, 0,  // clang-format off
               0, 0, 0, 0, 0, 
               0, 1, 0, 0, 0, 
