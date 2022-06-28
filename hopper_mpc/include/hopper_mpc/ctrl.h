@@ -18,7 +18,7 @@ class Control {                    // The class
   Eigen::DiagonalMatrix<float, 3> kd_diag_;
   Eigen::Vector3d K_;
   int s_pol_;
-  Eigen::MatrixXd S_b_;
+  Eigen::Matrix4d S_b_;
   Eigen::Vector3d tau_;
   std::unique_ptr<Leg> legPtr_;
 };

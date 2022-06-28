@@ -8,10 +8,10 @@ class Leg {                             // The class
  public:                                // Access specifier
   Leg(Model model, float dt, float g);  // constructor
   Eigen::Vector4d q;
-  Eigen::Vector4d q_prev;
   Eigen::Vector4d dq;
   Eigen::Vector2d qa;
   Eigen::Vector2d dqa;
+  Eigen::Vector4d q_prev;
 
   void UpdateState(Eigen::Vector2d a_in, Eigen::Quaterniond Q_base);
   Eigen::Vector2d KinInv(Eigen::Vector3d p_ref);
