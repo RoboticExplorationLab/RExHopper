@@ -12,6 +12,8 @@ add_compile_options(
   -Wl,--no-as-needed  
 )
 
+set(OpenGL_GL_PREFERENCE GLVND)
+
 set(CATKIN_PACKAGE_DEPENDENCIES
   hopper_can_interface
 )
@@ -49,6 +51,9 @@ add_executable(${PROJECT_NAME}
   src/main.cpp
   src/runner.cpp
   src/bridge_mujoco.cpp
+  src/leg.cpp 
+  src/utils.cpp 
+  src/ctrl.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   mujoco::mujoco

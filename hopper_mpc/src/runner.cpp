@@ -15,7 +15,7 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
   g = 9.807;  // should g be defined here?
 
   u_.setZero(model.n_a);
-  L_ = model.linklen;
+  L_ = model.leg_dim;
   h0_ = model.h0;
   J_ = model.inertia;
   mu_ = model.mu;
@@ -40,6 +40,8 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
 
   // class definitions
   bridgePtr_.reset(new MujocoBridge(model, dt, g, mu_, fixed, record));
+  legPtr_.reset(new Leg(model, dt, g));
+  ctrlPtr_.reset(new Control(model, *legPtr_));
 
 };  // constructor
 
@@ -47,7 +49,8 @@ void Runner::Run() {  // Method/function defined inside the class
   bridgePtr_->Init();
   for (int k = 0; k < N_run_; k++) {
     std::cout << k << "\n";
-    bridgePtr_->SimRun();
-    // X, qa, dqa, c, tau, i, v, grf = self.simulator.sim_run(u=self.u)  # run sim
+    bridgePtr_->SimRun();  // X, qa, dqa, c, tau, i, v, grf = self.simulator.sim_run(u=self.u)  # run sim
+    // legPtr_->UpdateState(a_in, Q_base);
+    // u = ctrlPtr_->OpSpacePosCtrl();
   }
 };

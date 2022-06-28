@@ -70,8 +70,8 @@ int main(int argc, char* argv[]) {
   hopper.n_a = 5;
   hopper.s_pol = 1;
   hopper.h0 = 0.27;
-  hopper.ks = 996;
-  hopper.kwbc = 5000;
+  hopper.K_s = 996;
+  hopper.K = 5000;
   hopper.mu = 0.5;
   hopper.init_q << -30 * M_PI / 180, -120 * M_PI / 180, -150 * M_PI / 180, 120 * M_PI / 180;
   hopper.init_dq << 0, 0, 0, 0;
