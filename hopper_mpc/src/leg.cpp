@@ -24,6 +24,10 @@ Leg::Leg(Model model, float dt, float g) {
   L3 = model.leg_dim(3);
   L4 = model.leg_dim(4);
   L5 = model.leg_dim(5);
+
+  s_pol_ = model.s_pol;
+  K_ << model.K, model.K, model.K;
+  UpdateGains(K_, K_ * 0.02);
 };
 
 void Leg::UpdateState(Eigen::Vector2d a_in, Eigen::Quaterniond Q_base) {
@@ -39,9 +43,9 @@ void Leg::UpdateState(Eigen::Vector2d a_in, Eigen::Quaterniond Q_base) {
   // dq_prev = dq;
   // Rotate gravity vector to match body orientation
   gb_ = Q_base.inverse().matrix() * gb_init_;  // world frame to body frame
-  Leg::GenMCG();
-  Leg::GenJac();
-  Leg::GenMx();
+  GenMCG();
+  GenJac();
+  GenMx();
   qa << q(0), q(2);
   dqa << dq(0), dq(2);
 };
@@ -92,11 +96,11 @@ Eigen::Vector3d Leg::GetVel() {
 }
 
 void Leg::GenMCG() {
-  sym::Del(q, dq, gb_, model_.m, model_.leg_dim, model_.l_c0, model_.l_c1, model_.l_c2, model_.l_c3, model_.I, M, C, G);
+  sym::Del<double>(q, dq, gb_, model_.m, model_.leg_dim, model_.l_c0, model_.l_c1, model_.l_c2, model_.l_c3, model_.I, &M, &C, &G);
 };
 
 void Leg::GenJac() {
-  sym::Jac(q, dq, gb_, model_.leg_dim.transpose(), Ja);  // TODO: Fix this
+  sym::Jac<double>(q, dq, gb_, model_.leg_dim.transpose(), &Ja);  // TODO: Fix this
 };
 
 void Leg::GenMx() {
@@ -118,4 +122,35 @@ void Leg::GenMx() {
     }
   }
   Mx = V.transpose() * (s.asDiagonal() * U);
+}
+
+void Leg::UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd) {
+  // Use this to update wbc PD gains in real time
+  kp_diag_ = kp.asDiagonal();
+  kd_diag_ = kd.asDiagonal();
+}
+
+Eigen::Vector2d Leg::OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref) {
+  Eigen::Vector3d p;
+  p = KinFwd();
+  Eigen::Vector3d v;
+  v = GetVel();
+  Eigen::Vector3d pdd_ref;
+  pdd_ref = (p_ref - p) + (v_ref - v);
+  // pdd_ref = kp_diag_ * (p_ref - p) + kd_diag_ * (v_ref - v);
+  Eigen::Vector3d f;
+  f = Mx * pdd_ref;
+  tau_ = Ja.transpose() * f;  // u = tau.flatten() - spring.fn_spring(leg.q[0], leg.q[2])
+  return -tau_;
+}
+
+Eigen::Vector2d Leg::OpSpaceForceCtrl(Eigen::Vector3d f) {
+  Eigen::Matrix<double, 3, 2> Ja;
+  tau_ = Ja.transpose() * f;  // u = (Ja.T @ force).flatten() - spring.fn_spring(leg.q[0], leg.q[2])
+  return -tau_;
+}
+
+Eigen::Vector2d Leg::InvKinPosCtrl(Eigen::Vector3d p_ref, float kp, float kd) {
+  tau_ = kp * (qa - Leg::KinInv(p_ref)) + kd * dqa;
+  return tau_;
 }

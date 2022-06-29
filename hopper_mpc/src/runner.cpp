@@ -41,7 +41,6 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
   // class definitions
   bridgePtr_.reset(new MujocoBridge(model, dt, g, mu_, fixed, record));
   legPtr_.reset(new Leg(model, dt, g));
-  ctrlPtr_.reset(new Control(model, *legPtr_));
 
 };  // constructor
 

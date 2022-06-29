@@ -2,7 +2,6 @@
 #include <memory>
 #include "Eigen/Dense"
 #include "hopper_mpc/bridge_mujoco.h"
-#include "hopper_mpc/ctrl.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
 
@@ -44,6 +43,5 @@ class Runner {  // The class
   double mu_;
 
   std::unique_ptr<MujocoBridge> bridgePtr_;
-  std::unique_ptr<Control> ctrlPtr_;
   std::unique_ptr<Leg> legPtr_;
 };

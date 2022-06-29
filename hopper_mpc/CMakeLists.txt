@@ -53,7 +53,6 @@ add_executable(${PROJECT_NAME}
   src/bridge_mujoco.cpp
   src/leg.cpp 
   src/utils.cpp 
-  src/ctrl.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   mujoco::mujoco
