@@ -151,6 +151,6 @@ Eigen::Vector2d Leg::OpSpaceForceCtrl(Eigen::Vector3d f) {
 }
 
 Eigen::Vector2d Leg::InvKinPosCtrl(Eigen::Vector3d p_ref, float kp, float kd) {
-  tau_ = kp * (qa - Leg::KinInv(p_ref)) + kd * dqa;
+  tau_ = kp * (qa - KinInv(p_ref)) + kd * dqa;
   return tau_;
 }

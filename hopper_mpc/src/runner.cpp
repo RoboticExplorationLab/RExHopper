@@ -4,6 +4,7 @@
 #include "hopper_mpc/bridge_mujoco.h"
 
 Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record, bool recalc) {
+  model = model;
   N_run_ = N_run;
   dt_ = dt;
   ctrl_ = ctrl;
@@ -45,10 +46,11 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
 };  // constructor
 
 void Runner::Run() {  // Method/function defined inside the class
-  bridgePtr_->Init();
+  bridgePtr_->Init(model.init_q);
   for (int k = 0; k < N_run_; k++) {
-    std::cout << k << "\n";
-    bridgePtr_->SimRun();  // X, qa, dqa, c, tau, i, v, grf = self.simulator.sim_run(u=self.u)  # run sim
+    // std::cout << k << "\n";
+    u_ << 10000, 10000, 10000, 10000, 10000;
+    bridgePtr_->SimRun(u_);  // X, qa, dqa, c, tau, i, v, grf = self.simulator.sim_run(u=self.u)  # run sim
     // legPtr_->UpdateState(a_in, Q_base);
     // u = ctrlPtr_->OpSpacePosCtrl();
   }

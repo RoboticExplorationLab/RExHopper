@@ -1,4 +1,5 @@
 #pragma once
+#include "Eigen/Core"
 #include "Eigen/Dense"
 #include "hopper_mpc/model.h"
 #include "mujoco/glfw3.h"
@@ -16,19 +17,11 @@ class MujocoBridge {                                                            
   float mu;
   bool fixed;
   bool record;
-  void Init();
-  void SimRun();
+  void Init(Eigen::Vector4d init_q);
+  void SimRun(Eigen::Matrix<double, 5, 1> u);
   void End();
 
  private:
-  // std::string error_;
-
-  mjModel* m_;
-  mjData* d_;
-  mjvCamera cam_;   // abstract camera
-  mjvOption opt_;   // visualization options
-  mjvScene scn_;    // abstract scene
-  mjrContext con_;  // custom GPU context
   GLFWwindow* window_;
   mjtNum timezero_;
   double_t update_rate_;

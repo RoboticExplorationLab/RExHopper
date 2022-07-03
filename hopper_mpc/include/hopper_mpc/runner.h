@@ -10,7 +10,7 @@ class Runner {  // The class
   Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record, bool recalc);  // constructor
 
   void Run();
-
+  Model model;
   int N_run_;         // number of timesteps in sim
   double dt_;         // timestep size
   std::string ctrl_;  // controller
