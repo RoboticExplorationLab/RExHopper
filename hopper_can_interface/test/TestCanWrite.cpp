@@ -34,7 +34,8 @@ int main() {
       can1.getWriteMsgBuffer().DATA[i] = data[i];
     }
     timer.startTimer();
-    can1.write();
+    can1.write(msg);
+    // can1.writeAsync();
     // CAN_Write(Channel::CAN1, &msg);
     timer.endTimer();
 

@@ -91,8 +91,8 @@ void CanInterface::writeWorker() {
         }
       }
 
-      // NOTE: If the transmit buffer is full, sleep for 300microseconds and resend.
-      std::this_thread::sleep_for(std::chrono::microseconds{300});
+      // NOTE: If the transmit buffer is full, sleep for 200microseconds and resend.
+      std::this_thread::sleep_for(std::chrono::microseconds{200});
     }
   }
 }
@@ -102,7 +102,7 @@ void CanInterface::readWorker() {
   }
 }
 
-void CanInterface::write() {
+void CanInterface::writeAsync() {
   {
     std::lock_guard<std::mutex> lock(bufferedMsgReadyMutex_);
     bufferedMsgReady_ = true;
@@ -110,7 +110,15 @@ void CanInterface::write() {
   bufferedMsgReadyCondition_.notify_all();
 }
 
-inline std::string CanInterface::toHex(int num) {
+void CanInterface::write(TPCANMsg& msg) {
+  Status status = CAN_Write(channel_, &msg);
+  if (status != PCAN_ERROR_OK) {
+    std::string errorMsg = std::string("[CanInterface::write] ") + errorMessage(status);
+    throw std::runtime_error(errorMsg);
+  }
+}
+
+inline std::string CanInterface::toHex(int num) const {
   std::stringstream ss;
   ss << "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << num;
   return ss.str();

@@ -33,13 +33,14 @@ class CanInterface final {
   ~CanInterface();
 
   Status initialize();
-  void write();
+  void writeAsync();  //!< Fill writeMsgBuffer before calling this method
+  void write(TPCANMsg& msg);
 
   TPCANMsg& getWriteMsgBuffer();
 
  private:
   std::string errorMessage(Status status);
-  std::string toHex(int num);
+  std::string toHex(int num) const;
 
   const Channel channel_;
   const BandRate bandRate_;
