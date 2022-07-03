@@ -1,5 +1,6 @@
 #include "hopper_can_interface/CanInterface.h"
 
+#include <chrono>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -9,14 +10,32 @@
 namespace hopper {
 namespace can {
 
-CanInterface::CanInterface(const Channel channel, const BandRate bandRate) : channel_(channel), bandRate_(bandRate), keepRunning_{true} {}
+CanInterface::CanInterface(const Channel channel, const BandRate bandRate) : channel_(channel), bandRate_(bandRate), keepRunning_{true} {
+  // Allocate buffer
+  activeWriteMsgPtr_.reset(new TPCANMsg);
+  bufferedWriteMsgPtr_.reset(new TPCANMsg);
+
+  Status status;
+  CAN_GetValue(channel, PCAN_CHANNEL_CONDITION, &status, sizeof(status));
+
+  if (status != PCAN_CHANNEL_AVAILABLE) {
+    std::stringstream ss;
+    ss << "[CanInterface::CanInterface] PCAN device " << toHex(channel_) << " is ";
+    if (status == PCAN_CHANNEL_UNAVAILABLE) {
+      ss << "UNAVAILABLE";
+    } else {
+      ss << "OCCUPIED";
+    }
+    throw std::runtime_error(ss.str());
+  }
+}
 
 CanInterface::~CanInterface() {
   {
-    std::lock_guard<std::mutex> lock(writeBuffer_.getMutex());
+    std::lock_guard<std::mutex> lock(bufferedMsgReadyMutex_);
     keepRunning_ = false;
   }
-  writeReadyCondition_.notify_all();
+  bufferedMsgReadyCondition_.notify_all();
 
   if (writeThread_.joinable()) {
     writeThread_.join();
@@ -25,11 +44,7 @@ CanInterface::~CanInterface() {
     readThread_.join();
   }
 
-  Status status = CAN_Uninitialize(channel_);
-  if (status != PCAN_ERROR_OK) {
-    std::cerr << errorMessage(status) << std::endl;
-    // throw std::runtime_error(errorMessage(status));
-  }
+  CAN_Uninitialize(channel_);
 }
 
 CanInterface::Status CanInterface::initialize() {
@@ -45,28 +60,40 @@ CanInterface::Status CanInterface::initialize() {
   return status;
 }
 
-void CanInterface::writeWorker() {
-  TPCANMsg msgCanMessage;
-  msgCanMessage.MSGTYPE = PCAN_MESSAGE_STANDARD;
-  Status status;
+TPCANMsg& CanInterface::getWriteMsgBuffer() {
+  return *bufferedWriteMsgPtr_;
+}
 
+void CanInterface::writeWorker() {
+  Status status;
   while (true) {
     {
-      std::unique_lock<std::mutex> lock(writeBuffer_.getMutex());
-      writeReadyCondition_.wait(lock, [this] { return writeMsgReady_ || !keepRunning_; });
+      std::unique_lock<std::mutex> lock(bufferedMsgReadyMutex_);
+      bufferedMsgReadyCondition_.wait(lock, [this] { return bufferedMsgReady_ || !keepRunning_; });
 
       if (!keepRunning_) {
         break;
       }
-      writeBuffer_.readMsgFromBuffer(msgCanMessage.ID, msgCanMessage.DATA, msgCanMessage.LEN);
-      writeMsgReady_ = false;
+
+      activeWriteMsgPtr_.swap(bufferedWriteMsgPtr_);
+      bufferedMsgReady_ = false;
     }
 
-    status = CAN_Write(channel_, &msgCanMessage);
-    if (status != PCAN_ERROR_OK) {
-      std::cerr << errorMessage(status) << std::endl;
-      // throw std::runtime_error("");
-    };
+    while (true) {
+      status = CAN_Write(channel_, activeWriteMsgPtr_.get());
+
+      if (status == PCAN_ERROR_OK) {
+        break;
+      } else {
+        std::lock_guard<std::mutex> lock(bufferedMsgReadyMutex_);
+        if (bufferedMsgReady_) {
+          break;
+        }
+      }
+
+      // NOTE: If the transmit buffer is full, sleep for 300microseconds and resend.
+      std::this_thread::sleep_for(std::chrono::microseconds{300});
+    }
   }
 }
 
@@ -75,27 +102,30 @@ void CanInterface::readWorker() {
   }
 }
 
-CanInterface::Status CanInterface::write(const uint32_t id, const uint8_t* srcPtr, const uint8_t length) {
-  std::lock_guard<std::mutex> lock(writeBuffer_.getMutex());
-  writeBuffer_.writeMsgToBuffer(id, srcPtr, length);
-  writeMsgReady_ = true;
-  writeReadyCondition_.notify_all();
+void CanInterface::write() {
+  {
+    std::lock_guard<std::mutex> lock(bufferedMsgReadyMutex_);
+    bufferedMsgReady_ = true;
+  }
+  bufferedMsgReadyCondition_.notify_all();
+}
 
-  return PCAN_ERROR_OK;
+inline std::string CanInterface::toHex(int num) {
+  std::stringstream ss;
+  ss << "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << num;
+  return ss.str();
 }
 
 std::string CanInterface::errorMessage(Status error) {
+  // No error - return
+  if (error == PCAN_ERROR_OK) return "";
+
   std::stringstream ss;
-
-  if (CAN_GetErrorText(error, 0x09, errorMessagebBuffer_) != PCAN_ERROR_OK) {
-    ss << "An error occurred. Error - code "
-       << "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << error << "could not be resolved\n";
-
+  if (CAN_GetErrorText(error, 0x09, errorMsgBuffer_) != PCAN_ERROR_OK) {
+    ss << "An error occurred. Error - code " << toHex(error) << "could not be resolved\n";
     return ss.str();
   } else {
-    ss << "Error: "
-       << "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << error << "  " << errorMessagebBuffer_ << "\n";
-
+    ss << "Error: " << toHex(error) << "  " << errorMsgBuffer_ << "\n";
     return ss.str();
   }
 }
