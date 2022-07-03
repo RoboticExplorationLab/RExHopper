@@ -2,8 +2,12 @@
 
 #include <PCANBasic.h>
 
+#include <atomic>
+#include <condition_variable>
 #include <string>
 #include <thread>
+
+#include "hopper_can_interface/BufferedDataArray.h"
 
 namespace hopper {
 namespace can {
@@ -18,22 +22,34 @@ enum BandRate : TPCANBaudrate {
   BAUD_125K = PCAN_BAUD_125K
 };
 
-class CanInterface {
+class CanInterface final {
  public:
   using Status = TPCANStatus;
   explicit CanInterface(const Channel channel, const BandRate bandRate);
   ~CanInterface();
 
   Status initialize();
-  Status write();
+  Status write(const uint32_t id, const uint8_t* srcPtr, const uint8_t length);
 
  private:
+  void writeWorker();
+  void readWorker();
+
+  std::atomic_bool keepRunning_;
+  std::condition_variable writeReadyCondition_;
+  bool writeMsgReady_;
+
   std::string errorMessage(Status status);
+
   const Channel channel_;
   const BandRate bandRate_;
 
+  char errorMessagebBuffer_[500];
+
   std::thread writeThread_;
   std::thread readThread_;
+
+  BufferedCanMsg writeBuffer_;
 };
 }  // namespace can
 }  // namespace hopper

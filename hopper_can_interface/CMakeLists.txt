@@ -22,6 +22,7 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}
+  src/BufferedDataArray.cpp
   src/CanInterface.cpp
 )
 target_link_libraries(${PROJECT_NAME} pcanbasic)
