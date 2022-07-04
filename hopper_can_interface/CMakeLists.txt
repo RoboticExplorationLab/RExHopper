@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(hopper_can_interface)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wfatal-errors")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfatal-errors")
+
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
 
 find_package(catkin REQUIRED)
 
@@ -25,7 +30,7 @@ add_library(${PROJECT_NAME}
   src/BufferedCanMsg.cpp
   src/CanInterface.cpp
 )
-target_link_libraries(${PROJECT_NAME} pcanbasic)
+target_link_libraries(${PROJECT_NAME} pcanbasic Threads::Threads)
 
 add_executable(TestCanWrite
   test/TestCanWrite.cpp
