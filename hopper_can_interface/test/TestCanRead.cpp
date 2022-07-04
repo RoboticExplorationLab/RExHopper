@@ -1,6 +1,5 @@
 #include "hopper_can_interface/CanInterface.h"
 
-#include <atomic>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -32,11 +31,9 @@ int main() {
   RepeatedTimer timer;
 
   BufferedCanMsg msgBuffer;
-  std::atomic_bool msgReceived{false};
 
-  can2.subscribeTopic(0x22, [&msgBuffer, &msgReceived](const TPCANMsg& msg) {
+  can2.subscribeTopic(0x22, [&msgBuffer](const TPCANMsg& msg) {
     msgBuffer.writeMsgToBuffer(msg);
-    msgReceived.store(true, std::memory_order_release);
   });
 
   can2.initialize();
@@ -46,7 +43,7 @@ int main() {
 
   bool receivedFirstMsg = false;
   while (true) {
-    if (msgReceived.load(std::memory_order_acquire)) {
+    if (msgBuffer.bufferReady()) {
       if (receivedFirstMsg)
         timer.endTimer();
       else
@@ -58,7 +55,6 @@ int main() {
                 << " DATA: " << dataToHex(msgBuffer.get().DATA, msgBuffer.get().LEN) << "Ave: " << timer.getAverageInMilliseconds()
                 << " missCounter: " << msgBuffer.getMissCounter() << "\n";
 
-      msgReceived.store(false, std::memory_order_release);
       timer.startTimer();
     }
   }
