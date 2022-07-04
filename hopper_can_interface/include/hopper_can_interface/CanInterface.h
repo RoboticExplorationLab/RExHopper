@@ -4,12 +4,12 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
-
-#include "hopper_can_interface/BufferedDataArray.h"
 
 namespace hopper {
 namespace can {
@@ -29,18 +29,21 @@ enum MsgType : TPCANMessageType { MSG_STANDARD = PCAN_MESSAGE_STANDARD, MSG_RTR 
 class CanInterface final {
  public:
   using Status = TPCANStatus;
+  using Callback = std::function<void(const TPCANMsg&)>;
+
   explicit CanInterface(const Channel channel, const BandRate bandRate);
   ~CanInterface();
 
   Status initialize();
-  void writeAsync();  //!< Fill writeMsgBuffer before calling this method
+  void writeAsync(TPCANMsg& msg);
   void write(TPCANMsg& msg);
 
-  TPCANMsg& getWriteMsgBuffer();
+  void subscribeTopic(uint32_t id, Callback callback);
 
  private:
   std::string errorMessage(Status status);
   std::string toHex(int num) const;
+  std::string dataToHex(uint8_t* data, size_t len);
 
   const Channel channel_;
   const BandRate bandRate_;
@@ -70,6 +73,12 @@ class CanInterface final {
   std::mutex bufferedMsgReadyMutex_;
   std::unique_ptr<TPCANMsg> activeWriteMsgPtr_;
   std::unique_ptr<TPCANMsg> bufferedWriteMsgPtr_;
+
+  /**
+   * Read
+   *
+   */
+  std::map<uint32_t, Callback> idCallbackMap_;
 
   /**
    *  Error message will be wrote here.

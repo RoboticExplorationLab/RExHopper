@@ -1,16 +1,31 @@
 #include "hopper_can_interface/CanInterface.h"
 
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <thread>
 
 #include "Benchmark.h"
 
 using namespace hopper::can;
 
+std::string toHex(int num) {
+  std::stringstream ss;
+  ss << "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << num;
+  return ss.str();
+}
+
+std::string dataToHex(uint8_t* data, size_t len) {
+  std::stringstream ss;
+  for (int i = 0; i < len; ++i) {
+    ss << toHex(data[i]) << " ";
+  }
+  return ss.str();
+}
+
 int main() {
   CanInterface can1(Channel::CAN1, BandRate::BAUD_1M);
-  uint8_t data[8] = {0};
   RepeatedTimer timer;
   can1.initialize();
 
@@ -19,28 +34,25 @@ int main() {
   msg.LEN = 8;
   msg.MSGTYPE = MsgType::MSG_STANDARD;
 
-  can1.getWriteMsgBuffer().ID = 0x22;
-  can1.getWriteMsgBuffer().LEN = 8;
-  can1.getWriteMsgBuffer().MSGTYPE = MsgType::MSG_STANDARD;
-
+  bool transmitFirstMsg = false;
   while (true) {
-    can1.getWriteMsgBuffer().ID = 0x22;
-    can1.getWriteMsgBuffer().LEN = 8;
-    can1.getWriteMsgBuffer().MSGTYPE = MsgType::MSG_STANDARD;
     for (int i = 0; i < 8; i++) {
-      ++data[i];
-      data[i] %= 0x10;
-      msg.DATA[i] = data[i];
-      can1.getWriteMsgBuffer().DATA[i] = data[i];
+      ++msg.DATA[i];
+      msg.DATA[i] %= 0x10;
     }
+
+    can1.writeAsync(msg);
+
+    std::cout << "Transmit ID: " << msg.ID << " LEN: " << static_cast<int>(msg.LEN) << " DATA: " << dataToHex(msg.DATA, msg.LEN)
+              << "Ave: " << timer.getAverageInMilliseconds() << "\n";
+
+    if (transmitFirstMsg)
+      timer.endTimer();
+    else
+      transmitFirstMsg = true;
+
     timer.startTimer();
-    can1.write(msg);
-    // can1.writeAsync();
-    // CAN_Write(Channel::CAN1, &msg);
-    timer.endTimer();
 
-    std::cerr << "Ave: " << timer.getAverageInMilliseconds() << "Max: " << timer.getMaxIntervalInMilliseconds() << "\n";
-
-    std::this_thread::sleep_for(std::chrono::microseconds{200});
+    std::this_thread::sleep_for(std::chrono::microseconds{1000});
   }
 }

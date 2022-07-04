@@ -10,7 +10,8 @@
 namespace hopper {
 namespace can {
 
-CanInterface::CanInterface(const Channel channel, const BandRate bandRate) : channel_(channel), bandRate_(bandRate), keepRunning_{true} {
+CanInterface::CanInterface(const Channel channel, const BandRate bandRate)
+    : channel_(channel), bandRate_(bandRate), keepRunning_{true}, bufferedMsgReady_{false} {
   // Allocate buffer
   activeWriteMsgPtr_.reset(new TPCANMsg);
   bufferedWriteMsgPtr_.reset(new TPCANMsg);
@@ -55,13 +56,9 @@ CanInterface::Status CanInterface::initialize() {
   }
 
   writeThread_ = std::thread(&CanInterface::writeWorker, this);
-  // readThread_ = std::thread(&CanInterface::readWorker, this);
+  readThread_ = std::thread(&CanInterface::readWorker, this);
 
   return status;
-}
-
-TPCANMsg& CanInterface::getWriteMsgBuffer() {
-  return *bufferedWriteMsgPtr_;
 }
 
 void CanInterface::writeWorker() {
@@ -92,19 +89,51 @@ void CanInterface::writeWorker() {
       }
 
       // NOTE: If the transmit buffer is full, sleep for 200microseconds and resend.
+      std::cerr << "\033[1;31mTransmit Buffer full.\033[0m\n";
       std::this_thread::sleep_for(std::chrono::microseconds{200});
     }
   }
 }
 
 void CanInterface::readWorker() {
+  TPCANMsg msgBuffer;
+  Status status;
+
+  int fd;
+  TPCANStatus stsResult = CAN_GetValue(channel_, PCAN_RECEIVE_EVENT, &fd, sizeof(fd));
+  struct timeval timeout = {};
+  timeout.tv_usec = 50000;  // 50ms
+
   while (keepRunning_) {
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+
+    // Checks for messages when an event is received
+    int err = select(fd + 1, &fds, nullptr, nullptr, &timeout);
+    if (err != -1 && FD_ISSET(fd, &fds)) {
+      status = CAN_Read(channel_, &msgBuffer, nullptr);
+
+      if (status == PCAN_ERROR_OK) {
+        // std::cout << "Receive ID: " << msgBuffer.ID << " LEN: " << static_cast<int>(msgBuffer.LEN)
+        //           << " DATA: " << dataToHex(msgBuffer.DATA, msgBuffer.LEN) << "\n";
+
+        auto iter = idCallbackMap_.find(msgBuffer.ID);
+        if (iter != idCallbackMap_.end()) {
+          iter->second(msgBuffer);
+        }
+      } else {
+        std::string errorMsg = std::string("\033[1;31m[CanInterface::readWorker] ") + errorMessage(status);
+        std::cerr << errorMsg << "\033[0m\n";
+      }
+    }
   }
 }
 
-void CanInterface::writeAsync() {
+void CanInterface::writeAsync(TPCANMsg& msg) {
   {
     std::lock_guard<std::mutex> lock(bufferedMsgReadyMutex_);
+    *bufferedWriteMsgPtr_ = msg;
     bufferedMsgReady_ = true;
   }
   bufferedMsgReadyCondition_.notify_all();
@@ -118,9 +147,21 @@ void CanInterface::write(TPCANMsg& msg) {
   }
 }
 
+void CanInterface::subscribeTopic(uint32_t id, Callback callback) {
+  idCallbackMap_.emplace(id, std::move(callback));
+}
+
 inline std::string CanInterface::toHex(int num) const {
   std::stringstream ss;
   ss << "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << num;
+  return ss.str();
+}
+
+std::string CanInterface::dataToHex(uint8_t* data, size_t len) {
+  std::stringstream ss;
+  for (int i = 0; i < len; ++i) {
+    ss << toHex(data[i]) << " ";
+  }
   return ss.str();
 }
 

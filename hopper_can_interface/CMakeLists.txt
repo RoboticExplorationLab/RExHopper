@@ -22,7 +22,7 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}
-  src/BufferedDataArray.cpp
+  src/BufferedCanMsg.cpp
   src/CanInterface.cpp
 )
 target_link_libraries(${PROJECT_NAME} pcanbasic)
@@ -31,6 +31,11 @@ add_executable(TestCanWrite
   test/TestCanWrite.cpp
 )
 target_link_libraries(TestCanWrite ${PROJECT_NAME})
+
+add_executable(TestCanRead
+  test/TestCanRead.cpp
+)
+target_link_libraries(TestCanRead ${PROJECT_NAME})
 
 #############
 ## Install ##
