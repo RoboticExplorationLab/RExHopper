@@ -10,8 +10,7 @@
 namespace hopper {
 namespace can {
 
-CanInterface::CanInterface(const Channel channel, const BandRate bandRate)
-    : channel_(channel), bandRate_(bandRate), keepRunning_{true}, bufferedMsgReady_{false} {
+CanInterface::CanInterface(const Channel channel, const BandRate bandRate) : channel_(channel), bandRate_(bandRate) {
   // Allocate buffer
   activeWriteMsgPtr_.reset(new TPCANMsg);
   bufferedWriteMsgPtr_.reset(new TPCANMsg);

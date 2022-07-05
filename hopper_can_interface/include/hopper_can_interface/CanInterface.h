@@ -26,7 +26,7 @@ enum BandRate : TPCANBaudrate {
 
 enum MsgType : TPCANMessageType { MSG_STANDARD = PCAN_MESSAGE_STANDARD, MSG_RTR = PCAN_MESSAGE_RTR, MSG_EXTENDED = PCAN_MESSAGE_EXTENDED };
 
-class CanInterface final {
+class CanInterface {
  public:
   using Status = TPCANStatus;
   using Callback = std::function<void(const TPCANMsg&)>;
@@ -55,7 +55,7 @@ class CanInterface final {
   void readWorker();
 
   /**
-   * Thread instances. Move assigned after constructor to support virtual functions (Not use yet).
+   * Thread instances. Move assigned after constructor to support virtual functions.
    */
   std::thread writeThread_;
   std::thread readThread_;
@@ -63,20 +63,19 @@ class CanInterface final {
   /**
    *  Flag is protected by bufferedMsgReadyMutex_, but shared by read, write and main threads. Thus, atomic here.
    */
-  std::atomic_bool keepRunning_;
+  std::atomic_bool keepRunning_{true};
 
   /**
    * Synchronization for transmitter
    */
   std::condition_variable bufferedMsgReadyCondition_;
-  bool bufferedMsgReady_;
+  bool bufferedMsgReady_{false};
   std::mutex bufferedMsgReadyMutex_;
   std::unique_ptr<TPCANMsg> activeWriteMsgPtr_;
   std::unique_ptr<TPCANMsg> bufferedWriteMsgPtr_;
 
   /**
-   * Read
-   *
+   * Callback map for receiver
    */
   std::map<uint32_t, Callback> idCallbackMap_;
 
