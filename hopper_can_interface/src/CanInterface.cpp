@@ -90,7 +90,7 @@ void CanInterface::writeWorker() {
 
       // NOTE: If the transmit buffer is full, sleep for 200microseconds and resend.
       std::cerr << "\033[1;31mTransmit Buffer full.\033[0m\n";
-      std::this_thread::sleep_for(std::chrono::microseconds{200});
+      std::this_thread::sleep_for(std::chrono::microseconds{500});
     }
   }
 }
@@ -98,35 +98,30 @@ void CanInterface::writeWorker() {
 void CanInterface::readWorker() {
   TPCANMsg msgBuffer;
   Status status;
-
-  int fd;
-  TPCANStatus stsResult = CAN_GetValue(channel_, PCAN_RECEIVE_EVENT, &fd, sizeof(fd));
-  struct timeval timeout = {};
-  timeout.tv_usec = 50000;  // 50ms
+  using clock = std::chrono::high_resolution_clock;
+  const std::chrono::microseconds duration{500};
+  const auto dt = std::chrono::duration_cast<clock::duration>(duration);
+  const auto start = clock::now();
+  auto sleepTill = start;
 
   while (keepRunning_) {
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-
-    // Checks for messages when an event is received
-    int err = select(fd + 1, &fds, nullptr, nullptr, &timeout);
-    if (err != -1 && FD_ISSET(fd, &fds)) {
+    do {
       status = CAN_Read(channel_, &msgBuffer, nullptr);
 
-      if (status == PCAN_ERROR_OK) {
-        // std::cout << "Receive ID: " << msgBuffer.ID << " LEN: " << static_cast<int>(msgBuffer.LEN)
-        //           << " DATA: " << dataToHex(msgBuffer.DATA, msgBuffer.LEN) << "\n";
-
+      if (status == PCAN_ERROR_OK) {  // If received
         auto iter = idCallbackMap_.find(msgBuffer.ID);
         if (iter != idCallbackMap_.end()) {
           iter->second(msgBuffer);
         }
-      } else {
+      } else if (status != PCAN_ERROR_QRCVEMPTY) {  // If error except receive buffer is empty
         std::string errorMsg = std::string("\033[1;31m[CanInterface::readWorker] ") + errorMessage(status);
         std::cerr << errorMsg << "\033[0m\n";
       }
-    }
+    } while (status == PCAN_ERROR_OK);
+
+    // Sleep
+    sleepTill += dt;
+    std::this_thread::sleep_until(sleepTill);
   }
 }
 

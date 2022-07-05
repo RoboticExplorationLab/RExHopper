@@ -53,6 +53,6 @@ int main() {
 
     timer.startTimer();
 
-    std::this_thread::sleep_for(std::chrono::microseconds{1000});
+    std::this_thread::sleep_for(std::chrono::microseconds{2000});
   }
 }
