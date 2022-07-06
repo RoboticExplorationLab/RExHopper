@@ -3,6 +3,7 @@
 // Modified by bbokser starting on 06/26/22.
 //
 #include "hopper_mpc/utils.hpp"
+#include <vector>
 #include "Eigen/Core"
 #include "Eigen/Dense"
 
@@ -53,6 +54,11 @@ Eigen::Matrix3d Utils::pseudo_inverse(const Eigen::Matrix3d& mat) {
   return svd.matrixV() *
          (svd.singularValues().array().abs() > tolerance).select(svd.singularValues().array().inverse(), 0).matrix().asDiagonal() *
          svd.matrixU().adjoint();
+};
+
+double Utils::WrapToPi(double a) {
+  // wrap input angle bt 0 and pi
+  return fmod(a + M_PI, 2 * M_PI) - M_PI;
 };
 
 // Eigen::Matrix4d L(Eigen::Quaterniond Q) {

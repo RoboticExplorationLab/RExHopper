@@ -13,7 +13,7 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
   spr_ = spr;
   record_ = record;
 
-  g = 9.807;  // should g be defined here?
+  g_ = 9.807;  // should g be defined here?
 
   u_.setZero(model.n_a);
   L_ = model.leg_dim;
@@ -21,37 +21,100 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
   J_ = model.inertia;
   mu_ = model.mu;
 
-  n_X = 13;
-  n_U = 6;
-  X_0.resize(n_X);
-  X_0 << 0, 0, h0_, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-  X_f.resize(n_X);
-  X_f << 2.5, 0, h0_, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  n_X_ = 13;
+  n_U_ = 6;
+  X_0_ << 0, 0, h0_, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  X_f_ << 2.5, 0, h0_, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
-  t_p = 0.8;                         // gait period, seconds
-  phi_switch = 0.5;                  // switching phase, must be between 0 and 1. Percentage of gait spent in contact.
-  N = 40;                            // mpc prediction horizon length (mpc steps)
-  dt_mpc = 0.01;                     // mpc sampling time (s), needs to be a factor of N
-  N_mpc = dt_mpc / dt_;              // mpc sampling time (timesteps), repeat mpc every x timesteps
-  t_horizon = N * dt_mpc;            // mpc horizon time
-  N_k = N * N_mpc;                   // total mpc prediction horizon length (low-level timesteps)
-  t_start = 0.5 * t_p * phi_switch;  // start halfway through stance phase
-  t_st = t_p * phi_switch;           // time spent in stance
-  N_c = t_st / dt;                   // number of timesteps spent in contact
+  t_p_ = 0.8;                           // gait period, seconds
+  phi_switch_ = 0.5;                    // switching phase, must be between 0 and 1. Percentage of gait spent in contact.
+  N_ = 40;                              // mpc prediction horizon length (mpc steps)
+  dt_mpc_ = 0.01;                       // mpc sampling time (s), needs to be a factor of N
+  N_mpc_ = dt_mpc_ / dt_;               // mpc sampling time (timesteps), repeat mpc every x timesteps
+  t_horizon_ = N_ * dt_mpc_;            // mpc horizon time
+  N_k_ = N_ * N_mpc_;                   // total mpc prediction horizon length (low-level timesteps)
+  t_start_ = 0.5 * t_p_ * phi_switch_;  // start halfway through stance phase
+  t_stance_ = t_p_ * phi_switch_;       // time spent in stance
+  N_c_ = t_stance_ / dt;                // number of timesteps spent in contact
 
   // class definitions
   bridgePtr_.reset(new MujocoBridge(model, dt, g, mu_, fixed, record));
   legPtr_.reset(new Leg(model, dt, g));
 
+  StateMachine::start();
 };  // constructor
 
 void Runner::Run() {  // Method/function defined inside the class
   bridgePtr_->Init(model.init_q);
+  double t = -dt_;
   for (int k = 0; k < N_run_; k++) {
+    t += dt_;
     // std::cout << k << "\n";
     u_ << 10000, 10000, 10000, 10000, 10000;
     bridgePtr_->SimRun(u_);  // X, qa, dqa, c, tau, i, v, grf = self.simulator.sim_run(u=self.u)  # run sim
     // legPtr_->UpdateState(a_in, Q_base);
     // u = ctrlPtr_->OpSpacePosCtrl();
+    bool s = ContactSchedule(t, 0);
+    bool sh = 0;  // for now
+    double dz = 0;
+    FsmUpdate(s, sh, dz);
+
+    state_prev_ = state_;  // should be last
   }
 };
+
+void Runner::FsmUpdate(bool s, bool sh, double dz) {
+  stateMachine.ReceiveData(s, sh, dz);
+  StateMachine::dispatch(update_);
+  inCmpr_ = StateMachine::is_in_state<Cmpr>();
+  inPush_ = StateMachine::is_in_state<Push>();
+  inRise_ = StateMachine::is_in_state<Rise>();
+  inFall_ = StateMachine::is_in_state<Fall>();
+  if (inCmpr_ == true) {
+    state_ = 'Cmpr';
+  } else if (inPush_ == true) {
+    state_ = 'Push';
+  } else if (inRise_ == true) {
+    state_ = 'Rise';
+  } else if (inFall_ == true) {
+    state_ = 'Fall';
+  } else {
+    throw std::invalid_argument("Invalid State");
+  }
+}
+
+bool Runner::ContactSchedule(double t, double t0) {
+  int phi = int((t - t0) / t_p_) % 1;
+  return phi < phi_switch_ ? 1 : 0;
+}
+
+bool Runner::ContactMap(int N, double dt, double ts, double t0) {
+  // generate vector of scheduled contact states over the mpc's prediction horizon
+  bool C[N] = {false};
+  for (int k = 0; k < N; k++) {
+    C[k] = ContactSchedule(ts, t0);
+    ts += dt;
+  }
+  return C;
+}
+
+Eigen::MatrixXd Runner::RefTraj(Eigen::Matrix<double, 12, 1> x_0, Eigen::Matrix<double, 12, 1> x_f) {
+  int N_traj = N_run_ - N_sit_;
+  int N_ref = N_run_ + N_k_;
+
+  x_ref_0_.resize(12, N_traj);
+  for (int i = 0; i < 12; i++) {
+    // interpolate positions
+    x_ref_0_.row(i) = Eigen::VectorXd::LinSpaced(N_traj, x_0(i), x_f(i));
+  }
+  // bool C = ContactMap(N_ref, dt_, t_start_, 0);
+  Eigen::MatrixXd x_ref_sit;
+  int N_sit_ref = N_k_ + N_sit_;  // add MPC horizon
+  x_ref_sit.resize(12, N_sit_ref);
+  for (int i = 0; i < N_sit_ref; i++) {  // can't use Replicate because it's not dynamic...
+    x_ref_sit.block<12, 1>(0, i) = x_f;
+  }
+  Eigen::MatrixXd x_ref(x_ref_0_.rows() + x_ref_sit.rows(), x_ref_0_.cols());
+  x_ref << x_ref_0_, x_ref_sit;
+  return x_ref;  // TODO: sine wave for mpc
+}
