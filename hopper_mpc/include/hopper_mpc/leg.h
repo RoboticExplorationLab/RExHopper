@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 #include "Eigen/Dense"
-#include "hopper_mpc/bridge_mujoco.h"
 #include "hopper_mpc/model.h"
 
 class Leg {                             // The class

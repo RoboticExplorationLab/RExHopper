@@ -8,8 +8,8 @@
 
 class Runner {  // The class
 
- public:  // Access specifier
-  Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record, bool recalc);  // constructor
+ public:                                                                                                      // Access specifier
+  Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record);  // constructor
 
   void Run();
   Model model;
@@ -58,7 +58,7 @@ class Runner {  // The class
 
   StateMachine stateMachine;
   Update update_;
-  void FsmUpdate(bool s, bool sh, double dz);
+  std::string FsmUpdate(bool s, bool sh, double dz);
   bool inCmpr_;
   bool inPush_;
   bool inRise_;

@@ -3,7 +3,7 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/bridge_mujoco.h"
 
-Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record, bool recalc) {
+Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record) {
   model = model;
   N_run_ = N_run;
   dt_ = dt;
@@ -57,30 +57,32 @@ void Runner::Run() {  // Method/function defined inside the class
     bool s = ContactSchedule(t, 0);
     bool sh = 0;  // for now
     double dz = 0;
-    FsmUpdate(s, sh, dz);
+    state_ = FsmUpdate(s, sh, dz);
 
     state_prev_ = state_;  // should be last
   }
 };
 
-void Runner::FsmUpdate(bool s, bool sh, double dz) {
+std::string Runner::FsmUpdate(bool s, bool sh, double dz) {
   stateMachine.ReceiveData(s, sh, dz);
   StateMachine::dispatch(update_);
   inCmpr_ = StateMachine::is_in_state<Cmpr>();
   inPush_ = StateMachine::is_in_state<Push>();
   inRise_ = StateMachine::is_in_state<Rise>();
   inFall_ = StateMachine::is_in_state<Fall>();
+  std::string state;
   if (inCmpr_ == true) {
-    state_ = 'Cmpr';
+    state = 'Cmpr';
   } else if (inPush_ == true) {
-    state_ = 'Push';
+    state = 'Push';
   } else if (inRise_ == true) {
-    state_ = 'Rise';
+    state = 'Rise';
   } else if (inFall_ == true) {
-    state_ = 'Fall';
+    state = 'Fall';
   } else {
     throw std::invalid_argument("Invalid State");
   }
+  return state;
 }
 
 bool Runner::ContactSchedule(double t, double t0) {
