@@ -11,8 +11,6 @@
 #include "Benchmark.h"
 #include "hopper_can_interface/BufferedCanMsg.h"
 
-#include "hopper_can_interface/SetThreadPriority.h"
-
 using namespace hopper::can;
 
 BufferedCanMsg msgBuffer;
