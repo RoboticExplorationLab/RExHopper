@@ -4,7 +4,6 @@
 #include "hopper_mpc/bridge_mujoco.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
-#include "hopper_mpc/state_machine.h"
 
 class Runner {  // The class
 
@@ -13,6 +12,12 @@ class Runner {  // The class
 
   void Run();
   Model model;
+
+  Eigen::Quaterniond Q_base;
+  Eigen::Vector2d a_in;
+  Eigen::Vector2d u_a;
+  std::string gc_state;  // gait cycle state
+  std::string gc_state_prev;
 
  private:
   int N_run_;         // number of timesteps in sim
@@ -52,17 +57,9 @@ class Runner {  // The class
 
   bool ContactSchedule(double t, double t0);
   bool ContactMap(int N, double dt, double ts, double t0);
-  Eigen::MatrixXd Runner::RefTraj(Eigen::Matrix<double, 12, 1> x_in, Eigen::Matrix<double, 12, 1> x_f);
+  Eigen::MatrixXd RefTraj(Eigen::Matrix<double, 12, 1> x_in, Eigen::Matrix<double, 12, 1> x_f);
 
   Eigen::MatrixXd x_ref_0_;
 
-  StateMachine stateMachine;
-  Update update_;
-  std::string FsmUpdate(bool s, bool sh, double dz);
-  bool inCmpr_;
-  bool inPush_;
-  bool inRise_;
-  bool inFall_;
-  std::string state_;
-  std::string state_prev_;
+  void GaitCycleUpdate(bool s, bool sh, double dz);
 };

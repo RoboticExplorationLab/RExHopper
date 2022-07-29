@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
               0, 0, 0, 0, 1;  // clang-format on
 
   double dt = 0.001;
-  Runner runner(hopper, N_run, dt, ctrl, plot, fixed, spr, record, false);
+  Runner runner(hopper, N_run, dt, ctrl, plot, fixed, spr, record);
   runner.Run();  // Call the method
   return 0;
 }

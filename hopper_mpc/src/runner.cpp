@@ -38,10 +38,14 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
   N_c_ = t_stance_ / dt;                // number of timesteps spent in contact
 
   // class definitions
-  bridgePtr_.reset(new MujocoBridge(model, dt, g, mu_, fixed, record));
-  legPtr_.reset(new Leg(model, dt, g));
+  bridgePtr_.reset(new MujocoBridge(model, dt, g_, mu_, fixed, record));
+  legPtr_.reset(new Leg(model, dt, g_));
 
-  StateMachine::start();
+  // initialize variables
+  a_in << 0, 0;
+  gc_state = "Fall";
+  gc_state_prev = gc_state;
+
 };  // constructor
 
 void Runner::Run() {  // Method/function defined inside the class
@@ -52,38 +56,32 @@ void Runner::Run() {  // Method/function defined inside the class
     // std::cout << k << "\n";
     u_ << 10000, 10000, 10000, 10000, 10000;
     bridgePtr_->SimRun(u_);  // X, qa, dqa, c, tau, i, v, grf = self.simulator.sim_run(u=self.u)  # run sim
-    // legPtr_->UpdateState(a_in, Q_base);
-    // u = ctrlPtr_->OpSpacePosCtrl();
+    legPtr_->UpdateState(a_in, Q_base);
+    Eigen::Vector3d p_ref;
+    p_ref << 0, 0, -0.6;
+    Eigen::Vector3d v_ref;
+    v_ref << 0, 0, 0;
+    u_a = legPtr_->OpSpacePosCtrl(p_ref, v_ref);
     bool s = ContactSchedule(t, 0);
     bool sh = 0;  // for now
     double dz = 0;
-    state_ = FsmUpdate(s, sh, dz);
+    GaitCycleUpdate(s, sh, dz);
 
-    state_prev_ = state_;  // should be last
+    gc_state_prev = gc_state;  // should be last
   }
 };
 
-std::string Runner::FsmUpdate(bool s, bool sh, double dz) {
-  stateMachine.ReceiveData(s, sh, dz);
-  StateMachine::dispatch(update_);
-  inCmpr_ = StateMachine::is_in_state<Cmpr>();
-  inPush_ = StateMachine::is_in_state<Push>();
-  inRise_ = StateMachine::is_in_state<Rise>();
-  inFall_ = StateMachine::is_in_state<Fall>();
-  std::string state;
-  if (inCmpr_ == true) {
-    state = 'Cmpr';
-  } else if (inPush_ == true) {
-    state = 'Push';
-  } else if (inRise_ == true) {
-    state = 'Rise';
-  } else if (inFall_ == true) {
-    state = 'Fall';
-  } else {
-    throw std::invalid_argument("Invalid State");
+void Runner::GaitCycleUpdate(bool s, bool sh, double dz) {
+  if (gc_state == "Cmpr" && dz >= 0) {
+    gc_state = "Push";
+  } else if (gc_state == "Push" && s == false && sh == false) {
+    gc_state = "Rise";
+  } else if (gc_state == "Rise" && dz <= 0) {
+    gc_state = "Fall";
+  } else if (gc_state == "Fall" && sh == true) {
+    gc_state = "Cmpr";
   }
-  return state;
-}
+};
 
 bool Runner::ContactSchedule(double t, double t0) {
   int phi = int((t - t0) / t_p_) % 1;
