@@ -1,7 +1,7 @@
 #include "hopper_mpc/runner.h"
 #include <iostream>
 #include "Eigen/Dense"
-#include "hopper_mpc/bridge_mujoco.h"
+//#include "hopper_mpc/bridge_mujoco.h"
 
 Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record) {
   model = model;
@@ -38,7 +38,7 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
   N_c_ = t_stance_ / dt;                // number of timesteps spent in contact
 
   // class definitions
-  bridgePtr_.reset(new MujocoBridge(model, dt, g_, mu_, fixed, record));
+  bridgePtr_.reset(new GazeboBridge(model, dt, g_, mu_, fixed, record));
   legPtr_.reset(new Leg(model, dt, g_));
 
   // initialize variables
