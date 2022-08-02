@@ -15,7 +15,7 @@ add_compile_options(
 set(OpenGL_GL_PREFERENCE GLVND)
 
 set(CATKIN_PACKAGE_DEPENDENCIES
-  hopper_can_interface
+  # hopper_can_interface
 )
 
 find_package(catkin REQUIRED COMPONENTS
@@ -23,7 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 #find_package(mujoco REQUIRED)
-find_package(gazebo REQUIRED)
+find_package(raisim CONFIG REQUIRED)
 #find_package(glfw3 REQUIRED)
 
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
@@ -50,14 +50,15 @@ include_directories(
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/runner.cpp
-  src/bridge_gazebo.cpp
+  src/bridge_raisim.cpp
   src/leg.cpp 
   src/utils.cpp 
 )
 target_link_libraries(${PROJECT_NAME}
   #mujoco::mujoco
   #glfw
-  gazebo::gazebo
+  raisim::raisim
+  pthread
 )
 
 #########################
