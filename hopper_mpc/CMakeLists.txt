@@ -15,7 +15,7 @@ add_compile_options(
 set(OpenGL_GL_PREFERENCE GLVND)
 
 set(CATKIN_PACKAGE_DEPENDENCIES
-  # hopper_can_interface
+  hopper_can_interface
 )
 
 find_package(catkin REQUIRED COMPONENTS
