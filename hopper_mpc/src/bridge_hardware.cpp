@@ -12,12 +12,16 @@ HardwareBridge::HardwareBridge(Model model, float dt, float g, float mu, bool fi
   mu = mu;
   fixed = fixed;
   record = record;
+
+  // Channel 1
   ODriveCan ODrive_q0(Channel::CAN1, BandRate::BAUD_1M);
   ODriveCan ODrive_rw1(Channel::CAN1, BandRate::BAUD_1M);
 
+  // Channel 2
   ODriveCan ODrive_q2(Channel::CAN2, BandRate::BAUD_1M);
   ODriveCan ODrive_rw2(Channel::CAN2, BandRate::BAUD_1M);
 
+  // Channel 3
   ODriveCan ODrive_rwz(Channel::CAN3, BandRate::BAUD_1M);
 
   // CAN bus node ids
@@ -28,14 +32,14 @@ HardwareBridge::HardwareBridge(Model model, float dt, float g, float mu, bool fi
   node_id_rwz = 4;
 }
 
-void HardwareBridge::Init(Eigen::Vector4d init_q) {
+void HardwareBridge::Init() {
   ODrive_q0.initialize();
   ODrive_q2.initialize();
-  Calibrate(ODrive_q0, node_id_q0, 1);
-  Calibrate(ODrive_q2, node_id_q2, -1);
-  // after calibration, prepare for torque control
-  SetPosCtrl(ODrive_q0, node_id_q0, -30);
-  SetPosCtrl(ODrive_q2, node_id_q2, -150);
+  Home(ODrive_q0, node_id_q0, 1);
+  Home(ODrive_q2, node_id_q2, -1);
+  // after calibration, prepare for pos control
+  SetPosCtrl(ODrive_q0, node_id_q0, model.q_init(0));
+  SetPosCtrl(ODrive_q2, node_id_q2, model.q_init(2));
 }
 
 void HardwareBridge::SetPosCtrl(ODriveCan ODrive, int node_id, double q_init) {
@@ -44,7 +48,27 @@ void HardwareBridge::SetPosCtrl(ODriveCan ODrive, int node_id, double q_init) {
   ODrive.SetTorque(node_id, q_init);
 }
 
-void HardwareBridge::Calibrate(ODriveCan ODrive, int node_id, int dir) {
+void HardwareBridge::Subscribe(ODriveCan ODrive, int node_id) {
+  ODrive.subscribeTopic(0x22, [&](const TPCANMsg& msg) {
+    msgBuffer.writeMsgToBuffer(msg);
+    {
+      std::lock_guard<std::mutex> lock(receivedMutex);
+      msgReceived = true;
+    }
+    receivedCondition.notify_all();
+  });
+
+  // can2.initialize();
+
+  // std::cout << "Start can..."
+  //           << "\n";
+
+  std::thread t(worker);
+
+  t.join();
+}
+
+void HardwareBridge::Home(ODriveCan ODrive, int node_id, int dir) {
   // Tell ODrive to find the leg position
   const double vel = 0.5;
   ODrive.SetControllerModes(node_id, ODriveCan::VELOCITY_CONTROL);
@@ -53,13 +77,10 @@ void HardwareBridge::Calibrate(ODriveCan ODrive, int node_id, int dir) {
   // assume that at the end of 5 seconds it has found home
   std::this_thread::sleep_for(std::chrono::seconds(5));
   // TODO: More complex but reliable homing procedure?
+  ODrive.SetVelocity(node_id, 0);                 // stop the motor
+  a_cal_(node_id) = ODrive.GetPosition(node_id);  // read the encoder position at home
 }
 
-void HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
-  raisim::MSLEEP(2);
-  // server.integrateWorldThreadSafe();
-}
+void HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {}
 
-void HardwareBridge::End() {
-  // server.killServer();
-}
+void HardwareBridge::End() {}

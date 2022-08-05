@@ -12,7 +12,7 @@ RaisimBridge::RaisimBridge(Model model, float dt, float g, float mu, bool fixed,
   record = record;
 }
 
-void RaisimBridge::Init(Eigen::Vector4d init_q) {
+void RaisimBridge::Init() {
   raisim::World::setActivationKey("/home/vscode/activation.raisim");
   // char tmp[256];
   // getcwd(tmp, 256);
@@ -30,9 +30,9 @@ void RaisimBridge::Init(Eigen::Vector4d init_q) {
 
 void RaisimBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
   raisim::MSLEEP(2);
-  // server.integrateWorldThreadSafe();
+  server.integrateWorldThreadSafe();
 }
 
 void RaisimBridge::End() {
-  // server.killServer();
+  server.killServer();
 }

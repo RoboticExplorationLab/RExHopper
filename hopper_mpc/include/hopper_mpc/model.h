@@ -13,8 +13,8 @@ struct Model {
   double K;
   double mu;
   Eigen::Vector4d m;  // leg masses
-  Eigen::Vector4d init_q;
-  Eigen::Vector4d init_dq;
+  Eigen::Vector4d q_init;
+  Eigen::Vector4d dq_init;
   Eigen::Vector3d l_c0;
   Eigen::Vector3d l_c1;
   Eigen::Vector3d l_c2;

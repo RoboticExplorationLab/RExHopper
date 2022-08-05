@@ -2,8 +2,6 @@
 #include <iostream>
 #include "Eigen/Dense"
 
-//#include "hopper_mpc/bridge_mujoco.h"
-
 Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record) {
   model = model;
   N_run_ = N_run;
@@ -50,7 +48,7 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
 };  // constructor
 
 void Runner::Run() {  // Method/function defined inside the class
-  bridgePtr_->Init(model.init_q);
+  bridgePtr_->Init();
   double t = -dt_;
   for (int k = 0; k < N_run_; k++) {
     t += dt_;

@@ -8,15 +8,15 @@
 #include "hopper_mpc/utils.hpp"
 
 Leg::Leg(Model model, float dt, float g) {
-  q = model.init_q;
+  q = model.q_init;
   q_prev = q;
-  dq = model.init_dq;
+  dq = model.dq_init;
 
   dt_ = dt;
   S_b_ = model.S.block<4, 4>(0, 0);  // actuator selection matrix (just the legs)
   gb_ << 0, 0, g;                    // initialize body frame gravity vector
   gb_init_ << 0, 0, g;
-  a_cal_ << model.init_q(0), model.init_q(2);
+  a_cal_ << model.q_init(0), model.q_init(2);
   model_ = model;
   L0 = model.leg_dim(0);
   L1 = model.leg_dim(1);
@@ -31,7 +31,7 @@ Leg::Leg(Model model, float dt, float g) {
 };
 
 void Leg::UpdateState(Eigen::Vector2d a_in, Eigen::Quaterniond Q_base) {
-  // Pull raw actuator joint values in from simulator or robot and calibrate encoders
+  // Pull raw actuator joint values in from simulator or robot and correct angle
   // Make sure this only happens once per time step
   a_in += a_cal_;
   q(0) = a_in(0);

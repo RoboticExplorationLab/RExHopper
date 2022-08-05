@@ -17,7 +17,7 @@ class RaisimBridge {                                                            
   float mu;
   bool fixed;
   bool record;
-  void Init(Eigen::Vector4d init_q);
+  void Init();
   void SimRun(Eigen::Matrix<double, 5, 1> u);
   void End();
 
