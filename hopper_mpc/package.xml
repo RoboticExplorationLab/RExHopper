@@ -19,7 +19,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>cmake_clang_tools</build_depend>
-  <depend>hopper_can_interface</depend>
+  <!-- <depend>hopper_can_interface</depend> -->
 
 
   <!-- The export tag contains other, unspecified, tags -->

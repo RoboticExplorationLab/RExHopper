@@ -15,16 +15,16 @@ add_compile_options(
 set(OpenGL_GL_PREFERENCE GLVND)
 
 set(CATKIN_PACKAGE_DEPENDENCIES
-  hopper_can_interface
+  # hopper_can_interface
 )
 
 find_package(catkin REQUIRED COMPONENTS
   ${CATKIN_PACKAGE_DEPENDENCIES}
 )
 
-find_package(mujoco REQUIRED)
-
-find_package(glfw3 REQUIRED)
+#find_package(mujoco REQUIRED)
+find_package(raisim CONFIG REQUIRED)
+#find_package(glfw3 REQUIRED)
 
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
@@ -50,13 +50,15 @@ include_directories(
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/runner.cpp
-  src/bridge_mujoco.cpp
+  src/bridge_raisim.cpp
   src/leg.cpp 
   src/utils.cpp 
 )
 target_link_libraries(${PROJECT_NAME}
-  mujoco::mujoco
-  glfw
+  #mujoco::mujoco
+  #glfw
+  raisim::raisim
+  pthread
 )
 
 #########################
@@ -87,24 +89,4 @@ catkin_add_gtest(${PROJECT_NAME}-test
   test/test_hopper_mpc.cpp
 )
 target_link_libraries(${PROJECT_NAME}-test gtest_main)
-
-
-############
-## MuJoCo ##
-############
-
-# set(USE_GL 1)
-# set(MUJOCO_PATH /opt/mujoco)
-# include_directories( 
-#   ${MUJOCO_PATH}/include
-# )
-# link_directories($ENV{MUJOCO_PATH}/lib)
-# #Finding main mujoco library
-# if(${USE_GL})
-#     file(GLOB LIB_MUJOCO $ENV{MUJOCO_PATH}/lib/libmujoco[0-9][0-9][0-9].so)
-# else()
-#     file(GLOB LIB_MUJOCO $ENV{MUJOCO_PATH}/lib/libmujoco[0-9][0-9][0-9]nogl.so)
-# endif()
-# #Showing mujoco library found
-# message(STATUS "MuJoCo lib: " ${LIB_MUJOCO})
 

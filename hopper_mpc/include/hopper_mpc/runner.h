@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include "Eigen/Dense"
-#include "hopper_mpc/bridge_mujoco.h"
+#include "hopper_mpc/bridge_raisim.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
 
@@ -11,8 +11,6 @@ class Runner {  // The class
   Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record);  // constructor
 
   void Run();
-  Model model;
-
   Eigen::Quaterniond Q_base;
   Eigen::Vector2d a_in;
   Eigen::Vector2d u_a;
@@ -20,6 +18,7 @@ class Runner {  // The class
   std::string gc_state_prev;
 
  private:
+  Model model_;
   int N_run_;         // number of timesteps in sim
   int N_sit_;         // number of timesteps to "sit" at end of traj
   double dt_;         // timestep size
@@ -52,7 +51,7 @@ class Runner {  // The class
   Eigen::Matrix3d J_;
   double mu_;
 
-  std::unique_ptr<MujocoBridge> bridgePtr_;
+  std::unique_ptr<RaisimBridge> bridgePtr_;
   std::unique_ptr<Leg> legPtr_;
 
   bool ContactSchedule(double t, double t0);
