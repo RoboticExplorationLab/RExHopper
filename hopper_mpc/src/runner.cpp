@@ -3,7 +3,7 @@
 #include "Eigen/Dense"
 
 Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record) {
-  model = model;
+  model_ = model;
   N_run_ = N_run;
   dt_ = dt;
   ctrl_ = ctrl;
