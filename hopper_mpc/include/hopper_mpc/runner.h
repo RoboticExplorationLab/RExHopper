@@ -11,8 +11,6 @@ class Runner {  // The class
   Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record);  // constructor
 
   void Run();
-  Model model;
-
   Eigen::Quaterniond Q_base;
   Eigen::Vector2d a_in;
   Eigen::Vector2d u_a;
@@ -20,6 +18,7 @@ class Runner {  // The class
   std::string gc_state_prev;
 
  private:
+  Model model_;
   int N_run_;         // number of timesteps in sim
   int N_sit_;         // number of timesteps to "sit" at end of traj
   double dt_;         // timestep size
