@@ -40,12 +40,15 @@ void HardwareBridge::Init() {
   // after calibration, prepare for pos control
   SetPosCtrl(ODrive_q0, node_id_q0, model.q_init(0));
   SetPosCtrl(ODrive_q2, node_id_q2, model.q_init(2));
+  if (calibrate == true) {
+    a_cal_ = ODrive.GetPosition();  // read the encoder positions at home
+  }
 }
 
 void HardwareBridge::SetPosCtrl(ODriveCan ODrive, int node_id, double q_init) {
   // Initialize Odrives into position control
   ODrive.SetControllerModes(node_id, ODriveCan::POSITION_CONTROL);
-  ODrive.SetTorque(node_id, q_init);
+  ODrive.SetPos(node_id, q_init);
 }
 
 void HardwareBridge::Subscribe(ODriveCan ODrive, int node_id) {
@@ -57,14 +60,10 @@ void HardwareBridge::Subscribe(ODriveCan ODrive, int node_id) {
     }
     receivedCondition.notify_all();
   });
-
   // can2.initialize();
-
   // std::cout << "Start can..."
   //           << "\n";
-
   std::thread t(worker);
-
   t.join();
 }
 
@@ -77,10 +76,33 @@ void HardwareBridge::Home(ODriveCan ODrive, int node_id, int dir) {
   // assume that at the end of 5 seconds it has found home
   std::this_thread::sleep_for(std::chrono::seconds(5));
   // TODO: More complex but reliable homing procedure?
-  ODrive.SetVelocity(node_id, 0);                 // stop the motor
-  a_cal_(node_id) = ODrive.GetPosition(node_id);  // read the encoder position at home
+  ODrive.SetVelocity(node_id, 0);  // stop the motor
 }
 
-void HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {}
+Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPosition() {
+  q = TurnsToRadians(Odrive.position) + model.q_init_cal - a_cal_;  // change encoder reading to match model
+  return q;
+}
 
-void HardwareBridge::End() {}
+void HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
+  q = GetJointPosition();
+  dq = GetJointVelocity();
+  // Torque vs Position Control for Legs
+  self.X [0:3] = p_base;
+  self.X [3:7] = Q_base;
+  self.X [7:10] = Z(Q_inv(Q_base), velocities[0]);
+  // linear vel world->body frame
+  self.X [10:] = Z(Q_inv(Q_base), velocities[1]);  // angular vel world->body frame
+
+  return X, q, dq, c, i, v;
+}
+
+void HardwareBridge::End() {
+  SetPosCtrl(ODrive_q0, node_id_q0, model.q_init(0));
+  SetPosCtrl(ODrive_q2, node_id_q2, model.q_init(2));
+}
+
+// Utility functions
+double HardwareBridge::TurnsToRadians(double turns) {
+  return 2 * M_PI * turns;
+}

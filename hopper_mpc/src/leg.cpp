@@ -33,7 +33,7 @@ Leg::Leg(Model model, float dt, float g) {
 void Leg::UpdateState(Eigen::Vector2d a_in, Eigen::Quaterniond Q_base) {
   // Pull raw actuator joint values in from simulator or robot and correct angle
   // Make sure this only happens once per time step
-  a_in += a_cal_;
+  // a_in += a_cal_;  // This belongs in the bridges because it depends on which sim/hardware
   q(0) = a_in(0);
   q(2) = a_in(1);
   q(1) = q(2) - q(0);
