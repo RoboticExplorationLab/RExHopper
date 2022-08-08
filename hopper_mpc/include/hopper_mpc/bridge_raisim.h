@@ -25,5 +25,6 @@ class RaisimBridge {                                                            
   bool record_;
   raisim::World world;
   raisim::RaisimServer server;
-  std::vector<raisim::ArticulatedSystem*> bot;
+  // std::vector<raisim::ArticulatedSystem*> bot;
+  raisim::ArticulatedSystem* bot;
 };

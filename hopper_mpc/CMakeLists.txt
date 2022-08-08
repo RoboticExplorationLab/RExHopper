@@ -53,6 +53,7 @@ add_executable(${PROJECT_NAME}
   src/bridge_raisim.cpp
   src/leg.cpp 
   src/utils.cpp 
+  # src/cassie.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   #mujoco::mujoco

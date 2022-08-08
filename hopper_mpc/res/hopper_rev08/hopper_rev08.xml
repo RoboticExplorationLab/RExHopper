@@ -1,17 +1,34 @@
 <mujoco model="hopper_rev08">
-  <compiler angle="radian"/>
+  <compiler inertiafromgeom='false' angle="radian"/>
   <option integrator="Euler" timestep="0.001"/>
   <size njmax="500" nconmax="100"/>
-  <default/>
+
+  <default>
+    <joint limited='true'/>
+    <motor ctrllimited='true'/>
+    <geom contype='0' conaffinity='0' condim='1' solref='0.005 1'/>
+    <equality solref='0.005 1'/>
+    <default class='cassie'>
+      <geom material='cassie'/>
+    </default>
+    <default class='collision'>
+      <!-- User parameter for geoms is used to identify collision types -->
+      <geom material='collision' contype='1' conaffinity='8' user='2'/>
+    </default>
+    <default class='obstacle'>
+      <geom material='obstacle' condim='3' contype='8' conaffinity='15' user='1'/>
+    </default>
+  </default>
+
   <asset>
-    <mesh name="base_link" file="base_link.STL"/>
-    <mesh name="Link 0" file="Link 0.STL"/>
-    <mesh name="Link 1" file="Link 1.STL"/>
-    <mesh name="Link 2" file="Link 2.STL"/>
-    <mesh name="Link 3" file="Link 3.STL"/>
-    <mesh name="rw0" file="rw0.STL"/>
-    <mesh name="rw1" file="rw1.STL"/>
-    <mesh name="rwz" file="rwz.STL"/>
+    <mesh name="base_link" file="base_link.stl"/>
+    <mesh name="Link 0" file="Link 0.stl"/>
+    <mesh name="Link 1" file="Link 1.stl"/>
+    <mesh name="Link 2" file="Link 2.stl"/>
+    <mesh name="Link 3" file="Link 3.stl"/>
+    <mesh name="rw0" file="rw0.stl"/>
+    <mesh name="rw1" file="rw1.stl"/>
+    <mesh name="rwz" file="rwz.stl"/>
 
     <texture builtin="gradient" height="100" rgb1="1 1 1" rgb2="0 0 0" type="skybox" width="100"/>
     <texture builtin="flat" height="1278" mark="cross" markrgb="1 1 1" name="texgeom" random="0.01" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" type="cube" width="127"/>
@@ -51,6 +68,7 @@
           <joint name="Joint 3" pos="0 0 0" axis="0 -1 0" limited="true" range="-1.8295 0.7597"/>
           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="Link 3"/>
           <geom type="mesh" rgba="1 1 1 1" mesh="Link 3"/>
+          <geom type='sphere' size='0.15' pos='0.02 0 0.02' class='collision'/>
         </body>
       </body>
       <body name="rw0" pos="0.0565685 -0.137196 0" quat="0 0.92388 -0.382683 0">
@@ -73,6 +91,12 @@
       </body>
     </body>
   </worldbody>
+
+  <equality>
+		<connect anchor="0.135 0 0" body1="Link 1" body2="Link 3" name="equality_constraint"/>
+    <connect anchor="-0.0014381 0 0.01485326948" body1="Link 3" body2="Link 1" name="equality_constraint"/>
+	</equality>
+
   <actuator>
     <motor joint='Joint 0' name='q0' gear="1" forcelimited="true" forcerange="-50 50"/>
 	</actuator>
