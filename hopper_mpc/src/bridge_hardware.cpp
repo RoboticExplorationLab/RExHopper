@@ -2,7 +2,6 @@
 #include <cstring>
 #include <filesystem>
 #include <iostream>
-#include "hopper_can_interface/ODriveCan.h"
 
 HardwareBridge::HardwareBridge(Model model, float dt, float g, float mu, bool fixed, bool record) {
   // constructor

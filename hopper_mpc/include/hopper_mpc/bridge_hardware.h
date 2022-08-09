@@ -1,5 +1,6 @@
 #pragma once
 
+#include "hopper_can_interface/ODriveCan.h"
 #include "hopper_mpc/model.h"
 // std
 #include "Eigen/Core"

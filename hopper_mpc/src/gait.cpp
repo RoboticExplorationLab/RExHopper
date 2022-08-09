@@ -12,7 +12,7 @@ Gait::Gait(Model model, double dt, Eigen::Matrix<double, 13, 1> X_f) {
   z_ref_ = 0;
 }
 
-Gait::U_Raibert(std::string state, std::string state_prev, Eigen::Matrix<double, 13, 1> X_in, Eigen::Matrix<double, 12, 1> x_ref) {}
+void Gait::U_Raibert(std::string state, std::string state_prev, Eigen::Matrix<double, 13, 1> X_in, Eigen::Matrix<double, 12, 1> x_ref) {}
 // def u_raibert(self, state, state_prev, X_in, x_ref):
 // #continuous raibert hopping
 // p = X_in[0:3]

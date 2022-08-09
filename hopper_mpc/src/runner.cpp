@@ -2,7 +2,7 @@
 #include <iostream>
 #include "Eigen/Dense"
 
-Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record) {
+Runner::Runner(Model model, int N_run, double dt, std::string ctrl, std::string bridge, bool plot, bool fixed, bool spr, bool record) {
   model_ = model;
   N_run_ = N_run;
   dt_ = dt;
@@ -35,9 +35,20 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, b
   t_start_ = 0.5 * t_p_ * phi_switch_;  // start halfway through stance phase
   t_stance_ = t_p_ * phi_switch_;       // time spent in stance
   N_c_ = t_stance_ / dt;                // number of timesteps spent in contact
-
+  std::cout << "before... \n";
   // class definitions
-  bridgePtr_.reset(new RaisimBridge(model, dt, g_, mu_, fixed, record));
+  if (bridge == "hardware") {
+    throw "hardware bridge not implemented yet!";
+    // TODO: fix this
+    // bridgePtr_.reset(new HardwareBridge(model, dt, g_, mu_, fixed, record));
+  } else if (bridge == "mujoco") {
+    bridgePtr_.reset(new MujocoBridge(model, dt, g_, mu_, fixed, record));
+  } else if (bridge == "raisim") {
+    bridgePtr_.reset(new RaisimBridge(model, dt, g_, mu_, fixed, record));
+  } else {
+    throw "Invalid bridge name! Use 'hardware', 'mujoco', or raisim";
+  }
+  std::cout << "after... \n";
   legPtr_.reset(new Leg(model, dt, g_));
 
   // initialize variables

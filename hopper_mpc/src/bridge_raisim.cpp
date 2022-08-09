@@ -15,8 +15,7 @@ RaisimBridge::RaisimBridge(Model model, double dt, double g, double mu, bool fix
 void RaisimBridge::Init() {
   raisim::World::setActivationKey("/home/vscode/activation.raisim");
   std::string s = "/workspaces/RosDockerWorkspace/devel/lib/hopper_mpc/hopper_mpc";
-  // int size = 150;
-  char* dir = new char[150];
+  char* dir = new char[150];  // just needs to be larger than the actual string
   strcpy(dir, s.c_str());
   auto binaryPath = raisim::Path::setFromArgv(dir);
   raisim::World world(binaryPath.getDirectory() + "/../../../src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08.xml");
@@ -43,20 +42,22 @@ void RaisimBridge::Init() {
   // std::cout << typeid(server).name() << '\n';
 
   // robot state
-  // std::cout << bot.back()->getGeneralizedCoordinateDim() << '\n';
+  std::cout << bot->getGeneralizedCoordinateDim() << '\n';
   // jointNominalConfig(bot.back()->getGeneralizedCoordinateDim());
   // jointNominalConfig.setZero();
   // jointNominalConfig[1] = 0.1;
   //
-  bot->setGeneralizedCoordinate({0, 0, 0.7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});  // first 7 elements are pos and quaternion
+  bot->setGeneralizedCoordinate({0, 0, 0, 0, 0, 0, 0});  // first 7 elements are pos and quaternion
+  // bot->setGeneralizedCoordinate({0, 0, 0.7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});  // first 7 elements are pos and quaternion
 }
 
 void RaisimBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
   raisim::MSLEEP(1);
   // bot.back()->setGeneralizedCoordinate(jointNominalConfig);
-  bot->setGeneralizedForce(jointNominalConfig);
+  // bot->setGeneralizedForce(jointNominalConfig);
   // std::this_thread::sleep_for(std::chrono::microseconds(1000));
   server.integrateWorldThreadSafe();
+  // world.integrate();
 }
 
 void RaisimBridge::End() {

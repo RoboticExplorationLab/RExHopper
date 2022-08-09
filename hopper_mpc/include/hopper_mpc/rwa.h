@@ -26,11 +26,13 @@ class Rwa {       // The class
   Eigen::Vector3d kp_tau_;
   Eigen::Vector3d ki_tau_;
   Eigen::Vector3d kd_tau_;
-  PID3 pid_tau;
+  // PID3 pid_tau;
   Eigen::Vector3d kp_vel_;
   Eigen::Vector3d ki_vel_;
   Eigen::Vector3d kd_vel_;
-  PID3 pid_vel;
+  // PID3 pid_vel;
+  std::unique_ptr<PID3> pid_tauPtr_;
+  std::unique_ptr<PID3> pid_velPtr_;
 
   Eigen::DiagonalMatrix<double, 3> kp_diag_;
   Eigen::DiagonalMatrix<double, 3> kd_diag_;

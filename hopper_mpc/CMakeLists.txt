@@ -22,9 +22,9 @@ find_package(catkin REQUIRED COMPONENTS
   ${CATKIN_PACKAGE_DEPENDENCIES}
 )
 
-#find_package(mujoco REQUIRED)
+find_package(mujoco REQUIRED)
 find_package(raisim CONFIG REQUIRED)
-#find_package(glfw3 REQUIRED)
+find_package(glfw3 REQUIRED)
 
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
@@ -50,14 +50,18 @@ include_directories(
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/runner.cpp
+  src/bridge.cpp
   src/bridge_raisim.cpp
+  src/bridge_mujoco.cpp
   src/leg.cpp 
+  src/gait.cpp
+  src/rwa.cpp
+  src/pid.cpp
   src/utils.cpp 
-  # src/cassie.cpp
 )
 target_link_libraries(${PROJECT_NAME}
-  #mujoco::mujoco
-  #glfw
+  mujoco::mujoco
+  glfw
   raisim::raisim
   pthread
 )

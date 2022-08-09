@@ -1,14 +1,18 @@
 #pragma once
 #include <memory>
 #include "Eigen/Dense"
+#include "hopper_mpc/bridge.h"
+//#include "hopper_mpc/bridge_hardware.h"
+#include "hopper_mpc/bridge_mujoco.h"
 #include "hopper_mpc/bridge_raisim.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
 
 class Runner {  // The class
 
- public:                                                                                                      // Access specifier
-  Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record);  // constructor
+ public:  // Access specifier
+  Runner(Model model, int N_run, double dt, std::string ctrl, std::string bridge, bool plot, bool fixed, bool spr,
+         bool record);  // constructor
 
   void Run();
   Eigen::Quaterniond Q_base;
@@ -51,7 +55,8 @@ class Runner {  // The class
   Eigen::Matrix3d J_;
   double mu_;
 
-  std::unique_ptr<RaisimBridge> bridgePtr_;
+  std::unique_ptr<Bridge> bridgePtr_;
+
   std::unique_ptr<Leg> legPtr_;
 
   bool ContactSchedule(double t, double t0);

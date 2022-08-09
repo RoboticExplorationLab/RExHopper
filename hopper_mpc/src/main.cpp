@@ -7,10 +7,12 @@
 
 int main(int argc, char* argv[]) {
   argparse::ArgumentParser program("Hopper");
-
+  std::cout << "1... \n";
   program.add_argument("ctrl").help("mpc, wbc_raibert, wbc_vert, or wbc_static");
 
   program.add_argument("N_run").help("number of timesteps the sim runs for").scan<'i', int>();
+
+  program.add_argument("bridge").help("hardware, mujoco, or raisim");
 
   program.add_argument("--plot").help("enable plotting").default_value(false).implicit_value(true);
 
@@ -32,6 +34,8 @@ int main(int argc, char* argv[]) {
   std::cout << (ctrl) << std::endl;
   int N_run = program.get<int>("N_run");
   std::cout << (N_run) << std::endl;
+  std::string bridge = program.get<std::string>("bridge");
+  std::cout << (bridge) << std::endl;
 
   bool plot = false;
   bool spr = false;
@@ -89,7 +93,8 @@ int main(int argc, char* argv[]) {
               0, 0, 0, 0, 1;  // clang-format on
 
   double dt = 0.001;
-  Runner runner(hopper, N_run, dt, ctrl, plot, fixed, spr, record);
+  std::cout << "1... \n";
+  Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record);
   runner.Run();  // Call the method
   return 0;
 }
