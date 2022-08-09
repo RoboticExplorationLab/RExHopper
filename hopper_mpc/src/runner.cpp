@@ -35,7 +35,7 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, std::string 
   t_start_ = 0.5 * t_p_ * phi_switch_;  // start halfway through stance phase
   t_stance_ = t_p_ * phi_switch_;       // time spent in stance
   N_c_ = t_stance_ / dt;                // number of timesteps spent in contact
-  std::cout << "before... \n";
+
   // class definitions
   if (bridge == "hardware") {
     throw "hardware bridge not implemented yet!";
@@ -48,7 +48,6 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, std::string 
   } else {
     throw "Invalid bridge name! Use 'hardware', 'mujoco', or raisim";
   }
-  std::cout << "after... \n";
   legPtr_.reset(new Leg(model, dt, g_));
 
   // initialize variables

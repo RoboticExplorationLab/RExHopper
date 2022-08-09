@@ -1,24 +1,11 @@
 #include "hopper_mpc/bridge.h"
 
-// Bridge::Bridge(Model model, double dt, double g, double mu, bool fixed, bool record) {
-//   // constructor
-//   model_ = model;
-//   dt_ = dt;
-//   g_ = g;
-//   mu_ = mu;
-//   fixed_ = fixed;
-//   record_ = record;
-// }
-Bridge::Bridge(){};
-
-void Bridge::Init() {
-  ;
-}
-
-void Bridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
-  ;
-}
-
-void Bridge::End() {
-  ;
+Bridge::Bridge(Model model, double dt, double g, double mu, bool fixed, bool record) {
+  // constructor
+  model_ = model;
+  dt_ = dt;
+  g_ = g;
+  mu_ = mu;
+  fixed_ = fixed;
+  record_ = record;
 }

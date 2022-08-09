@@ -9,12 +9,13 @@
 
 #define ERROR_SIZE 1000
 
-class MujocoBridge : public Bridge {                                                   // The class
- public:                                                                               // Access specifier
+class MujocoBridge : public Bridge {  // The class
+ public:
+  using Base = Bridge;                                                                 // Access specifier
   MujocoBridge(Model model, double dt, double g, double mu, bool fixed, bool record);  // constructor
-  void Init();
-  void SimRun(Eigen::Matrix<double, 5, 1> u);
-  void End();
+  void Init() override;
+  void SimRun(Eigen::Matrix<double, 5, 1> u) override;
+  void End() override;
 
  private:
   GLFWwindow* window_;

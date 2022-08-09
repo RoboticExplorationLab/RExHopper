@@ -9,17 +9,18 @@
 #include "Eigen/Dense"
 #include "string"
 
-class RaisimBridge : public Bridge {                                                   // The class
- public:                                                                               // Access specifier
+class RaisimBridge : public Bridge {  // The class
+ public:
+  using Base = Bridge;                                                                 // Access specifier
   RaisimBridge(Model model, double dt, double g, double mu, bool fixed, bool record);  // constructor
-  void Init();
-  void SimRun(Eigen::Matrix<double, 5, 1> u);
-  void End();
+  void Init() override;
+  void SimRun(Eigen::Matrix<double, 5, 1> u) override;
+  void End() override;
   Eigen::Matrix<double, 14, 1> jointNominalConfig;
 
  private:
   raisim::World world;
   raisim::RaisimServer server;
-  // std::vector<raisim::ArticulatedSystem*> bot;
-  raisim::ArticulatedSystem* bot;
+  // raisim::ArticulatedSystem* bot;// MJCF version
+  std::vector<raisim::ArticulatedSystem*> bot;  // URDF version
 };

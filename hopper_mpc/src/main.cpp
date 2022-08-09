@@ -7,7 +7,7 @@
 
 int main(int argc, char* argv[]) {
   argparse::ArgumentParser program("Hopper");
-  std::cout << "1... \n";
+
   program.add_argument("ctrl").help("mpc, wbc_raibert, wbc_vert, or wbc_static");
 
   program.add_argument("N_run").help("number of timesteps the sim runs for").scan<'i', int>();
@@ -93,7 +93,6 @@ int main(int argc, char* argv[]) {
               0, 0, 0, 0, 1;  // clang-format on
 
   double dt = 0.001;
-  std::cout << "1... \n";
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record);
   runner.Run();  // Call the method
   return 0;

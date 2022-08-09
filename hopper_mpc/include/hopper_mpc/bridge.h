@@ -2,13 +2,12 @@
 
 #include "hopper_mpc/model.h"
 
-class Bridge {  // The class
- public:        // Access specifier
-  // Bridge(Model model, double dt, double g, double mu, bool fixed, bool record);  // constructor
-  Bridge();
-  void Init();
-  void SimRun(Eigen::Matrix<double, 5, 1> u);
-  void End();
+class Bridge {                                                                   // The class
+ public:                                                                         // Access specifier
+  Bridge(Model model, double dt, double g, double mu, bool fixed, bool record);  // constructor
+  virtual void Init() = 0;
+  virtual void SimRun(Eigen::Matrix<double, 5, 1> u) = 0;
+  virtual void End() = 0;
 
  protected:
   Model model_;

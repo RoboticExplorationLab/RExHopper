@@ -6,21 +6,18 @@
 #include <iostream>
 #include <thread>
 
-char error[ERROR_SIZE] = "Could not load binary model";  // forced to make this global because I don't know how to code
-
-mjModel* m = mj_loadXML("/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08.xml", 0, error,
-                        ERROR_SIZE);  // MuJoCo model
-mjData* d = mj_makeData(m);           // MuJoCo data
-mjvCamera cam;                        // abstract camera
-mjvOption opt;                        // visualization options
-mjvScene scn;                         // abstract scene
-mjrContext con;                       // custom GPU context
-                                      // mouse interaction
-bool button_left = false;
-bool button_middle = false;
-bool button_right = false;
-double lastx = 0;
-double lasty = 0;
+mjModel* m;      // MuJoCo model
+mjData* d;       // MuJoCo data
+mjvCamera cam;   // abstract camera
+mjvOption opt;   // visualization options
+mjvScene scn;    // abstract scene
+mjrContext con;  // custom GPU context
+                 // mouse interaction
+bool button_left;
+bool button_middle;
+bool button_right;
+double lastx;
+double lasty;
 
 // keyboard callback
 void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods) {
@@ -79,17 +76,23 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
   mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
 }
 
-MujocoBridge::MujocoBridge(Model model, double dt, double g, double mu, bool fixed, bool record) {
-  // constructor
-  model_ = model;
-  dt_ = dt;
-  g_ = g;
-  mu_ = mu;
-  fixed_ = fixed;
-  record_ = record;
-}
+MujocoBridge::MujocoBridge(Model model, double dt, double g, double mu, bool fixed, bool record) : Base(model, dt, g, mu, fixed, record) {}
 
 void MujocoBridge::Init() {
+  char error[ERROR_SIZE] = "Could not load binary model";
+  m = mj_loadXML("/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08.xml", 0, error,
+                 ERROR_SIZE);  // MuJoCo model
+  d = mj_makeData(m);          // MuJoCo data
+  cam;                         // abstract camera
+  opt;                         // visualization options
+  scn;                         // abstract scene
+  con;                         // custom GPU context
+                               // mouse interaction
+  button_left = false;
+  button_middle = false;
+  button_right = false;
+  lastx = 0;
+  lasty = 0;
   // init GLFW
   if (!glfwInit()) mju_error("Could not initialize GLFW");
 
