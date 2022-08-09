@@ -17,6 +17,8 @@ class RaisimBridge : public Bridge {  // The class
   void SimRun(Eigen::Matrix<double, 5, 1> u) override;
   void End() override;
   Eigen::Matrix<double, 14, 1> jointNominalConfig;
+  int n_dof;
+  Eigen::VectorXd jointState, jointForce, jointPgain, jointDgain;
 
  private:
   raisim::World world;

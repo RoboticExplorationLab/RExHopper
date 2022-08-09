@@ -106,7 +106,7 @@
       lower="-3.14"
       upper="3.14"
       effort="50"
-      velocity="1000" />
+      velocity="2000" />
     <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
@@ -164,8 +164,8 @@
     <limit
       lower="-0.7597"
       upper="1.8295"
-      effort="0"
-      velocity="1000" />
+      effort="50"
+      velocity="2000" />
     <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
@@ -224,7 +224,7 @@
       lower="-3.14"
       upper="3.14"
       effort="50"
-      velocity="1000" />
+      velocity="2000" />
     <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
@@ -282,8 +282,27 @@
     <limit
       lower="-1.8295"
       upper="0.7597"
-      effort="0"
-      velocity="1000" />
+      effort="50"
+      velocity="2000" />
+    <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
+  </joint>
+  <joint
+    name="Joint 4"
+    type="revolute">
+    <origin
+      xyz="0.27 0 0"
+      rpy="-3.1416 -1.0768 3.1416" />
+    <parent
+      link="Link 1" />
+    <child
+      link="Link 3" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="50"
+      velocity="2000" />
     <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
