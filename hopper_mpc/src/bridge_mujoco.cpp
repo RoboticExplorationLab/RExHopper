@@ -80,14 +80,21 @@ MujocoBridge::MujocoBridge(Model model, double dt, double g, double mu, bool fix
 
 void MujocoBridge::Init() {
   char error[ERROR_SIZE] = "Could not load binary model";
-  m = mj_loadXML("/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08.xml", 0, error,
-                 ERROR_SIZE);  // MuJoCo model
-  d = mj_makeData(m);          // MuJoCo data
-  cam;                         // abstract camera
-  opt;                         // visualization options
-  scn;                         // abstract scene
-  con;                         // custom GPU context
-                               // mouse interaction
+
+  std::string str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+  char* dir = new char[150];  // just needs to be larger than the actual string
+  strcpy(dir, str.c_str());
+  if (std::strlen(dir) > 4 && !std::strcmp(dir + std::strlen(dir) - 4, ".mjb")) {
+    m = mj_loadModel(dir, 0);
+  } else {
+    m = mj_loadXML(dir, 0, error, 1000);
+  }
+  if (!m) {
+    mju_error_s("Load model error: %s", error);
+  }
+  // m = mj_loadXML(mjcf, 0, error, ERROR_SIZE);  // MuJoCo model
+  d = mj_makeData(m);  // MuJoCo data
+
   button_left = false;
   button_middle = false;
   button_right = false;
@@ -116,13 +123,13 @@ void MujocoBridge::Init() {
   glfwSetScrollCallback(window_, scroll);
 
   // initial position
-  // d->qpos[0] = init_q[0];
-  // d->qpos[1] = 0;
-  // d->qpos[2] = init_q[1];
-  // d->qpos[3] = 0;
-  // d->qpos[4] = init_q[2];
-  // d->qpos[5] = init_q[3];
-  // d->qpos[6] = init_q[4];
+  d->qpos[0] = model_.q_init[0];
+  d->qpos[1] = 0;
+  d->qpos[2] = model_.q_init[1];
+  d->qpos[3] = 0;
+  d->qpos[4] = model_.q_init[2];
+  d->qpos[5] = model_.q_init[3];
+  // d->qpos[6] = model_.q_init[4];
 
   // run main loop, target real-time simulation and 60 fps rendering
   timezero_ = d->time;
@@ -144,14 +151,14 @@ void MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
 
     while (d->time - simstart < 1.0 / 60.0) {
       mj_step(m, d);
-      d->ctrl[0] = u[0];
-      d->ctrl[1] = 0;
-      d->ctrl[2] = u[1];
-      d->ctrl[3] = 0;
-      d->ctrl[4] = u[2];
-      d->ctrl[5] = u[3];
-      d->ctrl[6] = u[4];
-      mj_step(m, d);
+      // d->ctrl[0] = u[0];
+      // d->ctrl[1] = 0;
+      // d->ctrl[2] = u[1];
+      // d->ctrl[3] = 0;
+      // d->ctrl[4] = u[2];
+      // d->ctrl[5] = u[3];
+      // d->ctrl[6] = u[4];
+      // mj_step(m, d);
       // d->ctrl[7] = 1;
     }
 

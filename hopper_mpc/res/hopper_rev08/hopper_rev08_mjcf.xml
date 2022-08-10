@@ -11,10 +11,6 @@
     <default class='cassie'>
       <geom material='cassie'/>
     </default>
-    <default class='collision'>
-      <!-- User parameter for geoms is used to identify collision types -->
-      <geom material='collision' contype='1' conaffinity='8' user='2'/>
-    </default>
     <default class='obstacle'>
       <geom material='obstacle' condim='3' contype='8' conaffinity='15' user='1'/>
     </default>
@@ -68,24 +64,23 @@
           <joint name="Joint 3" pos="0 0 0" axis="0 -1 0" limited="true" range="-1.8295 0.7597"/>
           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="Link 3"/>
           <geom type="mesh" rgba="1 1 1 1" mesh="Link 3"/>
-          <geom type='sphere' size='0.15' pos='0.02 0 0.02' class='collision'/>
         </body>
       </body>
       <body name="rw0" pos="0.0565685 -0.137196 0" quat="0 0.92388 -0.382683 0">
         <inertial pos="-0.0115496 -6.5649e-10 1.34792e-09" quat="0 0.92388 0 0.382683" mass="0.712387" diaginertia="0.00364147 0.00190084 0.00190027"/>
-        <joint name="joint_rw0" pos="0 0 0" axis="-1 0 0"/>
+        <joint name="joint_rw0" pos="0 0 0" axis="-1 0 0" limited="false"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rw0"/>
         <geom type="mesh" rgba="0.647059 0.619608 0.588235 1" mesh="rw0"/>
       </body>
       <body name="rw1" pos="0.0565685 0.137196 0" quat="0.92388 0 0 0.382683">
         <inertial pos="-0.0115498 6.56414e-10 -1.34804e-09" quat="0 0.92388 0 0.382683" mass="0.712387" diaginertia="0.00364147 0.00190084 0.00190027"/>
-        <joint name="joint_rw1" pos="0 0 0" axis="-1 0 0"/>
+        <joint name="joint_rw1" pos="0 0 0" axis="-1 0 0" limited="false"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rw1"/>
         <geom type="mesh" rgba="0.647059 0.619608 0.588235 1" mesh="rw1"/>
       </body>
       <body name="rwz" pos="-0.076 0 0.0835" quat="0 0 0 -1">
         <inertial pos="1.51931e-09 -2.24012e-09 -0.00885752" quat="0.707107 0 0 0.707107" mass="0.356354" diaginertia="0.0008373 0.00043511 0.00043511"/>
-        <joint name="joint_rwz" pos="0 0 0" axis="0 0 -1"/>
+        <joint name="joint_rwz" pos="0 0 0" axis="0 0 -1" limited="false"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rwz"/>
         <geom type="mesh" rgba="0.647059 0.619608 0.588235 1" mesh="rwz"/>
       </body>
@@ -93,22 +88,22 @@
   </worldbody>
 
   <equality>
-		<connect anchor="0.135 0 0" body1="Link 1" body2="Link 3" name="equality_constraint"/>
+		<connect anchor="0.25 0 0" body1="Link 1" body2="Link 3" name="equality_constraint"/>
 	</equality>
 
   <actuator>
-    <motor joint='Joint 0' name='q0' gear="1" forcelimited="true" forcerange="-50 50"/>
+    <motor joint='Joint 0' name='q0' gear="7" forcelimited="true" forcerange="-50 50" ctrllimited="true" ctrlrange="-3.14 3.14"/>
 	</actuator>
   <actuator>
-    <motor joint='Joint 2' name='q2' gear="1" forcelimited="true" forcerange="-50 50"/>
+    <motor joint='Joint 2' name='q2' gear="7" forcelimited="true" forcerange="-50 50" ctrllimited="true" ctrlrange="-3.14 3.14"/>
 	</actuator>
   <actuator>
-    <motor joint='joint_rw0' name='rw0' gear="1" forcelimited="true" forcerange="-11.24 11.24"/>
+    <motor joint='joint_rw0' name='rw0' gear="1" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
 	</actuator>
   <actuator>
-    <motor joint='joint_rw1' name='rw1' gear="1" forcelimited="true" forcerange="-11.24 11.24"/>
+    <motor joint='joint_rw1' name='rw1' gear="1" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
 	</actuator>
   <actuator>
-    <motor joint='joint_rwz' name='rwz' gear="1" forcelimited="true" forcerange="-4 4"/>
+    <motor joint='joint_rwz' name='rwz' gear="1" forcelimited="true" forcerange="-4 4" ctrllimited="false"/>
 	</actuator>
 </mujoco>
