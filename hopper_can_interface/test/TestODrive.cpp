@@ -10,7 +10,7 @@ using namespace hopper::can;
 
 int main(int argc, char** argv) {
   ODriveCan ODrive(Channel::CAN3, BandRate::BAUD_1M);
-  ODrive.initialize();
+  ODrive.initialize({{"test", 0}});
   double dir = 1;
   const double torque = 0.05;
   ODrive.SetControllerModes(0, ODriveCan::TORQUE_CONTROL);
