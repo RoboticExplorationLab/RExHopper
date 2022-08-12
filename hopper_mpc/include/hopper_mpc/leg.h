@@ -8,11 +8,11 @@ class Leg {                             // The class
   Leg(Model model, float dt, float g);  // constructor
   Eigen::Vector4d q;
   Eigen::Vector4d dq;
-  Eigen::Vector2d qa;
-  Eigen::Vector2d dqa;
+  Eigen::Vector2d qa;   // just the actuated leg joint pos (needed for jacobians)
+  Eigen::Vector2d dqa;  // just the actuated leg joint vel (needed for jacobians)
   Eigen::Vector4d q_prev;
 
-  void UpdateState(Eigen::Vector2d a_in, Eigen::Quaterniond Q_base);
+  void UpdateState(Eigen::Vector2d q_in, Eigen::Quaterniond Q_base);
 
   Eigen::Vector2d KinInv(Eigen::Vector3d p_ref);
   Eigen::Vector3d KinFwd();
@@ -29,7 +29,7 @@ class Leg {                             // The class
   Eigen::Vector2d InvKinPosCtrl(Eigen::Vector3d p_ref, float kp, float kd);
 
  private:
-  Eigen::Vector2d a_cal_;
+  Eigen::Matrix<double, 2, 1> qa_out_;
 
   Model model_;
   float dt_;

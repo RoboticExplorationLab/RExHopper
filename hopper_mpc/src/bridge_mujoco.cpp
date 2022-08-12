@@ -122,14 +122,14 @@ void MujocoBridge::Init() {
   glfwSetMouseButtonCallback(window_, mouse_button);
   glfwSetScrollCallback(window_, scroll);
 
-  // initial position
-  d->qpos[0] = model_.q_init[0];
-  d->qpos[1] = 0;
-  d->qpos[2] = model_.q_init[1];
-  d->qpos[3] = 0;
-  d->qpos[4] = model_.q_init[2];
-  d->qpos[5] = model_.q_init[3];
-  // d->qpos[6] = model_.q_init[4];
+  // set position
+  // d->qpos[0] =
+  // // d->qpos[1] =
+  // d->qpos[2] =
+  // // d->qpos[3] =
+  // d->qpos[4] =
+  // d->qpos[5] =
+  // d->qpos[6] =
 
   // run main loop, target real-time simulation and 60 fps rendering
   timezero_ = d->time;
@@ -137,56 +137,81 @@ void MujocoBridge::Init() {
 
   // making sure the first time step updates the ctrl previous_time
   // last_update = timezero - 1.0 / ctrl_update_freq;
+
+  // initialize variables
+  qa_cal_ << model_.q_init(0), model_.q_init(2), 0, 0, 0;
+  double kp = 45;
+  pid_q0Ptr_.reset(new PID1(dt_, kp, 0.0, kp * 0.02));
+  pid_q2Ptr_.reset(new PID1(dt_, kp, 0.0, kp * 0.02));
+
+  double fps = 60;            // 60 frames rendered per real second
+  double simhertz = 1 / dt_;  // 1000 steps per simulated second
+  // then only render visuals once every 16.66 timesteps
+  refresh_rate_ = simhertz / fps;
+  t_refresh_ += 0;
 }
 
-void MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
-  // use the first while condition if you want to simulate for a period.
-  //    while( !glfwWindowShouldClose(window) and d->time-timezero < 1.5)
+retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
   if (!glfwWindowShouldClose(window_)) {
-    // advance interactive simulation for 1/60 sec
-    //  Assuming MuJoCo can simulate faster than real-time, which it usually can,
-    //  this loop will finish on time for the next frame to be rendered at 60 fps.
-    //  Otherwise add a cpu timer and exit this loop when it is time to render.
-    mjtNum simstart = d->time;
+    qa_raw_ << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
+    // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) << "\n";
+    qa_ = qa_raw_ + qa_cal_;  // Correct the angle. Make sure this only happens once per time step
+    // std::cout << "corrected pos = " << qa_(0) << ", " << qa_(1) << ", " << qa_(2) << ", " << qa_(3) << ", " << qa_(4) << "\n";
 
-    while (d->time - simstart < 1.0 / 60.0) {
-      mj_step(m, d);
-      // d->ctrl[0] = u[0];
-      // d->ctrl[1] = 0;
-      // d->ctrl[2] = u[1];
-      // d->ctrl[3] = 0;
-      // d->ctrl[4] = u[2];
-      // d->ctrl[5] = u[3];
-      // d->ctrl[6] = u[4];
-      // mj_step(m, d);
-      // d->ctrl[7] = 1;
+    if (ctrlMode == "Pos") {
+      // if leg is using direct position controller, replace leg torque control values with qa_ref based pid torques
+      // this is the simulated equivalent of using ODrive's position controller
+      u(0) = -pid_q0Ptr_->PIDControl(qa_(0), qla_ref(0));
+      u(1) = -pid_q2Ptr_->PIDControl(qa_(1), qla_ref(1));
     }
 
-    std::cout << "actuator force: " << (d->actuator_force[0]) << ", " << (d->actuator_force[1]) << ", " << (d->actuator_force[2]) << ", "
-              << (d->actuator_force[3]) << ", " << (d->actuator_force[4]) << ", " << (d->actuator_force[5]) << ", "
-              << (d->actuator_force[6]) << std::endl;
-    // std::cout << "qpos: " << (d->qpos[0]) << ", " << (d->qpos[1]) << ", " << (d->qpos[2]) << ", " << (d->qpos[3]) << ", " <<
-    // (d->qpos[4])
-    //           << ", " << (d->qpos[5]) << ", " << (d->qpos[6]) << std::endl;
-    std::cout << "ctrl: " << (d->ctrl[0]) << ", " << (d->ctrl[1]) << ", " << (d->ctrl[2]) << ", " << (d->ctrl[3]) << ", " << (d->ctrl[4])
-              << ", " << (d->ctrl[5]) << ", " << (d->ctrl[6]) << std::endl;
-    // 15 ms is a little smaller than 60 Hz.
-    std::this_thread::sleep_for(std::chrono::milliseconds(15));
-    // get framebuffer viewport
-    viewport_ = {0, 0, 0, 0};
-    glfwGetFramebufferSize(window_, &viewport_.width, &viewport_.height);
+    // std::cout << t_refresh_ << "\n";
 
-    // update scene and render
-    mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
-    mjr_render(viewport_, &scn, &con);
+    // mj_step(m, d);
+    mj_step1(m, d);
+    d->ctrl[0] = u(0);  // moves joint 0
+    d->ctrl[1] = u(1);  // moves joint 2
+    d->ctrl[2] = u(2);  // moves rw0
+    d->ctrl[3] = u(3);  // moves rw1
+    d->ctrl[4] = u(4);  // moves rwz
+    // d->qpos[0] = 0; // These seem to be buggy and ignore equality connect
+    // d->qpos[2] = 0;
+    mj_step2(m, d);
 
-    // swap OpenGL buffers (blocking call due to v-sync)
-    glfwSwapBuffers(window_);
+    // std::cout << "actuator force: " << (d->actuator_force[0]) << ", " << (d->actuator_force[1]) << ", " << (d->actuator_force[2]) << ", "
+    //           << (d->actuator_force[3]) << ", " << (d->actuator_force[4]) << ", " << (d->actuator_force[5]) << ", "
+    //           << (d->actuator_force[6]) << std::endl;
+    // std::cout << "ctrl: " << (d->ctrl[0]) << ", " << (d->ctrl[1]) << ", " << (d->ctrl[2]) << ", " << (d->ctrl[3]) << ", " << (d->ctrl[4])
+    //           << ", " << (d->ctrl[5]) << ", " << (d->ctrl[6]) << std::endl;
+    mjtNum simstart = d->time;
 
-    // process pending GUI events, call GLFW callbacks
-    glfwPollEvents();
+    t_refresh_ += 1;
+
+    if (t_refresh_ > refresh_rate_) {
+      // visualization
+      t_refresh_ = 0;  // reset refresh counter
+      // 15 ms is a little smaller than 60 Hz.
+      // std::this_thread::sleep_for(std::chrono::milliseconds(15));
+      // get framebuffer viewport
+      viewport_ = {0, 0, 0, 0};
+      glfwGetFramebufferSize(window_, &viewport_.width, &viewport_.height);
+
+      // update scene and render
+      mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
+      mjr_render(viewport_, &scn, &con);
+
+      // swap OpenGL buffers (blocking call due to v-sync)
+      glfwSwapBuffers(window_);
+
+      // process pending GUI events, call GLFW callbacks
+      glfwPollEvents();
+    }
+
   } else {
+    End();
   }
+
+  return retVals{X_, qa_, dqa_};
 }
 
 void MujocoBridge::End() {

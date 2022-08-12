@@ -14,7 +14,7 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, std::string 
 
   g_ = 9.807;  // should g be defined here?
 
-  u_.setZero(model.n_a);
+  u.setZero(model.n_a);
   L_ = model.leg_dim;
   h0_ = model.h0;
   J_ = model.inertia;
@@ -46,31 +46,63 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, std::string 
   } else if (bridge == "raisim") {
     bridgePtr_.reset(new RaisimBridge(model, dt, g_, mu_, fixed, record));
   } else {
-    throw "Invalid bridge name! Use 'hardware', 'mujoco', or raisim";
+    throw "Invalid bridge name! Use 'hardware', 'mujoco', or 'raisim'";
   }
   legPtr_.reset(new Leg(model, dt, g_));
 
   // initialize variables
-  a_in << 0, 0;
   gc_state = "Fall";
   gc_state_prev = gc_state;
 
-};  // constructor
+  ctrlMode = "Pos";                                                  // "Torque&Pos"
+  qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
+  qla_ref << qla_ref(0), qla_ref(1) + 0.5;
+  p_ref << 0, 0, -0.3;  // desired operational space leg position
+  v_ref << 0, 0, 0;     // desired operational space leg velocity
+  f_ref << 0, 0, 0;     // desired operational space leg force
+  u << 0, 0, 0, 0, 0;   // ctrl Torques
+
+  x1 = 0;
+  z1 = -0.4;
+};
 
 void Runner::Run() {  // Method/function defined inside the class
   bridgePtr_->Init();
   double t = -dt_;
+
+  double z = p_ref(2);
+  double r = 0.1;
+  double flip = -1.0;
+
   for (int k = 0; k < N_run_; k++) {
     t += dt_;
     // std::cout << k << "\n";
-    u_ << 10000, 10000, 10000, 10000, 10000;
-    bridgePtr_->SimRun(u_);  // X, qa, dqa, c, tau, i, v, grf = self.simulator.sim_run(u=self.u)  # run sim
-    legPtr_->UpdateState(a_in, Q_base);
-    Eigen::Vector3d p_ref;
-    p_ref << 0, 0, -0.6;
-    Eigen::Vector3d v_ref;
-    v_ref << 0, 0, 0;
-    u_a = legPtr_->OpSpacePosCtrl(p_ref, v_ref);
+    // u << 0, 0, 0, 0, 0;
+    z += 0.001 * flip;
+    // std::cout << z << "\n";
+    if (z <= -0.5 || z >= -0.3) {
+      flip *= -1.0;
+    }
+    double x = (sqrt(pow(r, 2) - pow(z - z1, 2)) + x1) * -flip;
+    if (isnan(x)) {
+      x = 0;
+    }
+    p_ref(0) = x;
+    p_ref(2) = z;
+    std::cout << "p_ref = " << p_ref(0) << ", " << p_ref(1) << ", " << p_ref(2) << "\n";
+
+    auto [X, qa, dqa] = bridgePtr_->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
+    Q_base = X.block<4, 1>(3, 0);                                  // grab quaternion from state
+    // TODO: Should we use measured speed or infer it from position history?
+    legPtr_->UpdateState(qa.block<2, 1>(0, 0), Q_base);                // grab first two actuator pos values
+    Eigen::Vector3d pfb = legPtr_->KinFwd();                           // position of the foot in body frame
+    Eigen::Vector3d pf = X.block<3, 1>(0, 0) + Q_base.matrix() * pfb;  // position of the foot in world frame
+    // std::cout << "body frame foot pos = " << pfb(0) << ", " << pfb(1) << ", " << pfb(2) << "\n";
+
+    qla_ref = legPtr_->KinInv(p_ref);  // get desired leg actuator angles
+
+    // u.block<2, 1>(0, 0) = legPtr_->OpSpaceForceCtrl(f_ref);
+
     bool s = ContactSchedule(t, 0);
     bool sh = 0;  // for now
     double dz = 0;

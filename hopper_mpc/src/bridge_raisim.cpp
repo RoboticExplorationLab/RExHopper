@@ -14,39 +14,34 @@ void RaisimBridge::Init() {
   // TODO: Add rotor inertia
   // MJCF version
   // std::string s = "/workspaces/RosDockerWorkspace/devel/lib/hopper_mpc/hopper_mpc";
-  // char* dir = new char[150];  // just needs to be larger than the actual string
+  // char* dir = new char[200];  // just needs to be larger than the actual string
   // strcpy(dir, s.c_str());
   // auto binaryPath = raisim::Path::setFromArgv(dir);
-  // raisim::World world(binaryPath.getDirectory() + "/../../../src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08.xml");
+  // raisim::World world(binaryPath.getDirectory() + "/../../../src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml");
   // bot = static_cast<raisim::ArticulatedSystem*>(world.getObject("base_link"));
 
   // URDF version
-  bot.push_back(
-      world.addArticulatedSystem("/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_closed.urdf"));
-
-  auto ground = world.addGround();  // what's wrong with the units???
-  // TODO: Try modifying meshes to reduce complexity--might be causing the contact issues
+  robot.push_back(world.addArticulatedSystem("/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08.urdf"));
+  bot = robot.back();
+  auto ground = world.addGround();
   world.setTimeStep(dt_);
-  // raisim::Vec<3> gravity = world.getGravity();
-  // std::cout << gravity << '\n';
   /// launch raisim server for visualization. Can be visualized in raisimUnity
   server.launchServer();
-  // server.focusOn(bot); // MJCF version
-  server.focusOn(bot.back());  // URDF version
-  // std::cout << typeid(server).name() << '\n';
+  server.focusOn(bot);
 
   // robot state
-  std::cout << bot.back()->getGeneralizedCoordinateDim() << '\n';
-  // jointNominalConfig(bot.back()->getGeneralizedCoordinateDim());
+  std::cout << bot->getGeneralizedCoordinateDim() << '\n';
+  // jointNominalConfig(bot->getGeneralizedCoordinateDim());
   // jointNominalConfig.setZero();
   // jointNominalConfig[1] = 0.1;
   //
+
   // bot->setGeneralizedCoordinate({0, 0, 0, 0, 0, 0, 0});  // first 7 elements are pos and quaternion
-  // bot.back()->setGeneralizedCoordinate({0, 0, 0.5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});  // first 7 elements are pos and quaternion
-  bot.back()->setGeneralizedCoordinate({0, 0, 0.5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});  // first 7 elements are pos and quaternion
-  bot.back()->setControlMode(raisim::ControlMode::FORCE_AND_TORQUE);
-  // bot.back()->setControlMode(raisim::ControlMode::PD_PLUS_FEEDFORWARD_TORQUE);
-  n_dof = bot.back()->getDOF();
+  // bot->setGeneralizedCoordinate({0, 0, 0.5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});  // first 7 elements are pos and quaternion
+  bot->setGeneralizedCoordinate({0, 0, 0.5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});  // first 7 elements are pos and quaternion
+  bot->setControlMode(raisim::ControlMode::FORCE_AND_TORQUE);
+  // bot->setControlMode(raisim::ControlMode::PD_PLUS_FEEDFORWARD_TORQUE);
+  n_dof = bot->getDOF();
   // std::cout << n_dof << std::endl;
   jointState.resize(n_dof);
   jointForce.resize(n_dof);
@@ -54,31 +49,37 @@ void RaisimBridge::Init() {
   jointDgain.resize(n_dof);
   jointPgain.setZero();
   jointDgain.setZero();
-  bot.back()->setPdGains(jointPgain, jointDgain);
+  bot->setPdGains(jointPgain, jointDgain);
 
-  // std::vector<std::__cxx11::basic_string<char>> path = bot.back()->getMovableJointNames();
+  // std::vector<std::__cxx11::basic_string<char>> path = bot->getMovableJointNames();
   // for (auto i : path) std::cout << i << ' ' << std::endl;
-  bot.back()->ignoreCollisionBetween(0, 1);
-  bot.back()->ignoreCollisionBetween(0, 2);
-  bot.back()->ignoreCollisionBetween(0, 3);
-  bot.back()->ignoreCollisionBetween(0, 4);
-  bot.back()->ignoreCollisionBetween(1, 2);
-  bot.back()->ignoreCollisionBetween(1, 3);
-  bot.back()->ignoreCollisionBetween(1, 4);
-  bot.back()->ignoreCollisionBetween(3, 4);
-  bot.back()->ignoreCollisionBetween(2, 3);
-  bot.back()->ignoreCollisionBetween(2, 4);
+  bot->ignoreCollisionBetween(0, 1);
+  bot->ignoreCollisionBetween(0, 2);
+  bot->ignoreCollisionBetween(0, 3);
+  bot->ignoreCollisionBetween(0, 4);
+  bot->ignoreCollisionBetween(1, 2);
+  bot->ignoreCollisionBetween(1, 3);
+  bot->ignoreCollisionBetween(1, 4);
+  bot->ignoreCollisionBetween(3, 4);
+  bot->ignoreCollisionBetween(2, 3);
+  bot->ignoreCollisionBetween(2, 4);
+
+  // initialize variables
+  qa_cal_ << model_.q_init(0), model_.q_init(2);
 }
 
-void RaisimBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
+retVals RaisimBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
   raisim::MSLEEP(2);
   jointForce << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1, 1, 1;
-  bot.back()->setGeneralizedForce(jointForce);
-  // bot.back()->setGeneralizedCoordinate(jointNominalConfig);
+  // jointForce << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1, 1, 1;
+  // bot->setGeneralizedForce(jointForce);
+  // bot->setGeneralizedCoordinate(jointNominalConfig);
   // bot->setGeneralizedForce(jointNominalConfig);
   // std::this_thread::sleep_for(std::chrono::microseconds(1000));
   server.integrateWorldThreadSafe();
   // world.integrate();
+  qa_ = qa_raw_ + qa_cal_;  // Correct the angle. Make sure this only happens once per time step
+  return retVals{X_, qa_, dqa_};
 }
 
 void RaisimBridge::End() {

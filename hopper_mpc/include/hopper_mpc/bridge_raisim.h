@@ -14,7 +14,7 @@ class RaisimBridge : public Bridge {  // The class
   using Base = Bridge;                                                                 // Access specifier
   RaisimBridge(Model model, double dt, double g, double mu, bool fixed, bool record);  // constructor
   void Init() override;
-  void SimRun(Eigen::Matrix<double, 5, 1> u) override;
+  retVals SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) override;
   void End() override;
   Eigen::Matrix<double, 14, 1> jointNominalConfig;
   int n_dof;
@@ -23,6 +23,7 @@ class RaisimBridge : public Bridge {  // The class
  private:
   raisim::World world;
   raisim::RaisimServer server;
-  // raisim::ArticulatedSystem* bot;// MJCF version
-  std::vector<raisim::ArticulatedSystem*> bot;  // URDF version
+
+  std::vector<raisim::ArticulatedSystem*> robot;  // needed for URDF version
+  raisim::ArticulatedSystem* bot;
 };

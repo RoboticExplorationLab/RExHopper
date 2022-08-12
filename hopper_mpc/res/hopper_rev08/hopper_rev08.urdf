@@ -32,7 +32,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/base_link.STL" />
+          filename="base_link.obj" />
       </geometry>
       <material
         name="">
@@ -46,7 +46,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/base_link.STL" />
+          filename="base_link.obj" />
       </geometry>
     </collision>
   </link>
@@ -72,7 +72,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/Link 0.STL" />
+          filename="Link 0.obj" />
       </geometry>
       <material
         name="">
@@ -86,7 +86,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/Link 0.STL" />
+          filename="Link 0.obj" />
       </geometry>
     </collision>
   </link>
@@ -105,8 +105,9 @@
     <limit
       lower="-3.14"
       upper="3.14"
-      effort="0"
-      velocity="0" />
+      effort="50"
+      velocity="2000" />
+    <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
     name="Link 1">
@@ -130,7 +131,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/Link 1.STL" />
+          filename="Link 1.obj" />
       </geometry>
       <material
         name="">
@@ -144,7 +145,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/Link 1.STL" />
+          filename="Link 1.obj" />
       </geometry>
     </collision>
   </link>
@@ -163,8 +164,9 @@
     <limit
       lower="-0.7597"
       upper="1.8295"
-      effort="0"
-      velocity="0" />
+      effort="50"
+      velocity="2000" />
+    <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
     name="Link 2">
@@ -188,7 +190,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/Link 2.STL" />
+          filename="Link 2.obj" />
       </geometry>
       <material
         name="">
@@ -202,7 +204,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/Link 2.STL" />
+          filename="Link 2.obj" />
       </geometry>
     </collision>
   </link>
@@ -221,8 +223,9 @@
     <limit
       lower="-3.14"
       upper="3.14"
-      effort="0"
-      velocity="0" />
+      effort="50"
+      velocity="2000" />
+    <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
     name="Link 3">
@@ -246,7 +249,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/Link 3.STL" />
+          filename="Link 3.obj" />
       </geometry>
       <material
         name="">
@@ -260,7 +263,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/Link 3.STL" />
+          filename="Link 3.obj" />
       </geometry>
     </collision>
   </link>
@@ -279,8 +282,28 @@
     <limit
       lower="-1.8295"
       upper="0.7597"
-      effort="0"
-      velocity="0" />
+      effort="50"
+      velocity="2000" />
+    <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
+  </joint>
+  <joint
+    name="Joint 4"
+    type="revolute">
+    <origin
+      xyz="0.27 0 0"
+      rpy="-3.1416 -1.0768 3.1416" />
+    <parent
+      link="Link 1" />
+    <child
+      link="Link 3" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="50"
+      velocity="2000" />
+    <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
     name="rw0">
@@ -304,7 +327,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/rw0.STL" />
+          filename="rw0.obj" />
       </geometry>
       <material
         name="">
@@ -318,7 +341,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/rw0.STL" />
+          filename="rw0.obj" />
       </geometry>
     </collision>
   </link>
@@ -334,6 +357,7 @@
       link="rw0" />
     <axis
       xyz="-1 0 0" />
+    <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
     name="rw1">
@@ -357,7 +381,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/rw1.STL" />
+          filename="rw1.obj" />
       </geometry>
       <material
         name="">
@@ -371,7 +395,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/rw1.STL" />
+          filename="rw1.obj" />
       </geometry>
     </collision>
   </link>
@@ -387,6 +411,7 @@
       link="rw1" />
     <axis
       xyz="-1 0 0" />
+    <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
   <link
     name="rwz">
@@ -410,7 +435,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/rwz.STL" />
+          filename="rwz.obj" />
       </geometry>
       <material
         name="">
@@ -424,7 +449,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hopper_rev08/meshes/rwz.STL" />
+          filename="rwz.obj" />
       </geometry>
     </collision>
   </link>
@@ -440,5 +465,6 @@
       link="rwz" />
     <axis
       xyz="0 0 -1" />
+    <dynamics rotor_inertia="0.0" stiffness="0.0" damping="0."/>
   </joint>
 </robot>

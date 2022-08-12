@@ -16,10 +16,18 @@ class Runner {  // The class
 
   void Run();
   Eigen::Quaterniond Q_base;
-  Eigen::Vector2d a_in;
-  Eigen::Vector2d u_a;
   std::string gc_state;  // gait cycle state
   std::string gc_state_prev;
+  Eigen::Matrix<double, 5, 1> u;        // control torques
+  Eigen::Matrix<double, 2, 1> qla_ref;  // leg actuator position setpoints
+  std::string ctrlMode;
+  Eigen::Vector3d p_ref;
+  Eigen::Vector3d v_ref;
+  Eigen::Vector3d f_ref;
+
+  double x1;
+  double z1;
+  double z;
 
  private:
   Model model_;
@@ -37,7 +45,6 @@ class Runner {  // The class
   int n_U_;                           // number of sim controls
   Eigen::Matrix<double, 13, 1> X_0_;  // init state
   Eigen::Matrix<double, 13, 1> X_f_;  // final state
-  Eigen::Matrix<double, 5, 1> u_;     // controls
 
   double t_p_;         // gait period, seconds
   double phi_switch_;  // switching phase, must be between 0 and 1. Percentage of gait spent in contact.
