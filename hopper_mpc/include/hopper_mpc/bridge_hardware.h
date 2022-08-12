@@ -34,4 +34,7 @@ class HardwareBridge {  // The class
   double node_id_rw2;
   double node_id_rwz;
   Eigen::Matrix<double, 5, 1> a_cal_;
+
+  // double posEst_prev;
+  // int count;
 };

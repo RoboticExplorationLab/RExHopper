@@ -84,11 +84,27 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
 }
 
 void HardwareBridge::End() {
-  SetPosCtrl(ODrive_q0, node_id_q0, model.q_init(0));
-  SetPosCtrl(ODrive_q2, node_id_q2, model.q_init(2));
+  SetPosCtrl(ODriveCAN1, node_id_q0, model.q_init(0));
+  SetPosCtrl(ODriveCAN2, node_id_q2, model.q_init(2));
 }
 
 // Utility functions
 double HardwareBridge::TurnsToRadians(double turns) {
   return 2 * M_PI * turns;
 }
+
+// double HardwareBridge::Mapper(double posEst, double velEst) {
+//   // This would have to be a class?
+//   // Or part of the ODrive class
+//   // Maps encoder abs position (turns) to linear space
+//   double dx = posEst - posEst_prev;
+//   posEst_prev = posEst;
+//   // This might not work depending on thread timing...
+//   if (sign(dx) < sign(velEst)) {
+//     count += 1;
+//   } else if (sign(dx) > sign(velEst)) {
+//     count -= 1;
+//   }
+//   double q = posEst + count;
+//   return q;
+// }
