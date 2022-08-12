@@ -38,9 +38,7 @@ Runner::Runner(Model model, int N_run, double dt, std::string ctrl, std::string 
 
   // class definitions
   if (bridge == "hardware") {
-    throw "hardware bridge not implemented yet!";
-    // TODO: fix this
-    // bridgePtr_.reset(new HardwareBridge(model, dt, g_, mu_, fixed, record));
+    bridgePtr_.reset(new HardwareBridge(model, dt, g_, mu_, fixed, record));
   } else if (bridge == "mujoco") {
     bridgePtr_.reset(new MujocoBridge(model, dt, g_, mu_, fixed, record));
   } else if (bridge == "raisim") {
@@ -78,8 +76,9 @@ void Runner::Run() {  // Method/function defined inside the class
     t += dt_;
     // std::cout << k << "\n";
     // u << 0, 0, 0, 0, 0;
-    z += 0.001 * flip;
-    // std::cout << z << "\n";
+
+    // - START CIRCLE TEST - //
+    z += 0.001 * flip;  // std::cout << z << "\n";
     if (z <= -0.5 || z >= -0.3) {
       flip *= -1.0;
     }
@@ -89,6 +88,8 @@ void Runner::Run() {  // Method/function defined inside the class
     }
     p_ref(0) = x;
     p_ref(2) = z;
+    // - END CIRCLE TEST - //
+
     std::cout << "p_ref = " << p_ref(0) << ", " << p_ref(1) << ", " << p_ref(2) << "\n";
 
     auto [X, qa, dqa] = bridgePtr_->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf

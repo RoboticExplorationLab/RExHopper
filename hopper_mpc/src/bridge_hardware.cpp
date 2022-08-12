@@ -3,45 +3,32 @@
 #include <filesystem>
 #include <iostream>
 
-HardwareBridge::HardwareBridge(Model model, float dt, float g, float mu, bool fixed, bool record) {
-  // constructor
-  model = model;
-  dt = dt;
-  g = g;
-  mu = mu;
-  fixed = fixed;
-  record = record;
-
-  // Channel 1
-  ODriveCan ODrive_q0(Channel::CAN1, BandRate::BAUD_1M);
-  ODriveCan ODrive_rw1(Channel::CAN1, BandRate::BAUD_1M);
-
-  // Channel 2
-  ODriveCan ODrive_q2(Channel::CAN2, BandRate::BAUD_1M);
-  ODriveCan ODrive_rw2(Channel::CAN2, BandRate::BAUD_1M);
-
-  // Channel 3
-  ODriveCan ODrive_rwz(Channel::CAN3, BandRate::BAUD_1M);
-
-  // CAN bus node ids
+HardwareBridge::HardwareBridge(Model model, double dt, double g, double mu, bool fixed, bool record)
+    : Base(model, dt, g, mu, fixed, record) {
+  ODriveCan ODriveCAN1(Channel::CAN1, BandRate::BAUD_1M);  // Channel 1
   node_id_q0 = 0;
-  node_id_q2 = 1;
   node_id_rw1 = 2;
-  node_id_rw2 = 3;
+
+  ODriveCan ODriveCAN2(Channel::CAN2, BandRate::BAUD_1M);  // Channel 2
+  node_id_q2 = 1;
+  node_id_rw1 = 3;
+
+  ODriveCan ODriveCAN3(Channel::CAN3, BandRate::BAUD_1M);  // Channel 3
   node_id_rwz = 4;
 }
 
 void HardwareBridge::Init() {
-  ODrive_q0.initialize();
-  ODrive_q2.initialize();
-  Home(ODrive_q0, node_id_q0, 1);
-  Home(ODrive_q2, node_id_q2, -1);
-  // after calibration, prepare for pos control
-  SetPosCtrl(ODrive_q0, node_id_q0, model.q_init(0));
-  SetPosCtrl(ODrive_q2, node_id_q2, model.q_init(2));
+  ODriveCAN1.initialize();
+  ODriveCAN2.initialize();
+  ODriveCAN3.initialize();
+  Home(ODriveCAN1, node_id_q0, 1);
+  Home(ODriveCAN2, node_id_q2, -1);
   if (calibrate == true) {
-    a_cal_ = ODrive.GetPosition();  // read the encoder positions at home
+    a_cal_ = GetPosition();  // read the encoder positions at home
   }
+  // after calibration, prepare for pos control
+  SetPosCtrl(ODriveCAN1, node_id_q0, model.q_init(0));
+  SetPosCtrl(ODriveCAN2, node_id_q2, model.q_init(2));
 }
 
 void HardwareBridge::SetPosCtrl(ODriveCan ODrive, int node_id, double q_init) {
@@ -83,7 +70,7 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPosition() {
   return q;
 }
 
-void HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
+retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
   q = GetJointPosition();
   dq = GetJointVelocity();
   // Torque vs Position Control for Legs
@@ -93,7 +80,7 @@ void HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u) {
   // linear vel world->body frame
   self.X [10:] = Z(Q_inv(Q_base), velocities[1]);  // angular vel world->body frame
 
-  return X, q, dq, c, i, v;
+  return retVals{X_, qa_, dqa_};
 }
 
 void HardwareBridge::End() {
