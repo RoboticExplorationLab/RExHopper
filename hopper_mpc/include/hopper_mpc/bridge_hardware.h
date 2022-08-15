@@ -23,17 +23,18 @@ class HardwareBridge {  // The class
   void SetPosCtrl(ODriveCan ODrive, int node_id, double q_init);
   Eigen::Matrix<double, 5, 1> GetJointPosition();
   double TurnsToRadians(double turns);
+  std::string ctrlMode_prev;
 
  private:
-  ODriveCan ODrive_CAN1;  // leg links
-  ODriveCan ODrive_CAN2;
-  ODriveCan ODrive_CAN3;
+  ODriveCan ODriveCAN1;  // leg links
+  ODriveCan ODriveCAN2;
+  ODriveCan ODriveCAN3;
   double node_id_q0;
   double node_id_q2;
-  double node_id_rw1;
-  double node_id_rw2;
+  double node_id_rwr;
+  double node_id_rwl;
   double node_id_rwz;
-  Eigen::Matrix<double, 5, 1> a_cal_;
+  Eigen::Matrix<double, 5, 1> q_offset_;
 
   // double posEst_prev;
   // int count;

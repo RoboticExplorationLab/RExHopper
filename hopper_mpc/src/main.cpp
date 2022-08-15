@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
   hopper.leg_dim << .1, .27, .27, .1, .17, .0205;
   hopper.a_kt << 1.73, 1.73, 0.106, 0.106, 0.0868;
   hopper.inertia << 0.07542817, 0.00016327, 0.00222099,  // clang-format off
-                    0.00016327, 0.04599064,  -0.00008321,
+                    0.00016327, 0.04599064, -0.00008321,
                     0.00222099, -0.00008321, 0.07709692;                  // clang-format on
   hopper.S << 1, 0, 0, 0, 0,  // clang-format off
               0, 0, 0, 0, 0, 
@@ -91,6 +91,7 @@ int main(int argc, char* argv[]) {
               0, 0, 1, 0, 0,
               0, 0, 0, 1, 0, 
               0, 0, 0, 0, 1;  // clang-format on
+  hopper.qa_home << 0, 0;                                                                        // TODO: Update from CAD
 
   double dt = 0.001;
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record);

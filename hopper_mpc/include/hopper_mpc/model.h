@@ -31,6 +31,7 @@ struct Model {
   Eigen::Vector3d rh;
   Eigen::Matrix3d inertia;        // total inertia matrix
   Eigen::Matrix<double, 7, 5> S;  // actuator selection matrix
+  Eigen::Vector2d qa_home;        // home positions for leg homing
 
   // Note: q and a vectors will have many different sizes depending on the situation.
   // This can be confusing.
