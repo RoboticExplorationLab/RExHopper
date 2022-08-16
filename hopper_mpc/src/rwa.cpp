@@ -2,7 +2,7 @@
 #include "Eigen/Core"
 #include "hopper_mpc/utils.hpp"
 
-Rwa::Rwa(float dt) {
+Rwa::Rwa(double dt) {
   // q = model.init_q;
   // q_prev = q;
   // dq = model.init_dq;
@@ -68,7 +68,7 @@ Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
   return setp;
 }
 
-Eigen::Vector3d Rwa::AttitudeControl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref) {
+Eigen::Vector3d Rwa::AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref) {
   // simple reaction wheel attitude control w/ derivative on measurement pid
   theta_ = AttitudeIn(Q_ref, Q_base);
   setp_ = AttitudeSetp(Q_ref, z_ref);
@@ -76,7 +76,7 @@ Eigen::Vector3d Rwa::AttitudeControl(Eigen::Quaterniond Q_ref, Eigen::Quaternion
   return pid_tauPtr_->PIDControlWrapped(theta_, setp_);  // Cascaded PID Loop
 }
 
-Eigen::Vector3d Rwa::TorqueControl(Eigen::Vector3d tau_ref) {
+Eigen::Vector3d Rwa::TorqueCtrl(Eigen::Vector3d tau_ref) {
   // simple reaction wheel torque control (rotated into rw axes)
   Eigen::Vector3d tau;
   tau(0) = (tau_ref(0) - tau_ref(1)) / (2 * sin45_);

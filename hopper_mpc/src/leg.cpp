@@ -7,12 +7,13 @@
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/utils.hpp"
 
-Leg::Leg(Model model, float dt, float g) {
+Leg::Leg(Model model, double dt) {
   q = model.q_init.block<4, 1>(0, 0);
   q_prev = q;
   dq = model.dq_init.block<4, 1>(0, 0);
 
   dt_ = dt;
+  double g = model.g;
   S_b_ = model.S.block<4, 4>(0, 0);  // actuator selection matrix (just the legs)
   gb_ << 0, 0, g;                    // initialize body frame gravity vector
   gb_init_ << 0, 0, g;
@@ -145,7 +146,9 @@ Eigen::Vector2d Leg::OpSpaceForceCtrl(Eigen::Vector3d f) {
   return -tau_;
 }
 
-Eigen::Vector2d Leg::InvKinPosCtrl(Eigen::Vector3d p_ref, float kp, float kd) {
+Eigen::Vector2d Leg::KinInvPosCtrl(Eigen::Vector3d p_ref) {
+  double kp = model_.k_kin(0);
+  double kd = model_.k_kin(1);
   tau_ = kp * (qa - KinInv(p_ref)) + kd * dqa;
   return tau_;
 }

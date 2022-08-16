@@ -3,9 +3,9 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/model.h"
 
-class Leg {                             // The class
- public:                                // Access specifier
-  Leg(Model model, float dt, float g);  // constructor
+class Leg {                     // The class
+ public:                        // Access specifier
+  Leg(Model model, double dt);  // constructor
   Eigen::Vector4d q;
   Eigen::Vector4d dq;
   Eigen::Vector2d qa;   // just the actuated leg joint pos (needed for jacobians)
@@ -26,13 +26,13 @@ class Leg {                             // The class
   void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
   Eigen::Vector2d OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref);
   Eigen::Vector2d OpSpaceForceCtrl(Eigen::Vector3d f);
-  Eigen::Vector2d InvKinPosCtrl(Eigen::Vector3d p_ref, float kp, float kd);
+  Eigen::Vector2d KinInvPosCtrl(Eigen::Vector3d p_ref);
 
  private:
   Eigen::Matrix<double, 2, 1> qa_out_;
 
   Model model_;
-  float dt_;
+  double dt_;
   Eigen::Matrix4d S_b_;      // actuator selection matrix (just the legs)
   Eigen::Vector3d gb_;       // 3D gravity vector in the body frame
   Eigen::Vector3d gb_init_;  // initial 3D gravity vector in the body frame, should not change

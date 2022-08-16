@@ -17,7 +17,8 @@ struct Model {
   double h0;
   double K_s;
   double K;
-  double mu;
+  double mu;                            // coeff of foot-floor friction
+  double g;                             // gravitational constant
   Eigen::Vector4d m;                    // leg masses
   Eigen::Matrix<double, 7, 1> q_init;   // default initial joint pos
   Eigen::Matrix<double, 7, 1> dq_init;  // default initial joint vel
@@ -32,6 +33,7 @@ struct Model {
   Eigen::Matrix3d inertia;        // total inertia matrix
   Eigen::Matrix<double, 7, 5> S;  // actuator selection matrix
   Eigen::Vector2d qa_home;        // home positions for leg homing
+  Eigen::Vector2d k_kin;          // inv kin control gains kp and kd
 
   // Note: q and a vectors will have many different sizes depending on the situation.
   // This can be confusing.

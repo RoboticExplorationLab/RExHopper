@@ -77,6 +77,7 @@ int main(int argc, char* argv[]) {
   hopper.K_s = 996;
   hopper.K = 5000;
   hopper.mu = 0.5;
+  hopper.g = 9.807;
   hopper.q_init << -30 * M_PI / 180, -120 * M_PI / 180, -150 * M_PI / 180, 120 * M_PI / 180, 0, 0, 0;
   hopper.dq_init << 0, 0, 0, 0, 0, 0, 0;
   hopper.leg_dim << .1, .27, .27, .1, .17, .0205;
@@ -91,7 +92,8 @@ int main(int argc, char* argv[]) {
               0, 0, 1, 0, 0,
               0, 0, 0, 1, 0, 
               0, 0, 0, 0, 1;  // clang-format on
-  hopper.qa_home << 0, 0;                                                                        // TODO: Update from CAD
+  hopper.qa_home << 29 * M_PI / 180, -187 * M_PI / 180;
+  hopper.k_kin << 45, 45 * 0.02;
 
   double dt = 0.001;
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record);

@@ -16,4 +16,5 @@ class Utils {
   static Eigen::Matrix3d skew(Eigen::Vector3d vec);
   static Eigen::Matrix3d pseudo_inverse(const Eigen::Matrix3d& mat);
   static double WrapToPi(double a);
+  static double Clip(double n, double lower, double upper);
 };
