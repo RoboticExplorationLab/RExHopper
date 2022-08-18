@@ -2,8 +2,7 @@
 #include <filesystem>
 #include <iostream>
 
-RaisimBridge::RaisimBridge(Model model, double dt, double g, double mu, bool fixed, bool record)
-    : Base(model, dt, g, mu, fixed, record), server(&world) {}
+RaisimBridge::RaisimBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_), server(&world) {}
 
 void RaisimBridge::Init() {
   // char tmp[256];
@@ -24,7 +23,7 @@ void RaisimBridge::Init() {
   robot.push_back(world.addArticulatedSystem("/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08.urdf"));
   bot = robot.back();
   auto ground = world.addGround();
-  world.setTimeStep(dt_);
+  world.setTimeStep(dt);
   /// launch raisim server for visualization. Can be visualized in raisimUnity
   server.launchServer();
   server.focusOn(bot);
@@ -65,7 +64,7 @@ void RaisimBridge::Init() {
   bot->ignoreCollisionBetween(2, 4);
 
   // initialize variables
-  qa_cal_ << model_.q_init(0), model_.q_init(2);
+  qa_cal << model.q_init(0), model.q_init(2);
 }
 
 retVals RaisimBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
@@ -78,8 +77,8 @@ retVals RaisimBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
   // std::this_thread::sleep_for(std::chrono::microseconds(1000));
   server.integrateWorldThreadSafe();
   // world.integrate();
-  qa_ = qa_raw_ + qa_cal_;  // Correct the angle. Make sure this only happens once per time step
-  return retVals{X_, qa_, dqa_};
+  qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
+  return retVals{X, qa, dqa};
 }
 
 void RaisimBridge::End() {

@@ -76,12 +76,15 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
   mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
 }
 
-MujocoBridge::MujocoBridge(Model model, double dt, double g, double mu, bool fixed, bool record) : Base(model, dt, g, mu, fixed, record) {}
+MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_) {}
 
 void MujocoBridge::Init() {
   char error[ERROR_SIZE] = "Could not load binary model";
-
-  std::string str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+  if (fixed == true) {
+    str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf_fixed.xml";
+  } else {
+    str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+  }
   char* dir = new char[150];  // just needs to be larger than the actual string
   strcpy(dir, str.c_str());
   if (std::strlen(dir) > 4 && !std::strcmp(dir + std::strlen(dir) - 4, ".mjb")) {
@@ -104,8 +107,8 @@ void MujocoBridge::Init() {
   if (!glfwInit()) mju_error("Could not initialize GLFW");
 
   // create window, make OpenGL context current, request v-sync
-  window_ = glfwCreateWindow(1200, 900, "Demo", NULL, NULL);
-  glfwMakeContextCurrent(window_);
+  window = glfwCreateWindow(1200, 900, "Demo", NULL, NULL);
+  glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
 
   // initialize visualization data structures
@@ -117,55 +120,46 @@ void MujocoBridge::Init() {
   mjr_makeContext(m, &con, mjFONTSCALE_150);  // model-specific context
 
   // install GLFW mouse and keyboard callbacks
-  glfwSetKeyCallback(window_, keyboard);
-  glfwSetCursorPosCallback(window_, mouse_move);
-  glfwSetMouseButtonCallback(window_, mouse_button);
-  glfwSetScrollCallback(window_, scroll);
-
-  // set position
-  // d->qpos[0] =
-  // // d->qpos[1] =
-  // d->qpos[2] =
-  // // d->qpos[3] =
-  // d->qpos[4] =
-  // d->qpos[5] =
-  // d->qpos[6] =
+  glfwSetKeyCallback(window, keyboard);
+  glfwSetCursorPosCallback(window, mouse_move);
+  glfwSetMouseButtonCallback(window, mouse_button);
+  glfwSetScrollCallback(window, scroll);
 
   // run main loop, target real-time simulation and 60 fps rendering
-  timezero_ = d->time;
-  update_rate_ = dt_;  // update rate is same as timestep size for now
+  timezero = d->time;
+  update_rate = dt;  // update rate is same as timestep size for now
 
   // making sure the first time step updates the ctrl previous_time
   // last_update = timezero - 1.0 / ctrl_update_freq;
 
   // initialize variables
-  qa_cal_ << model_.q_init(0), model_.q_init(2), 0, 0, 0;
+  qa_cal << model.q_init(0), model.q_init(2), 0, 0, 0;
   double kp = 45;
-  pid_q0Ptr_.reset(new PID1(dt_, kp, 0.0, kp * 0.02));
-  pid_q2Ptr_.reset(new PID1(dt_, kp, 0.0, kp * 0.02));
+  pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kp * 0.02));
+  pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kp * 0.02));
 
-  double fps = 60;            // 60 frames rendered per real second
-  double simhertz = 1 / dt_;  // 1000 steps per simulated second
+  double fps = 60;           // 60 frames rendered per real second
+  double simhertz = 1 / dt;  // 1000 steps per simulated second
   // then only render visuals once every 16.66 timesteps
-  refresh_rate_ = simhertz / fps;
-  t_refresh_ += 0;
+  refresh_rate = simhertz / fps;
+  t_refresh += 0;
 }
 
 retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
-  if (!glfwWindowShouldClose(window_)) {
-    qa_raw_ << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
+  if (!glfwWindowShouldClose(window)) {
+    qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
     // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) << "\n";
-    qa_ = qa_raw_ + qa_cal_;  // Correct the angle. Make sure this only happens once per time step
+    qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
     // std::cout << "corrected pos = " << qa_(0) << ", " << qa_(1) << ", " << qa_(2) << ", " << qa_(3) << ", " << qa_(4) << "\n";
 
     if (ctrlMode == "Pos") {
       // if leg is using direct position controller, replace leg torque control values with qa_ref based pid torques
       // this is the simulated equivalent of using ODrive's position controller
-      u(0) = -pid_q0Ptr_->PIDControl(qa_(0), qla_ref(0));
-      u(1) = -pid_q2Ptr_->PIDControl(qa_(1), qla_ref(1));
+      u(0) = -pid_q0Ptr->PIDControl(qa(0), qla_ref(0));
+      u(1) = -pid_q2Ptr->PIDControl(qa(1), qla_ref(1));
     }
 
-    // std::cout << t_refresh_ << "\n";
+    // std::cout << t_refresh << "\n";
 
     // mj_step(m, d);
     mj_step1(m, d);
@@ -185,23 +179,23 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     //           << ", " << (d->ctrl[5]) << ", " << (d->ctrl[6]) << std::endl;
     mjtNum simstart = d->time;
 
-    t_refresh_ += 1;
+    t_refresh += 1;
 
-    if (t_refresh_ > refresh_rate_) {
+    if (t_refresh > refresh_rate) {
       // visualization
-      t_refresh_ = 0;  // reset refresh counter
+      t_refresh = 0;  // reset refresh counter
       // 15 ms is a little smaller than 60 Hz.
       // std::this_thread::sleep_for(std::chrono::milliseconds(15));
       // get framebuffer viewport
-      viewport_ = {0, 0, 0, 0};
-      glfwGetFramebufferSize(window_, &viewport_.width, &viewport_.height);
+      viewport = {0, 0, 0, 0};
+      glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
 
       // update scene and render
       mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
-      mjr_render(viewport_, &scn, &con);
+      mjr_render(viewport, &scn, &con);
 
       // swap OpenGL buffers (blocking call due to v-sync)
-      glfwSwapBuffers(window_);
+      glfwSwapBuffers(window);
 
       // process pending GUI events, call GLFW callbacks
       glfwPollEvents();
@@ -211,7 +205,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     End();
   }
 
-  return retVals{X_, qa_, dqa_};
+  return retVals{X, qa, dqa};
 }
 
 void MujocoBridge::End() {

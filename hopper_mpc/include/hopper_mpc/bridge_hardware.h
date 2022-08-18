@@ -10,8 +10,8 @@
 
 class HardwareBridge {  // The class
  public:
-  using Base = Bridge;                                                                // Access specifier
-  HardwareBridge(Model model, float dt, float g, float mu, bool fixed, bool record);  // constructor
+  using Base = Bridge;                                                 // Access specifier
+  HardwareBridge(Model model_, float dt_, bool fixed_, bool record_);  // constructor
   // --- virtual function overrides --- //
   void Init() override;
   retVals SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) override;

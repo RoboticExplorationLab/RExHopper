@@ -3,9 +3,9 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/model.h"
 
-class Leg {                     // The class
- public:                        // Access specifier
-  Leg(Model model, double dt);  // constructor
+class Leg {                       // The class
+ public:                          // Access specifier
+  Leg(Model model_, double dt_);  // constructor
   Eigen::Vector4d q;
   Eigen::Vector4d dq;
   Eigen::Vector2d qa;   // just the actuated leg joint pos (needed for jacobians)
@@ -17,40 +17,41 @@ class Leg {                     // The class
   Eigen::Vector2d KinInv(Eigen::Vector3d p_ref);
   Eigen::Vector3d KinFwd();
   Eigen::Vector3d GetVel();
+  void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
+  Eigen::Vector2d OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref);
+  Eigen::Vector2d OpSpaceForceCtrl(Eigen::Vector3d f);
+  Eigen::Vector2d KinInvPosCtrl(Eigen::Vector3d p_ref);
+  void GenMCG();
+  void GenJac();
+  void GenMx();
+
+ private:
   Eigen::Matrix<double, 4, 4> M;
   Eigen::Matrix<double, 4, 1> C;
   Eigen::Matrix<double, 4, 1> G;
   Eigen::Matrix<double, 3, 2> Ja;
   Eigen::Matrix3d Mx;
 
-  void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
-  Eigen::Vector2d OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref);
-  Eigen::Vector2d OpSpaceForceCtrl(Eigen::Vector3d f);
-  Eigen::Vector2d KinInvPosCtrl(Eigen::Vector3d p_ref);
+  Eigen::Matrix<double, 2, 1> qa_out;
 
- private:
-  Eigen::Matrix<double, 2, 1> qa_out_;
-
-  Model model_;
-  double dt_;
-  Eigen::Matrix4d S_b_;      // actuator selection matrix (just the legs)
-  Eigen::Vector3d gb_;       // 3D gravity vector in the body frame
-  Eigen::Vector3d gb_init_;  // initial 3D gravity vector in the body frame, should not change
+  Model model;
+  double dt;
+  Eigen::Matrix4d S_b;      // actuator selection matrix (just the legs)
+  Eigen::Vector3d gb;       // 3D gravity vector in the body frame
+  Eigen::Vector3d gb_init;  // initial 3D gravity vector in the body frame, should not change
   double L0;
   double L1;
   double L2;
   double L3;
   double L4;
   double L5;
-  void GenMCG();
-  void GenJac();
-  void GenMx();
-  const double singularity_thresh_ = 0.00025;
-  Eigen::Matrix3d Mx_inv_;
-  Eigen::Matrix<double, 3, 4> J_;
-  Eigen::DiagonalMatrix<double, 3> kp_diag_;
-  Eigen::DiagonalMatrix<double, 3> kd_diag_;
-  Eigen::Vector3d K_;
-  int s_pol_;
-  Eigen::Vector2d tau_;
+
+  const double singularity_thresh = 0.00025;
+  Eigen::Matrix3d Mx_inv;
+  Eigen::Matrix<double, 3, 4> J;
+  Eigen::DiagonalMatrix<double, 3> kp_diag;
+  Eigen::DiagonalMatrix<double, 3> kd_diag;
+  Eigen::Vector3d K;
+  int s_pol;
+  Eigen::Vector2d tau;
 };

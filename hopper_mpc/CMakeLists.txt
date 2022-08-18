@@ -15,7 +15,7 @@ add_compile_options(
 set(OpenGL_GL_PREFERENCE GLVND)
 
 set(CATKIN_PACKAGE_DEPENDENCIES
-  hopper_can_interface
+  # hopper_can_interface
 )
 
 find_package(catkin REQUIRED COMPONENTS
@@ -53,7 +53,7 @@ add_executable(${PROJECT_NAME}
   src/bridge.cpp
   src/bridge_raisim.cpp
   src/bridge_mujoco.cpp
-  src/bridge_hardware.cpp
+  # src/bridge_hardware.cpp
   src/leg.cpp 
   src/gait.cpp
   src/rwa.cpp

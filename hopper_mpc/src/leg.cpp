@@ -7,17 +7,17 @@
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/utils.hpp"
 
-Leg::Leg(Model model, double dt) {
+Leg::Leg(Model model_, double dt_) {
+  model = model_;
   q = model.q_init.block<4, 1>(0, 0);
   q_prev = q;
   dq = model.dq_init.block<4, 1>(0, 0);
 
-  dt_ = dt;
+  dt = dt_;
   double g = model.g;
-  S_b_ = model.S.block<4, 4>(0, 0);  // actuator selection matrix (just the legs)
-  gb_ << 0, 0, g;                    // initialize body frame gravity vector
-  gb_init_ << 0, 0, g;
-  model_ = model;
+  S_b = model.S.block<4, 4>(0, 0);  // actuator selection matrix (just the legs)
+  gb << 0, 0, g;                    // initialize body frame gravity vector
+  gb_init << 0, 0, g;
   L0 = model.leg_dim(0);
   L1 = model.leg_dim(1);
   L2 = model.leg_dim(2);
@@ -25,22 +25,22 @@ Leg::Leg(Model model, double dt) {
   L4 = model.leg_dim(4);
   L5 = model.leg_dim(5);
 
-  s_pol_ = model.s_pol;
-  K_ << model.K, model.K, model.K;
-  UpdateGains(K_, K_ * 0.02);
+  s_pol = model.s_pol;
+  K << model.K, model.K, model.K;
+  UpdateGains(K, K * 0.02);
 };
 
-void Leg::UpdateState(Eigen::Vector2d q_in, Eigen::Quaterniond Q_base) {
+void Leg::UpdateState(Eigen::Vector2d qa_in, Eigen::Quaterniond Q_base) {
   // Update joint info
-  q(0) = q_in(0);
-  q(2) = q_in(1);
+  q(0) = qa_in(0);
+  q(2) = qa_in(1);
   q(1) = q(2) - q(0);
   q(3) = -q(1);
-  dq = (q - q_prev) / dt_;
+  dq = (q - q_prev) / dt;
   q_prev = q;
   // dq_prev = dq;
   // Rotate gravity vector to match body orientation
-  gb_ = Q_base.inverse().matrix() * gb_init_;  // world frame to body frame
+  gb = Q_base.inverse().matrix() * gb_init;  // world frame to body frame
   GenMCG();
   GenJac();
   GenMx();
@@ -63,8 +63,8 @@ Eigen::Matrix<double, 2, 1> Leg::KinInv(Eigen::Vector3d p_ref) {
   double r2 = sqrt(pow(xm, 2) + pow(zm, 2));
   double sigma = acos((-pow(L1, 2) + pow(r2, 2) + pow(L0, 2)) / (2 * r2 * L0));
   double q0 = atan2(zm, xm) + sigma;
-  qa_out_ << q0, q2;
-  return qa_out_;
+  qa_out << q0, q2;
+  return qa_out;
 };
 
 Eigen::Vector3d Leg::KinFwd() {
@@ -92,26 +92,26 @@ Eigen::Vector3d Leg::GetVel() {
 }
 
 void Leg::GenMCG() {
-  sym::Del<double>(q, dq, gb_, model_.m, model_.leg_dim, model_.l_c0, model_.l_c1, model_.l_c2, model_.l_c3, model_.I, &M, &C, &G);
+  sym::Del<double>(q, dq, gb, model.m, model.leg_dim, model.l_c0, model.l_c1, model.l_c2, model.l_c3, model.I, &M, &C, &G);
 };
 
 void Leg::GenJac() {
-  sym::Jac<double>(q, dq, gb_, model_.leg_dim.transpose(), &Ja);  // TODO: Fix this
+  sym::Jac<double>(q, dq, gb, model.leg_dim.transpose(), &Ja);  // TODO: Fix this
 };
 
 void Leg::GenMx() {
-  J_.setZero();
-  J_.block<3, 1>(0, 0) = Ja.block<3, 1>(0, 0);
-  J_.block<3, 1>(0, 2) = Ja.block<3, 1>(0, 1);
-  Mx_inv_ = J_ * (M.inverse() * J_.transpose());  // TODO: Check that this is symmetric
-  Eigen::JacobiSVD<Eigen::Matrix<double, 3, 3> > svd(Mx_inv_, Eigen::ComputeFullU);
+  J.setZero();
+  J.block<3, 1>(0, 0) = Ja.block<3, 1>(0, 0);
+  J.block<3, 1>(0, 2) = Ja.block<3, 1>(0, 1);
+  Mx_inv = J * (M.inverse() * J.transpose());  // TODO: Check that this is symmetric
+  Eigen::JacobiSVD<Eigen::Matrix<double, 3, 3> > svd(Mx_inv, Eigen::ComputeFullU);
   Eigen::Matrix<double, 3, 3> U = svd.matrixU();
   Eigen::Vector3d s = svd.singularValues();
   Eigen::Matrix<double, 3, 3> V = U.transpose();
 
   for (int i = 0; i < 3; i++) {
     // cut off singular values which cause control problems
-    if (s(i) < singularity_thresh_) {
+    if (s(i) < singularity_thresh) {
       s(i) = 0;
     } else {
       s(i) = 1 / s(i);
@@ -122,8 +122,8 @@ void Leg::GenMx() {
 
 void Leg::UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd) {
   // Use this to update wbc PD gains in real time
-  kp_diag_ = kp.asDiagonal();
-  kd_diag_ = kd.asDiagonal();
+  kp_diag = kp.asDiagonal();
+  kd_diag = kd.asDiagonal();
 }
 
 Eigen::Vector2d Leg::OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref) {
@@ -133,22 +133,22 @@ Eigen::Vector2d Leg::OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref
   v = GetVel();
   Eigen::Vector3d pdd_ref;
   // pdd_ref = (p_ref - p) + (v_ref - v);
-  pdd_ref = kp_diag_ * (p_ref - p) + kd_diag_ * (v_ref - v);
+  pdd_ref = kp_diag * (p_ref - p) + kd_diag * (v_ref - v);
   Eigen::Vector3d f;
   f = Mx * pdd_ref;
-  tau_ = Ja.transpose() * f;  // u = tau.flatten() - spring.fn_spring(leg.q[0], leg.q[2])
-  return -tau_;
+  tau = Ja.transpose() * f;  // u = tau.flatten() - spring.fn_spring(leg.q[0], leg.q[2])
+  return -tau;
 }
 
 Eigen::Vector2d Leg::OpSpaceForceCtrl(Eigen::Vector3d f) {
   Eigen::Matrix<double, 3, 2> Ja;
-  tau_ = Ja.transpose() * f;  // u = (Ja.T @ force).flatten() - spring.fn_spring(leg.q[0], leg.q[2])
-  return -tau_;
+  tau = Ja.transpose() * f;  // u = (Ja.T @ force).flatten() - spring.fn_spring(leg.q[0], leg.q[2])
+  return -tau;
 }
 
 Eigen::Vector2d Leg::KinInvPosCtrl(Eigen::Vector3d p_ref) {
-  double kp = model_.k_kin(0);
-  double kd = model_.k_kin(1);
-  tau_ = kp * (qa - KinInv(p_ref)) + kd * dqa;
-  return tau_;
+  double kp = model.k_kin(0);
+  double kd = model.k_kin(1);
+  tau = kp * (qa - KinInv(p_ref)) + kd * dqa;
+  return tau;
 }
