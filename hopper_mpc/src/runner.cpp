@@ -46,8 +46,8 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
     throw "Invalid bridge name! Use 'hardware', 'mujoco', or 'raisim'";
   }
 
-  legPtr.reset(new Leg(model, dt));                      // leg control class
-  rwaPtr.reset(new Rwa(dt));                             // reaction wheel control class
+  legPtr = std::make_shared<Leg>(model, dt);
+  rwaPtr = std::make_shared<Rwa>(dt);
   gaitPtr.reset(new Gait(model, dt, &legPtr, &rwaPtr));  // gait controller class
 
   // initialize variables
@@ -64,7 +64,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   x1 = 0;
   z1 = -0.4;
-  X = X_0;  // initialize state to X_0
+  // X = X_0;  // initialize state to X_0
 };
 
 void Runner::Run() {  // Method/function defined inside the class
@@ -77,30 +77,23 @@ void Runner::Run() {  // Method/function defined inside the class
 
   for (int k = 0; k < N_run; k++) {
     t += dt;
-    // std::cout << k << "\n";
-    // u << 0, 0, 0, 0, 0;
-    u = gaitPtr->uRaibert(gc_state, gc_state_prev, X, X_f);
-    // p_ref = CircleTest(z, r, flip, p_ref);
-    p = X.block<3, 1>(0, 0);       // grab position from state vector
-    Q_base = X.block<4, 1>(3, 0);  // grab quaternion from state vector
-    // TODO: Should we use measured speed or infer it from position history?
+    auto [p, Q, v, w, qa, dqa, sh] = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
+    legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);                              // grab first two actuator pos values
+    bool s = ContactSchedule(t, 0);
+    GaitCycleUpdate(s, sh, v(2));  // TODO: should use v_g instead?
 
-    Eigen::Vector3d peb = legPtr->KinFwd();          // position of the foot in body frame
-    Eigen::Vector3d pe = p + Q_base.matrix() * peb;  // position of the foot in world frame
-    // std::cout << "body frame foot pos = " << pfb(0) << ", " << pfb(1) << ", " << pfb(2) << "\n";
+    // u = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+    u = gaitPtr->uKinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+    // p_ref = CircleTest(z, r, flip, p_ref);
+
+    Eigen::Vector3d peb = legPtr->KinFwd();     // position of the foot in body frame
+    Eigen::Vector3d pe = p + Q.matrix() * peb;  // position of the foot in world frame
 
     qla_ref = legPtr->KinInv(pe_ref);  // get desired leg actuator angles
 
-    // u.block<2, 1>(0, 0) = legPtr_->OpSpaceForceCtrl(f_ref);
-
-    auto [X, qa, dqa] = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
-    legPtr->UpdateState(qa.block<2, 1>(0, 0), Q_base);            // grab first two actuator pos values
-    bool s = ContactSchedule(t, 0);
-    bool sh = 0;  // for now
-    double dz = 0;
-    GaitCycleUpdate(s, sh, dz);
-
     gc_state_prev = gc_state;  // should be last
+    // std::cout << k << "\n";
+    // std::cout << "body frame foot pos = " << pfb(0) << ", " << pfb(1) << ", " << pfb(2) << "\n";
   }
 };
 

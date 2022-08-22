@@ -18,7 +18,13 @@ class Bridge {                                                  // The class
   bool record;
   Eigen::Matrix<double, 5, 1> qa_cal;
   Eigen::Matrix<double, 5, 1> qa_raw;
+
+  Eigen::Matrix<double, 3, 1> p;
+  Eigen::Quaterniond Q;
+  Eigen::Matrix<double, 3, 1> v;  // linear vel in global frame
+  Eigen::Matrix<double, 3, 1> w;  // angular vel in global frame (is this relative to CoM or global origin???)
+
   Eigen::Matrix<double, 5, 1> qa;
   Eigen::Matrix<double, 5, 1> dqa;
-  Eigen::Matrix<double, 13, 1> X;
+  bool sh;
 };

@@ -78,7 +78,7 @@ retVals RaisimBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
   server.integrateWorldThreadSafe();
   // world.integrate();
   qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
-  return retVals{X, qa, dqa};
+  return retVals{p, Q, v, w, qa, dqa, sh};
 }
 
 void RaisimBridge::End() {

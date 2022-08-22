@@ -31,10 +31,18 @@ class Runner {  // The class
   int N_c;            // number of timesteps spent in contact
   int N_sit;          // number of timesteps to "sit" at end of traj
 
-  Eigen::Vector3d p;          // base world frame position
-  Eigen::Quaterniond Q_base;  // base world frame quaternion
-  Eigen::Vector3d v;          // base ?? frame velocity
-  Eigen::Vector3d w;          // base ?? frame rotational velocity
+  Eigen::Vector3d p;     // base world frame position
+  Eigen::Quaterniond Q;  // base world frame quaternion
+  Eigen::Vector3d v;     // base body frame velocity
+  Eigen::Vector3d w;     // base body frame rotational velocity
+
+  Eigen::Vector3d p_ref;     // base world frame position
+  Eigen::Quaterniond Q_ref;  // base world frame quaternion
+  Eigen::Vector3d v_ref;     // base body frame velocity
+  Eigen::Vector3d w_ref;     // base body frame rotational velocity
+
+  Eigen::Matrix<double, 5, 1> qa;
+  Eigen::Matrix<double, 5, 1> dqa;
 
   std::string gc_state;  // gait cycle state
   std::string gc_state_prev;
@@ -50,8 +58,6 @@ class Runner {  // The class
   Eigen::Matrix<double, 13, 1> X_0;  // init state
   Eigen::Matrix<double, 13, 1> X_f;  // final state
   Eigen::Matrix<double, 13, 1> X;    // current state
-  Eigen::Matrix<double, 5, 1> qa;
-  Eigen::Matrix<double, 5, 1> dqa;
 
   double x1;
   double z1;
@@ -74,9 +80,10 @@ class Runner {  // The class
   double mu;
 
   std::unique_ptr<Bridge> bridgePtr;
-  std::unique_ptr<Leg> legPtr;
-  std::unique_ptr<Rwa> rwaPtr;
   std::unique_ptr<Gait> gaitPtr;
+
+  std::shared_ptr<Leg> legPtr;
+  std::shared_ptr<Rwa> rwaPtr;
 
   bool ContactSchedule(double t, double t0);
   bool ContactMap(int N, double dt, double ts, double t0);

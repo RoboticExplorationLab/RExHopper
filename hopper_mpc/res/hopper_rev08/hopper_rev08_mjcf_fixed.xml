@@ -24,8 +24,9 @@
     <geom conaffinity="1" condim="3" material="MatPlane" name="floor" pos="0 0 0" rgba="0.8 0.9 0.8 1" size="40 40 40" type="plane"/>
 
     <body name="base_link" pos="0 0 0.7" quat="1 0 0 0">
+      <site name='imu' size='0.01' pos='0 0 0'/>
       <inertial pos="-0.00332091752229416 -4.21471772738262E-05 0.0145280493491318" quat="1 0 0 0" mass="4.3805" diaginertia="0.03370055 0.01701751 0.03500408"/>
-      
+      <!-- <joint type="free" stiffness="0" damping="0" frictionloss="0" armature="0"/> -->
       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.898039 0.917647 0.929412 1" mesh="base_link"/>
       <geom type="mesh" rgba="0.898039 0.917647 0.929412 1" mesh="base_link"/>
       <body name="Link 0" pos="0 0 0" quat="0.965926 0 0.258819 0">
@@ -46,6 +47,7 @@
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.898039 0.917647 0.929412 1" mesh="Link 2"/>
         <geom type="mesh" rgba="0.898039 0.917647 0.929412 1" mesh="Link 2"/>
         <body name="Link 3" pos="0.27 0 0" quat="0.512777 0 -0.858522 0">
+          <site name='contact_sensor' size='0.02' pos='.27 0 -.0205'/>
           <inertial pos="0.101438 -0.00250998 -0.0148533" quat="0.595716 0.401476 0.567266 0.402677" mass="0.124858" diaginertia="0.00135755 0.00135081 1.98956e-05"/>
           <joint name="Joint 3" pos="0 0 0" axis="0 -1 0" limited="true" range="-1.8295 0.7597"/>
           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="Link 3"/>
@@ -106,6 +108,15 @@
     <exclude name="exclude_base_rwz" body1="base_link" body2="rwz"/>
     <exclude name="exclude_2_rwz" body1="Link 2" body2="rwz"/>
   </contact>
+
+  <sensor>
+    <!-- User parameter is the number of absolute encoder bits -->
+    <framepos     name='base-pos' objtype='site' objname='imu'/>
+    <framequat    name='base-attitude' objtype='site' objname='imu'/>
+    <velocimeter  name='base-linear-velocity' site='imu'/>
+    <gyro  name='base-angular-velocity' site='imu'/>
+    <touch  name='contact sensor' site='contact_sensor'/>
+  </sensor>
 
 </mujoco>
 

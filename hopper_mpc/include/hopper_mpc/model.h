@@ -1,10 +1,14 @@
 #pragma once
 #include "Eigen/Dense"
 
-struct retVals {                    // Declare a local structure
-  Eigen::Matrix<double, 13, 1> X;   // simulation state (p, Q, v, omega)
+struct retVals {  // Declare a local structure
+  Eigen::Matrix<double, 3, 1> p;
+  Eigen::Quaterniond Q;
+  Eigen::Matrix<double, 3, 1> v;    // linear vel in global frame
+  Eigen::Matrix<double, 3, 1> w;    // angular vel in global frame (is this relative to CoM or global origin???)
   Eigen::Matrix<double, 5, 1> qa;   // actuated joint positions
   Eigen::Matrix<double, 5, 1> dqa;  // actuated joint velocities
+  bool sh;
 };
 
 struct Model {

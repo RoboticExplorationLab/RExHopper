@@ -137,7 +137,9 @@ void MujocoBridge::Init() {
   double kp = 45;
   pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kp * 0.02));
   pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kp * 0.02));
+  sh = 0;
 
+  // RENDERING STUFF
   double fps = 60;           // 60 frames rendered per real second
   double simhertz = 1 / dt;  // 1000 steps per simulated second
   // then only render visuals once every 16.66 timesteps
@@ -148,9 +150,15 @@ void MujocoBridge::Init() {
 retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
   if (!glfwWindowShouldClose(window)) {
     qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
-    // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) << "\n";
     qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
-    // std::cout << "corrected pos = " << qa_(0) << ", " << qa_(1) << ", " << qa_(2) << ", " << qa_(3) << ", " << qa_(4) << "\n";
+
+    p << d->sensordata[0], d->sensordata[1], d->sensordata[2];
+    Q.w() = d->sensordata[3];
+    Q.x() = d->sensordata[4];
+    Q.y() = d->sensordata[5];
+    Q.z() = d->sensordata[6];
+    v << d->sensordata[7], d->sensordata[8], d->sensordata[9];
+    w << d->sensordata[10], d->sensordata[11], d->sensordata[12];
 
     if (ctrlMode == "Pos") {
       // if leg is using direct position controller, replace leg torque control values with qa_ref based pid torques
@@ -159,8 +167,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       u(1) = -pid_q2Ptr->PIDControl(qa(1), qla_ref(1));
     }
 
-    // std::cout << t_refresh << "\n";
-
+    sh = (d->sensordata[13] != 0);  // Contact detection, convert grf normal to bool
     // mj_step(m, d);
     mj_step1(m, d);
     d->ctrl[0] = u(0);  // moves joint 0
@@ -172,16 +179,24 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     // d->qpos[2] = 0;
     mj_step2(m, d);
 
-    // std::cout << "actuator force: " << (d->actuator_force[0]) << ", " << (d->actuator_force[1]) << ", " << (d->actuator_force[2]) << ", "
-    //           << (d->actuator_force[3]) << ", " << (d->actuator_force[4]) << ", " << (d->actuator_force[5]) << ", "
-    //           << (d->actuator_force[6]) << std::endl;
-    // std::cout << "ctrl: " << (d->ctrl[0]) << ", " << (d->ctrl[1]) << ", " << (d->ctrl[2]) << ", " << (d->ctrl[3]) << ", " << (d->ctrl[4])
-    //           << ", " << (d->ctrl[5]) << ", " << (d->ctrl[6]) << std::endl;
     mjtNum simstart = d->time;
 
     t_refresh += 1;
 
     if (t_refresh > refresh_rate) {
+      std::cout << "sh = " << sh << "\n ";
+      // std::cout << "contact = " << d->sensordata[13] << "\n ";
+      // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) <<
+      // "\n";
+      // std::cout << "corrected pos = " << qa_(0) << ", " << qa_(1) << ", " << qa_(2) << ", " << qa_(3) << ", " << qa_(4) << "\n";
+      // std::cout << "actuator force: " << (d->actuator_force[0]) << ", " << (d->actuator_force[1]) << ", " << (d->actuator_force[2]) << ",
+      // "
+      //           << (d->actuator_force[3]) << ", " << (d->actuator_force[4]) << ", " << (d->actuator_force[5]) << ", "
+      //           << (d->actuator_force[6]) << std::endl;
+      // std::cout << "ctrl: " << (d->ctrl[0]) << ", " << (d->ctrl[1]) << ", " << (d->ctrl[2]) << ", " << (d->ctrl[3]) << ", " <<
+      // (d->ctrl[4])
+      //           << ", " << (d->ctrl[5]) << ", " << (d->ctrl[6]) << std::endl;
+
       // visualization
       t_refresh = 0;  // reset refresh counter
       // 15 ms is a little smaller than 60 Hz.
@@ -205,7 +220,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     End();
   }
 
-  return retVals{X, qa, dqa};
+  return retVals{p, Q, v, w, qa, dqa, sh};
 }
 
 void MujocoBridge::End() {
