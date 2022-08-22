@@ -2,71 +2,98 @@
 #include <iostream>
 #include "Eigen/Dense"
 
-Runner::Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record) {
-  model_ = model;
-  N_run_ = N_run;
-  dt_ = dt;
-  ctrl_ = ctrl;
-  plot_ = plot;
-  fixed_ = fixed;
-  spr_ = spr;
-  record_ = record;
+Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
+               bool record_) {
+  model = model_;
+  N_run = N_run_;
+  dt = dt_;
+  ctrl = ctrl_;
+  plot = plot_;
+  fixed = fixed_;
+  spr = spr_;
+  record = record_;
 
-  g_ = 9.807;  // should g be defined here?
+  g = model.g;  // should g be defined here?
+  L = model.leg_dim;
+  h0 = model.h0;
+  J = model.inertia;
+  mu = model.mu;
 
-  u_.setZero(model.n_a);
-  L_ = model.leg_dim;
-  h0_ = model.h0;
-  J_ = model.inertia;
-  mu_ = model.mu;
+  n_X = 13;
+  n_U = 6;
+  X_0 << 0, 0, h0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  X_f << 2.5, 0, h0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
-  n_X_ = 13;
-  n_U_ = 6;
-  X_0_ << 0, 0, h0_, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-  X_f_ << 2.5, 0, h0_, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-
-  t_p_ = 0.8;                           // gait period, seconds
-  phi_switch_ = 0.5;                    // switching phase, must be between 0 and 1. Percentage of gait spent in contact.
-  N_ = 40;                              // mpc prediction horizon length (mpc steps)
-  dt_mpc_ = 0.01;                       // mpc sampling time (s), needs to be a factor of N
-  N_mpc_ = dt_mpc_ / dt_;               // mpc sampling time (timesteps), repeat mpc every x timesteps
-  t_horizon_ = N_ * dt_mpc_;            // mpc horizon time
-  N_k_ = N_ * N_mpc_;                   // total mpc prediction horizon length (low-level timesteps)
-  t_start_ = 0.5 * t_p_ * phi_switch_;  // start halfway through stance phase
-  t_stance_ = t_p_ * phi_switch_;       // time spent in stance
-  N_c_ = t_stance_ / dt;                // number of timesteps spent in contact
+  t_p = 0.8;                         // gait period, seconds
+  phi_switch = 0.5;                  // switching phase, must be between 0 and 1. Percentage of gait spent in contact.
+  N = 40;                            // mpc prediction horizon length (mpc steps)
+  dt_mpc = 0.01;                     // mpc sampling time (s), needs to be a factor of N
+  N_mpc = dt_mpc / dt;               // mpc sampling time (timesteps), repeat mpc every x timesteps
+  t_horizon = N * dt_mpc;            // mpc horizon time
+  N_k = N * N_mpc;                   // total mpc prediction horizon length (low-level timesteps)
+  t_start = 0.5 * t_p * phi_switch;  // start halfway through stance phase
+  t_stance = t_p * phi_switch;       // time spent in stance
+  N_c = t_stance / dt;               // number of timesteps spent in contact
 
   // class definitions
-  bridgePtr_.reset(new RaisimBridge(model, dt, g_, mu_, fixed, record));
-  legPtr_.reset(new Leg(model, dt, g_));
+  if (bridge_ == "hardware") {
+    // bridgePtr_.reset(new HardwareBridge(model, dt, g_, mu_, fixed, record));
+  } else if (bridge_ == "mujoco") {
+    bridgePtr.reset(new MujocoBridge(model, dt, fixed, record));
+  } else if (bridge_ == "raisim") {
+    bridgePtr.reset(new RaisimBridge(model, dt, fixed, record));
+  } else {
+    throw "Invalid bridge name! Use 'hardware', 'mujoco', or 'raisim'";
+  }
+
+  legPtr = std::make_shared<Leg>(model, dt);
+  rwaPtr = std::make_shared<Rwa>(dt);
+  gaitPtr.reset(new Gait(model, dt, &legPtr, &rwaPtr));  // gait controller class
 
   // initialize variables
-  a_in << 0, 0;
   gc_state = "Fall";
   gc_state_prev = gc_state;
 
-};  // constructor
+  ctrlMode = "Pos";                                                  // "Torque&Pos"
+  qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
+  qla_ref << qla_ref(0), qla_ref(1) + 0.5;
+  pe_ref << 0, 0, -0.3;  // desired operational space leg position
+  ve_ref.setZero();      // desired operational space leg velocity
+  f_ref.setZero();       // desired operational space leg force
+  u.setZero();           // ctrl Torques
+
+  x1 = 0;
+  z1 = -0.4;
+  // X = X_0;  // initialize state to X_0
+};
 
 void Runner::Run() {  // Method/function defined inside the class
-  bridgePtr_->Init();
-  double t = -dt_;
-  for (int k = 0; k < N_run_; k++) {
-    t += dt_;
-    // std::cout << k << "\n";
-    u_ << 10000, 10000, 10000, 10000, 10000;
-    bridgePtr_->SimRun(u_);  // X, qa, dqa, c, tau, i, v, grf = self.simulator.sim_run(u=self.u)  # run sim
-    legPtr_->UpdateState(a_in, Q_base);
-    Eigen::Vector3d p_ref;
-    p_ref << 0, 0, -0.6;
-    Eigen::Vector3d v_ref;
-    v_ref << 0, 0, 0;
-    u_a = legPtr_->OpSpacePosCtrl(p_ref, v_ref);
+  bridgePtr->Init();
+  double t = -dt;
+
+  double z = pe_ref(2);
+  double r = 0.1;
+  double flip = -1.0;
+
+  for (int k = 0; k < N_run; k++) {
+    t += dt;
+    auto [p, Q, v, w, qa, dqa, sh] = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
+    legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);                              // grab first two actuator pos values
     bool s = ContactSchedule(t, 0);
-    bool sh = 0;  // for now
-    double dz = 0;
-    GaitCycleUpdate(s, sh, dz);
+    GaitCycleUpdate(s, sh, v(2));  // TODO: should use v_g instead?
+
+    // u = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+    u = gaitPtr->uKinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+    // p_ref = CircleTest(z, r, flip, p_ref);
+
+    Eigen::Vector3d peb = legPtr->KinFwd();     // position of the foot in body frame
+    Eigen::Vector3d pe = p + Q.matrix() * peb;  // position of the foot in world frame
+
+    qla_ref = legPtr->KinInv(pe_ref);  // get desired leg actuator angles
 
     gc_state_prev = gc_state;  // should be last
+    // std::cout << k << "\n";
+    // std::cout << "body frame foot pos = " << pfb(0) << ", " << pfb(1) << ", " << pfb(2) << "\n";
   }
 };
 
@@ -83,8 +110,8 @@ void Runner::GaitCycleUpdate(bool s, bool sh, double dz) {
 };
 
 bool Runner::ContactSchedule(double t, double t0) {
-  int phi = int((t - t0) / t_p_) % 1;
-  return phi < phi_switch_ ? 1 : 0;
+  int phi = int((t - t0) / t_p) % 1;
+  return phi < phi_switch ? 1 : 0;
 }
 
 bool Runner::ContactMap(int N, double dt, double ts, double t0) {
@@ -98,22 +125,38 @@ bool Runner::ContactMap(int N, double dt, double ts, double t0) {
 }
 
 Eigen::MatrixXd Runner::RefTraj(Eigen::Matrix<double, 12, 1> x_0, Eigen::Matrix<double, 12, 1> x_f) {
-  int N_traj = N_run_ - N_sit_;
-  int N_ref = N_run_ + N_k_;
+  int N_traj = N_run - N_sit;
+  int N_ref = N_run + N_k;
 
-  x_ref_0_.resize(12, N_traj);
+  x_ref_0.resize(12, N_traj);
   for (int i = 0; i < 12; i++) {
     // interpolate positions
-    x_ref_0_.row(i) = Eigen::VectorXd::LinSpaced(N_traj, x_0(i), x_f(i));
+    x_ref_0.row(i) = Eigen::VectorXd::LinSpaced(N_traj, x_0(i), x_f(i));
   }
   // bool C = ContactMap(N_ref, dt_, t_start_, 0);
   Eigen::MatrixXd x_ref_sit;
-  int N_sit_ref = N_k_ + N_sit_;  // add MPC horizon
+  int N_sit_ref = N_k + N_sit;  // add MPC horizon
   x_ref_sit.resize(12, N_sit_ref);
   for (int i = 0; i < N_sit_ref; i++) {  // can't use Replicate because it's not dynamic...
     x_ref_sit.block<12, 1>(0, i) = x_f;
   }
-  Eigen::MatrixXd x_ref(x_ref_0_.rows() + x_ref_sit.rows(), x_ref_0_.cols());
-  x_ref << x_ref_0_, x_ref_sit;
+  Eigen::MatrixXd x_ref(x_ref_0.rows() + x_ref_sit.rows(), x_ref_0.cols());
+  x_ref << x_ref_0, x_ref_sit;
   return x_ref;  // TODO: sine wave for mpc
+}
+
+Eigen::Vector3d Runner::CircleTest(double z, double r, double flip, Eigen::Vector3d pe_ref) {
+  z += 0.001 * flip;  // std::cout << z << "\n";
+  if (z <= -0.5 || z >= -0.3) {
+    flip *= -1.0;
+  }
+  double x = (sqrt(pow(r, 2) - pow(z - z1, 2)) + x1) * -flip;
+  if (isnan(x)) {
+    x = 0;
+  }
+  pe_ref(0) = x;
+  pe_ref(2) = z;
+
+  std::cout << "pe_ref = " << pe_ref(0) << ", " << pe_ref(1) << ", " << pe_ref(2) << "\n";
+  return pe_ref;
 }

@@ -182,18 +182,18 @@ void ODriveCan::SetVelocityGains(int axis_id, float velocity_gain, float velocit
 
 // //////////// Get functions ///////////
 
-// float ODriveCan::GetPosition(int axis_id) {
-//   uint8_t msg_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+float ODriveCan::GetPosition(int axis_id) {
+  uint8_t msg_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-//   sendMessage(axis_id, CMD_ID_GET_ENCODER_ESTIMATES, true, 8, msg_data);
+  sendMessage(axis_id, CMD_ID_GET_ENCODER_ESTIMATES, true, 8, msg_data);
 
-//   float_t output;
-//   *((uint8_t*)(&output) + 0) = msg_data[0];
-//   *((uint8_t*)(&output) + 1) = msg_data[1];
-//   *((uint8_t*)(&output) + 2) = msg_data[2];
-//   *((uint8_t*)(&output) + 3) = msg_data[3];
-//   return output;
-// }
+  float_t output;
+  *((uint8_t*)(&output) + 0) = msg_data[0];
+  *((uint8_t*)(&output) + 1) = msg_data[1];
+  *((uint8_t*)(&output) + 2) = msg_data[2];
+  *((uint8_t*)(&output) + 3) = msg_data[3];
+  return output;
+}
 
 // float ODriveCan::GetVelocity(int axis_id) {
 //   uint8_t msg_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};

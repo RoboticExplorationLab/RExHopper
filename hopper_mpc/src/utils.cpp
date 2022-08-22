@@ -61,6 +61,9 @@ double Utils::WrapToPi(double a) {
   return fmod(a + M_PI, 2 * M_PI) - M_PI;
 };
 
+double Utils::Clip(double n, double lower, double upper) {
+  return std::max(lower, std::min(n, upper));
+}
 // Eigen::Matrix4d L(Eigen::Quaterniond Q) {
 //   Eigen::Matrix4d LQ;
 //   LQ(0, 0) = Q.w();

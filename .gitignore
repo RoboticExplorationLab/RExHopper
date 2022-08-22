@@ -30,3 +30,5 @@
 *.exe
 *.out
 *.app
+
+.devcontainer/activation.raisim

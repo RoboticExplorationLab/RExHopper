@@ -1,64 +1,93 @@
 #pragma once
 #include <memory>
 #include "Eigen/Dense"
+#include "hopper_mpc/bridge.h"
+// #include "hopper_mpc/bridge_hardware.h"
+#include "hopper_mpc/bridge_mujoco.h"
 #include "hopper_mpc/bridge_raisim.h"
+#include "hopper_mpc/gait.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
+#include "hopper_mpc/rwa.h"
 
 class Runner {  // The class
 
- public:                                                                                                      // Access specifier
-  Runner(Model model, int N_run, double dt, std::string ctrl, bool plot, bool fixed, bool spr, bool record);  // constructor
+ public:  // Access specifier
+  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
+         bool record_);  // constructor
 
   void Run();
-  Eigen::Quaterniond Q_base;
-  Eigen::Vector2d a_in;
-  Eigen::Vector2d u_a;
-  std::string gc_state;  // gait cycle state
-  std::string gc_state_prev;
 
  private:
-  Model model_;
-  int N_run_;         // number of timesteps in sim
-  int N_sit_;         // number of timesteps to "sit" at end of traj
-  double dt_;         // timestep size
-  std::string ctrl_;  // controller
-  bool plot_;
-  bool fixed_;
-  bool spr_;
-  bool record_;
-  double g_;  // gravitational constant
+  double t_p;         // gait period, seconds
+  double phi_switch;  // switching phase, must be between 0 and 1. Percentage of gait spent in contact.
+  int N;              // mpc prediction horizon length (mpc steps)
+  double dt_mpc;      // mpc sampling time (s), needs to be a factor of N
+  int N_mpc;          // mpc sampling time (timesteps), repeat mpc every x timesteps
+  double t_horizon;   // mpc horizon time
+  int N_k;            // total mpc prediction horizon length (low-level timesteps)
+  double t_start;     // start halfway through stance phase
+  double t_stance;    // time spent in stance
+  int N_c;            // number of timesteps spent in contact
+  int N_sit;          // number of timesteps to "sit" at end of traj
 
-  int n_X_;                           // number of sim states
-  int n_U_;                           // number of sim controls
-  Eigen::Matrix<double, 13, 1> X_0_;  // init state
-  Eigen::Matrix<double, 13, 1> X_f_;  // final state
-  Eigen::Matrix<double, 5, 1> u_;     // controls
+  Eigen::Vector3d p;     // base world frame position
+  Eigen::Quaterniond Q;  // base world frame quaternion
+  Eigen::Vector3d v;     // base body frame velocity
+  Eigen::Vector3d w;     // base body frame rotational velocity
 
-  double t_p_;         // gait period, seconds
-  double phi_switch_;  // switching phase, must be between 0 and 1. Percentage of gait spent in contact.
-  int N_;              // mpc prediction horizon length (mpc steps)
-  double dt_mpc_;      // mpc sampling time (s), needs to be a factor of N
-  int N_mpc_;          // mpc sampling time (timesteps), repeat mpc every x timesteps
-  double t_horizon_;   // mpc horizon time
-  int N_k_;            // total mpc prediction horizon length (low-level timesteps)
-  double t_start_;     // start halfway through stance phase
-  double t_stance_;    // time spent in stance
-  int N_c_;            // number of timesteps spent in contact
+  Eigen::Vector3d p_ref;     // base world frame position
+  Eigen::Quaterniond Q_ref;  // base world frame quaternion
+  Eigen::Vector3d v_ref;     // base body frame velocity
+  Eigen::Vector3d w_ref;     // base body frame rotational velocity
 
-  Eigen::VectorXd L_;
-  double h0_;
-  Eigen::Matrix3d J_;
-  double mu_;
+  Eigen::Matrix<double, 5, 1> qa;
+  Eigen::Matrix<double, 5, 1> dqa;
 
-  std::unique_ptr<RaisimBridge> bridgePtr_;
-  std::unique_ptr<Leg> legPtr_;
+  std::string gc_state;  // gait cycle state
+  std::string gc_state_prev;
+  Eigen::Matrix<double, 5, 1> u;        // control torques
+  Eigen::Matrix<double, 2, 1> qla_ref;  // leg actuator position setpoints
+  std::string ctrlMode;
+  Eigen::Vector3d pe_ref;  // body frame end effector position reference
+  Eigen::Vector3d ve_ref;  // body frame end effector vel reference
+  Eigen::Vector3d f_ref;   // body frame end effector force ref
+
+  int n_X;                           // number of sim states
+  int n_U;                           // number of sim controls
+  Eigen::Matrix<double, 13, 1> X_0;  // init state
+  Eigen::Matrix<double, 13, 1> X_f;  // final state
+  Eigen::Matrix<double, 13, 1> X;    // current state
+
+  double x1;
+  double z1;
+  double z;
+  Eigen::MatrixXd x_ref_0;
+
+  Model model;
+  int N_run;         // number of timesteps in sim
+  double dt;         // timestep size
+  std::string ctrl;  // controller
+  bool plot;
+  bool fixed;
+  bool spr;
+  bool record;
+  double g;  // gravitational constant
+
+  Eigen::VectorXd L;
+  double h0;
+  Eigen::Matrix3d J;
+  double mu;
+
+  std::unique_ptr<Bridge> bridgePtr;
+  std::unique_ptr<Gait> gaitPtr;
+
+  std::shared_ptr<Leg> legPtr;
+  std::shared_ptr<Rwa> rwaPtr;
 
   bool ContactSchedule(double t, double t0);
   bool ContactMap(int N, double dt, double ts, double t0);
   Eigen::MatrixXd RefTraj(Eigen::Matrix<double, 12, 1> x_in, Eigen::Matrix<double, 12, 1> x_f);
-
-  Eigen::MatrixXd x_ref_0_;
-
   void GaitCycleUpdate(bool s, bool sh, double dz);
+  Eigen::Vector3d CircleTest(double z, double r, double flip, Eigen::Vector3d pe_ref);
 };

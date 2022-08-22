@@ -12,6 +12,8 @@ int main(int argc, char* argv[]) {
 
   program.add_argument("N_run").help("number of timesteps the sim runs for").scan<'i', int>();
 
+  program.add_argument("bridge").help("hardware, mujoco, or raisim");
+
   program.add_argument("--plot").help("enable plotting").default_value(false).implicit_value(true);
 
   program.add_argument("--fixed").help("fix the robot in place").default_value(false).implicit_value(true);
@@ -32,6 +34,8 @@ int main(int argc, char* argv[]) {
   std::cout << (ctrl) << std::endl;
   int N_run = program.get<int>("N_run");
   std::cout << (N_run) << std::endl;
+  std::string bridge = program.get<std::string>("bridge");
+  std::cout << (bridge) << std::endl;
 
   bool plot = false;
   bool spr = false;
@@ -73,12 +77,13 @@ int main(int argc, char* argv[]) {
   hopper.K_s = 996;
   hopper.K = 5000;
   hopper.mu = 0.5;
-  hopper.q_init << -30 * M_PI / 180, -120 * M_PI / 180, -150 * M_PI / 180, 120 * M_PI / 180;
-  hopper.dq_init << 0, 0, 0, 0;
+  hopper.g = 9.807;
+  hopper.q_init << -30 * M_PI / 180, -120 * M_PI / 180, -150 * M_PI / 180, 120 * M_PI / 180, 0, 0, 0;
+  hopper.dq_init << 0, 0, 0, 0, 0, 0, 0;
   hopper.leg_dim << .1, .27, .27, .1, .17, .0205;
   hopper.a_kt << 1.73, 1.73, 0.106, 0.106, 0.0868;
   hopper.inertia << 0.07542817, 0.00016327, 0.00222099,  // clang-format off
-                    0.00016327, 0.04599064,  -0.00008321,
+                    0.00016327, 0.04599064, -0.00008321,
                     0.00222099, -0.00008321, 0.07709692;                  // clang-format on
   hopper.S << 1, 0, 0, 0, 0,  // clang-format off
               0, 0, 0, 0, 0, 
@@ -87,9 +92,11 @@ int main(int argc, char* argv[]) {
               0, 0, 1, 0, 0,
               0, 0, 0, 1, 0, 
               0, 0, 0, 0, 1;  // clang-format on
+  hopper.qa_home << 29 * M_PI / 180, -187 * M_PI / 180;
+  hopper.k_kin << 45, 45 * 0.02;
 
   double dt = 0.001;
-  Runner runner(hopper, N_run, dt, ctrl, plot, fixed, spr, record);
+  Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record);
   runner.Run();  // Call the method
   return 0;
 }
