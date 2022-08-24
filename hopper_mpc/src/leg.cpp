@@ -1,4 +1,5 @@
 #include "hopper_mpc/leg.h"
+#include <iostream>
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "Eigen/SVD"
@@ -146,9 +147,11 @@ Eigen::Vector2d Leg::OpSpaceForceCtrl(Eigen::Vector3d f) {
   return -tau;
 }
 
-Eigen::Vector2d Leg::KinInvPosCtrl(Eigen::Vector3d p_ref) {
-  double kp = model.k_kin(0);
-  double kd = model.k_kin(1);
-  tau = kp * (qa - KinInv(p_ref)) + kd * dqa;
+Eigen::Vector2d Leg::KinInvPosCtrl(Eigen::Vector3d pe_ref, double kp, double kd) {
+  // double kp = model.k_kin(0);
+  // double kd = model.k_kin(1);
+
+  tau = kp * (qa - KinInv(pe_ref)) + kd * dqa;
+
   return tau;
 }

@@ -134,7 +134,7 @@ void MujocoBridge::Init() {
 
   // initialize variables
   qa_cal << model.q_init(0), model.q_init(2), 0, 0, 0;
-  double kp = 45;
+  double kp = 200;
   pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kp * 0.02));
   pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kp * 0.02));
   sh = 0;
@@ -149,46 +149,55 @@ void MujocoBridge::Init() {
 
 retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
   if (!glfwWindowShouldClose(window)) {
-    qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
-    qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
+    if (fixed == true) {
+      qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
+    } else {
+      qa_raw << d->qpos[7], d->qpos[9], d->qpos[11], d->qpos[12], d->qpos[13];
+      // first seven indices are for base pos and quat in floating body mode
+    }
 
+    qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
+    // TODO: Should sensor stuff go after the integrate?
     p << d->sensordata[0], d->sensordata[1], d->sensordata[2];
-    Q.w() = d->sensordata[3];
-    Q.x() = d->sensordata[4];
-    Q.y() = d->sensordata[5];
-    Q.z() = d->sensordata[6];
+
+    if (d->time == 0.001) {
+      Q.coeffs() << 0, 0, 0, 1;  // Q initializes as all zeros which is invalid
+    } else {
+      Q.w() = d->sensordata[3];
+      Q.x() = d->sensordata[4];
+      Q.y() = d->sensordata[5];
+      Q.z() = d->sensordata[6];
+    }
     v << d->sensordata[7], d->sensordata[8], d->sensordata[9];
     w << d->sensordata[10], d->sensordata[11], d->sensordata[12];
 
-    if (ctrlMode == "Pos") {
-      // if leg is using direct position controller, replace leg torque control values with qa_ref based pid torques
-      // this is the simulated equivalent of using ODrive's position controller
-      u(0) = -pid_q0Ptr->PIDControl(qa(0), qla_ref(0));
-      u(1) = -pid_q2Ptr->PIDControl(qa(1), qla_ref(1));
+    // if leg is using direct position controller, replace leg torque control values with qa_ref based pid torques
+    if (ctrlMode == "Pos") {  // this is the simulated equivalent of using ODrive's position controller
+      u(0) = pid_q0Ptr->PIDControl(qa(0), qla_ref(0));
+      u(1) = pid_q2Ptr->PIDControl(qa(1), qla_ref(1));
     }
 
     sh = (d->sensordata[13] != 0);  // Contact detection, convert grf normal to bool
     // mj_step(m, d);
     mj_step1(m, d);
-    d->ctrl[0] = u(0);  // moves joint 0
-    d->ctrl[1] = u(1);  // moves joint 2
-    d->ctrl[2] = u(2);  // moves rw0
-    d->ctrl[3] = u(3);  // moves rw1
-    d->ctrl[4] = u(4);  // moves rwz
+    d->ctrl[0] = -u(0);  // moves joint 0
+    d->ctrl[1] = -u(1);  // moves joint 2
+    d->ctrl[2] = -u(2);  // moves rw0
+    d->ctrl[3] = -u(3);  // moves rw1
+    d->ctrl[4] = -u(4);  // moves rwz
     // d->qpos[0] = 0; // These seem to be buggy and ignore equality connect
     // d->qpos[2] = 0;
     mj_step2(m, d);
 
-    mjtNum simstart = d->time;
-
     t_refresh += 1;
-
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     if (t_refresh > refresh_rate) {
-      std::cout << "sh = " << sh << "\n ";
+      // std::cout << "sh = " << sh << "\n ";
       // std::cout << "contact = " << d->sensordata[13] << "\n ";
       // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) <<
       // "\n";
-      // std::cout << "corrected pos = " << qa_(0) << ", " << qa_(1) << ", " << qa_(2) << ", " << qa_(3) << ", " << qa_(4) << "\n";
+      // std::cout << "corrected pos = " << qa(0) * 180 / M_PI << ", " << qa(1) * 180 / M_PI << ", " << qa(2) * 180 / M_PI << ", "
+      //           << qa(3) * 180 / M_PI << ", " << qa(4) * 180 / M_PI << "\n";
       // std::cout << "actuator force: " << (d->actuator_force[0]) << ", " << (d->actuator_force[1]) << ", " << (d->actuator_force[2]) << ",
       // "
       //           << (d->actuator_force[3]) << ", " << (d->actuator_force[4]) << ", " << (d->actuator_force[5]) << ", "

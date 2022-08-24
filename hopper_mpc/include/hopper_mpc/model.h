@@ -11,6 +11,12 @@ struct retVals {  // Declare a local structure
   bool sh;
 };
 
+struct uVals {
+  Eigen::Matrix<double, 5, 1> u;
+  Eigen::Matrix<double, 2, 1> qla_ref;
+  std::string ctrlMode;
+};
+
 struct Model {
   std::string name;
   std::string csvpath;

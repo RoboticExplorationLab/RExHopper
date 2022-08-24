@@ -1,6 +1,7 @@
 #include "hopper_mpc/runner.h"
 #include <iostream>
 #include "Eigen/Dense"
+#include "hopper_mpc/plots.hpp"
 
 Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
                bool record_) {
@@ -48,22 +49,26 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   legPtr = std::make_shared<Leg>(model, dt);
   rwaPtr = std::make_shared<Rwa>(dt);
-  gaitPtr.reset(new Gait(model, dt, &legPtr, &rwaPtr));  // gait controller class
+  peb_ref << 0, 0, -model.h0 * 5 / 3;                             // desired operational space leg position in body frame
+  gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
 
   // initialize variables
   gc_state = "Fall";
   gc_state_prev = gc_state;
 
-  ctrlMode = "Pos";                                                  // "Torque&Pos"
+  ctrlMode = "Force";                                                // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
   qla_ref << qla_ref(0), qla_ref(1) + 0.5;
-  pe_ref << 0, 0, -0.3;  // desired operational space leg position
-  ve_ref.setZero();      // desired operational space leg velocity
-  f_ref.setZero();       // desired operational space leg force
-  u.setZero();           // ctrl Torques
+
+  veb_ref.setZero();  // desired operational space leg velocity
+  fb_ref.setZero();   // desired operational space leg force
+  u.setZero();        // ctrl Torques
 
   x1 = 0;
   z1 = -0.4;
+  z = -0.3;  // peb_ref(2);
+  r = 0.1;
+  flip = -1;
   // X = X_0;  // initialize state to X_0
 };
 
@@ -71,9 +76,8 @@ void Runner::Run() {  // Method/function defined inside the class
   bridgePtr->Init();
   double t = -dt;
 
-  double z = pe_ref(2);
-  double r = 0.1;
-  double flip = -1.0;
+  std::vector<double> theta_x(N_run), theta_y(N_run), theta_z(N_run), setp_x(N_run), setp_y(N_run), setp_z(N_run), q0(N_run), q2(N_run),
+      q0_ref(N_run), q2_ref(N_run), peb_x(N_run), peb_z(N_run), peb_refx(N_run), peb_refz(N_run);
 
   for (int k = 0; k < N_run; k++) {
     t += dt;
@@ -82,18 +86,47 @@ void Runner::Run() {  // Method/function defined inside the class
     bool s = ContactSchedule(t, 0);
     GaitCycleUpdate(s, sh, v(2));  // TODO: should use v_g instead?
 
-    // u = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
-    u = gaitPtr->uKinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
-    // p_ref = CircleTest(z, r, flip, p_ref);
-
-    Eigen::Vector3d peb = legPtr->KinFwd();     // position of the foot in body frame
+    Eigen::Vector3d peb = legPtr->KinFwd();     // Pos of End-effector in Body frame (P.E.B.)
     Eigen::Vector3d pe = p + Q.matrix() * peb;  // position of the foot in world frame
 
-    qla_ref = legPtr->KinInv(pe_ref);  // get desired leg actuator angles
+    // u = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+    auto [u_, qla_ref_, ctrlMode_] = gaitPtr->uKinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+    peb_ref = gaitPtr->peb_ref;  // update peb_ref from gait class object
+    u = u_;
+    qla_ref = qla_ref_;
+    ctrlMode = ctrlMode_;
+    // CircleTest(); // edits peb_ref in place
+    // qla_ref = legPtr->KinInv(peb_ref);  // get desired leg actuator angles
 
+    // u << 0.1, 0.1, 0.1, 0.1, 0.1;
     gc_state_prev = gc_state;  // should be last
+
     // std::cout << k << "\n";
-    // std::cout << "body frame foot pos = " << pfb(0) << ", " << pfb(1) << ", " << pfb(2) << "\n";
+    // std::cout << "u = " << u(0) << ", " << u(1) << ", " << u(2) << ", " << u(3) << ", "
+    //           << ", " << u(4) << "\n";
+    // std::cout << "kinInv = " << qla_ref(0) * 180 / M_PI << ", " << qla_ref(1) * 180 / M_PI << "\n";
+    // std::cout << "body frame foot pos = " << peb(0) << ", " << peb(1) << ", " << peb(2) << "\n";
+    if (plot == true) {
+      theta_x.at(k) = rwaPtr->theta(0);
+      theta_y.at(k) = rwaPtr->theta(1);
+      theta_z.at(k) = rwaPtr->theta(2);
+      setp_x.at(k) = rwaPtr->setp(0);
+      setp_y.at(k) = rwaPtr->setp(1);
+      setp_z.at(k) = rwaPtr->setp(2);
+      q0.at(k) = qa(0) * 180 / M_PI;
+      q2.at(k) = qa(1) * 180 / M_PI;
+      q0_ref.at(k) = qla_ref(0) * 180 / M_PI;
+      q2_ref.at(k) = qla_ref(1) * 180 / M_PI;
+      peb_x.at(k) = peb(0);
+      peb_z.at(k) = peb(2);
+      peb_refx.at(k) = peb_ref(0);
+      peb_refz.at(k) = peb_ref(2);
+    }
+  }
+  if (plot == true) {
+    Plots::Theta(N_run, theta_x, theta_y, theta_z, setp_x, setp_y, setp_z);
+    Plots::JointPos(N_run, q0, q2, q0_ref, q2_ref);
+    Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
   }
 };
 
@@ -145,18 +178,18 @@ Eigen::MatrixXd Runner::RefTraj(Eigen::Matrix<double, 12, 1> x_0, Eigen::Matrix<
   return x_ref;  // TODO: sine wave for mpc
 }
 
-Eigen::Vector3d Runner::CircleTest(double z, double r, double flip, Eigen::Vector3d pe_ref) {
+void Runner::CircleTest() {
+  // edits peb_ref in-place
   z += 0.001 * flip;  // std::cout << z << "\n";
   if (z <= -0.5 || z >= -0.3) {
-    flip *= -1.0;
+    flip *= -1;
   }
   double x = (sqrt(pow(r, 2) - pow(z - z1, 2)) + x1) * -flip;
   if (isnan(x)) {
     x = 0;
   }
-  pe_ref(0) = x;
-  pe_ref(2) = z;
+  peb_ref(0) = x;
+  peb_ref(2) = z;
 
-  std::cout << "pe_ref = " << pe_ref(0) << ", " << pe_ref(1) << ", " << pe_ref(2) << "\n";
-  return pe_ref;
+  std::cout << "peb_ref = " << peb_ref(0) << ", " << peb_ref(1) << ", " << peb_ref(2) << "\n";
 }

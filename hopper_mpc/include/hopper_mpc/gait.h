@@ -7,18 +7,16 @@
 
 class Gait {  // The class
 
- public:                                                                                         // Access specifier
-  Gait(Model model_, double dt_, std::shared_ptr<Leg>* legPtr_, std::shared_ptr<Rwa>* rwaPtr_);  // constructor
+ public:  // Access specifier
+  Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<Leg>* legPtr_, std::shared_ptr<Rwa>* rwaPtr_);  // constructor
   void Run();
-  Eigen::Matrix<double, 5, 1> uRaibert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q,
-                                       Eigen::Vector3d v, Eigen::Vector3d w, Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref,
-                                       Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
-  Eigen::Matrix<double, 5, 1> uKinInvVert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q,
-                                          Eigen::Vector3d v, Eigen::Vector3d w, Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref,
-                                          Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
-  Eigen::Matrix<double, 5, 1> uKinInvStand(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q,
-                                           Eigen::Vector3d v, Eigen::Vector3d w, Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref,
-                                           Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
+  uVals uRaibert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v, Eigen::Vector3d w,
+                 Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
+  uVals uKinInvVert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v,
+                    Eigen::Vector3d w, Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
+  uVals uKinInvStand(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v,
+                     Eigen::Vector3d w, Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
+  Eigen::Vector3d peb_ref;
 
  private:
   Eigen::Matrix<double, 5, 1> u;  // controls
@@ -32,6 +30,7 @@ class Gait {  // The class
 
   Model model;
   double dt;  // timestep size
+
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;
   std::unique_ptr<PID3> pid_vPtr;

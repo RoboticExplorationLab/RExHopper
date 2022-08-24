@@ -49,9 +49,9 @@ class Runner {  // The class
   Eigen::Matrix<double, 5, 1> u;        // control torques
   Eigen::Matrix<double, 2, 1> qla_ref;  // leg actuator position setpoints
   std::string ctrlMode;
-  Eigen::Vector3d pe_ref;  // body frame end effector position reference
-  Eigen::Vector3d ve_ref;  // body frame end effector vel reference
-  Eigen::Vector3d f_ref;   // body frame end effector force ref
+  Eigen::Vector3d peb_ref;  // body frame end effector position reference
+  Eigen::Vector3d veb_ref;  // body frame end effector vel reference
+  Eigen::Vector3d fb_ref;   // body frame end effector force ref
 
   int n_X;                           // number of sim states
   int n_U;                           // number of sim controls
@@ -62,6 +62,8 @@ class Runner {  // The class
   double x1;
   double z1;
   double z;
+  double r;
+  int flip;
   Eigen::MatrixXd x_ref_0;
 
   Model model;
@@ -89,5 +91,5 @@ class Runner {  // The class
   bool ContactMap(int N, double dt, double ts, double t0);
   Eigen::MatrixXd RefTraj(Eigen::Matrix<double, 12, 1> x_in, Eigen::Matrix<double, 12, 1> x_f);
   void GaitCycleUpdate(bool s, bool sh, double dz);
-  Eigen::Vector3d CircleTest(double z, double r, double flip, Eigen::Vector3d pe_ref);
+  void CircleTest();
 };

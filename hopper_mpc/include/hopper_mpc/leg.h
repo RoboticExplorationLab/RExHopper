@@ -20,7 +20,7 @@ class Leg {                       // The class
   void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
   Eigen::Vector2d OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref);
   Eigen::Vector2d OpSpaceForceCtrl(Eigen::Vector3d f);
-  Eigen::Vector2d KinInvPosCtrl(Eigen::Vector3d p_ref);
+  Eigen::Vector2d KinInvPosCtrl(Eigen::Vector3d p_ref, double kp, double kd);
   void GenMCG();
   void GenJac();
   void GenMx();
