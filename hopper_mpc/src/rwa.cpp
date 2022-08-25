@@ -9,17 +9,18 @@ Rwa::Rwa(double dt_) {
 
   dt = dt_;
 
-  a = -45 * M_PI / 180;
-  b = 45 * M_PI / 180;
+  a = 45 * M_PI / 180;
+  b = -45 * M_PI / 180;
   sin45 = sin(45 * M_PI / 180);
 
-  double ku = 1600;  // 1600
+  double ku = 1800;  // 1600
   kp_tau << ku, ku, ku * 0.5;
   ki_tau << ku * 0.1, ku * 0.1, ku * 0.01;
   kd_tau << ku * 0.04, ku * 0.04, ku * 0.005;  // ku * 0.04, ku * 0.04, ku * 0.005;
+
   // PID3 pid_tau(dt, kp_tau, ki_tau, kd_tau);
   pid_tauPtr.reset(new PID3(dt, kp_tau, ki_tau, kd_tau));
-  double ks = 0.00002;
+  double ks = 0.;  // 0.00002
   kp_vel << ks, ks, ks * 2;
   ki_vel << ks * 0.1, ks * 0.1, ks * 0.1;
   kd_vel << 0, 0, 0;

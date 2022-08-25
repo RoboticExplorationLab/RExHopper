@@ -30,6 +30,7 @@
       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.898039 0.917647 0.929412 1" mesh="base_link"/>
       <geom type="mesh" rgba="0.898039 0.917647 0.929412 1" mesh="base_link"/>
       <body name="Link 0" pos="0 0 0" quat="0.965926 0 0.258819 0">
+        <site name="tau0"/>
         <inertial pos="0.00532255 0.0312919 0.000492239" quat="0.447264 0.448457 0.571984 0.521224" mass="0.586955" diaginertia="0.000856436 0.000632559 0.000405846"/>
         <joint name="Joint 0" pos="0 0 0" axis="0 -1 0" limited="true" range="-3.14 3.14"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.898039 0.917647 0.929412 1" mesh="Link 0"/>
@@ -42,6 +43,7 @@
         </body>
       </body>
       <body name="Link 2" pos="0 0 0" quat="0.273102 0 0.961985 0">
+        <site name="tau1"/>
         <inertial pos="0.0181413 -0.0300645 -0.000292456" quat="0.538041 0.513174 0.47916 0.466444" mass="0.619414" diaginertia="0.00283382 0.00262201 0.000411756"/>
         <joint name="Joint 2" pos="0 0 0" axis="0 -1 0" limited="true" range="-3.14 3.14"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.898039 0.917647 0.929412 1" mesh="Link 2"/>
@@ -55,18 +57,21 @@
         </body>
       </body>
       <body name="rw0" pos="0.0565685 -0.137196 0" quat="0 0.92388 -0.382683 0">
+        <site name="tau2"/>
         <inertial pos="-0.0115496 -6.5649e-10 1.34792e-09" quat="0 0.92388 0 0.382683" mass="0.712387" diaginertia="0.00364147 0.00190084 0.00190027"/>
         <joint name="joint_rw0" pos="0 0 0" axis="-1 0 0" limited="false"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rw0"/>
         <geom type="mesh" rgba="0.647059 0.619608 0.588235 1" mesh="rw0"/>
       </body>
       <body name="rw1" pos="0.0565685 0.137196 0" quat="0.92388 0 0 0.382683">
+        <site name="tau3"/>
         <inertial pos="-0.0115498 6.56414e-10 -1.34804e-09" quat="0 0.92388 0 0.382683" mass="0.712387" diaginertia="0.00364147 0.00190084 0.00190027"/>
         <joint name="joint_rw1" pos="0 0 0" axis="-1 0 0" limited="false"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rw1"/>
         <geom type="mesh" rgba="0.647059 0.619608 0.588235 1" mesh="rw1"/>
       </body>
       <body name="rwz" pos="-0.076 0 0.0835" quat="0 0 0 -1">
+        <site name="tau4"/>
         <inertial pos="1.51931e-09 -2.24012e-09 -0.00885752" quat="0.707107 0 0 0.707107" mass="0.356354" diaginertia="0.0008373 0.00043511 0.00043511"/>
         <joint name="joint_rwz" pos="0 0 0" axis="0 0 -1" limited="false"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rwz"/>
@@ -116,6 +121,11 @@
     <velocimeter  name='base-linear-velocity' site='imu'/>
     <gyro  name='base-angular-velocity' site='imu'/>
     <touch  name='contact sensor' site='contact_sensor'/>
+    <torque  name='tau0' site='tau0'/>
+    <torque  name='tau1' site='tau1'/>
+    <torque  name='tau2' site='tau2'/>
+    <torque  name='tau3' site='tau3'/>
+    <torque  name='tau4' site='tau4'/>
   </sensor>
 
 </mujoco>

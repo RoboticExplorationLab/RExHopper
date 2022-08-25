@@ -149,6 +149,22 @@ void MujocoBridge::Init() {
 
 retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
   if (!glfwWindowShouldClose(window)) {
+    // if leg is using direct position controller, replace leg torque control values with qa_ref based pid torques
+    if (ctrlMode == "Pos") {  // this is the simulated equivalent of using ODrive's position controller
+      u(0) = pid_q0Ptr->PIDControl(qa(0), qla_ref(0));
+      u(1) = pid_q2Ptr->PIDControl(qa(1), qla_ref(1));
+    }
+
+    // mj_step(m, d);
+    mj_step1(m, d);
+    d->ctrl[0] = -u(0);  // moves joint 0
+    d->ctrl[1] = -u(1);  // moves joint 2
+    d->ctrl[2] = -u(2);  // moves rw0  //requires a swap for some reason??
+    d->ctrl[3] = -u(3);  // moves rw1
+    d->ctrl[4] = -u(4);  // moves rwz
+    mj_step2(m, d);
+
+    // get measurements
     if (fixed == true) {
       qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
     } else {
@@ -170,27 +186,14 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     }
     v << d->sensordata[7], d->sensordata[8], d->sensordata[9];
     w << d->sensordata[10], d->sensordata[11], d->sensordata[12];
-
-    // if leg is using direct position controller, replace leg torque control values with qa_ref based pid torques
-    if (ctrlMode == "Pos") {  // this is the simulated equivalent of using ODrive's position controller
-      u(0) = pid_q0Ptr->PIDControl(qa(0), qla_ref(0));
-      u(1) = pid_q2Ptr->PIDControl(qa(1), qla_ref(1));
-    }
-
     sh = (d->sensordata[13] != 0);  // Contact detection, convert grf normal to bool
-    // mj_step(m, d);
-    mj_step1(m, d);
-    d->ctrl[0] = -u(0);  // moves joint 0
-    d->ctrl[1] = -u(1);  // moves joint 2
-    d->ctrl[2] = -u(2);  // moves rw0
-    d->ctrl[3] = -u(3);  // moves rw1
-    d->ctrl[4] = -u(4);  // moves rwz
-    // d->qpos[0] = 0; // These seem to be buggy and ignore equality connect
-    // d->qpos[2] = 0;
-    mj_step2(m, d);
+
+    tau << d->sensordata[16], d->sensordata[19], d->sensordata[22], d->sensordata[25],
+        d->sensordata[28];  // TODO: this data seems wrong...?
+    tau_ref = u;
 
     t_refresh += 1;
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (t_refresh > refresh_rate) {
       // std::cout << "sh = " << sh << "\n ";
       // std::cout << "contact = " << d->sensordata[13] << "\n ";

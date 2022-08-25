@@ -8,6 +8,8 @@ class Bridge {                                                  // The class
   virtual void Init() = 0;
   virtual retVals SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) = 0;
   virtual void End() = 0;
+  Eigen::Matrix<double, 5, 1> tau;      // measured torque
+  Eigen::Matrix<double, 5, 1> tau_ref;  // ref torque before gear ratios
 
  protected:
   Model model;

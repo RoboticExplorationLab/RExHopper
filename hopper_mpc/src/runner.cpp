@@ -77,7 +77,8 @@ void Runner::Run() {  // Method/function defined inside the class
   double t = -dt;
 
   std::vector<double> theta_x(N_run), theta_y(N_run), theta_z(N_run), setp_x(N_run), setp_y(N_run), setp_z(N_run), q0(N_run), q2(N_run),
-      q0_ref(N_run), q2_ref(N_run), peb_x(N_run), peb_z(N_run), peb_refx(N_run), peb_refz(N_run);
+      q0_ref(N_run), q2_ref(N_run), peb_x(N_run), peb_z(N_run), peb_refx(N_run), peb_refz(N_run), tau_0(N_run), tau_1(N_run), tau_2(N_run),
+      tau_3(N_run), tau_4(N_run), tau_ref0(N_run), tau_ref1(N_run), tau_ref2(N_run), tau_ref3(N_run), tau_ref4(N_run);
 
   for (int k = 0; k < N_run; k++) {
     t += dt;
@@ -121,12 +122,23 @@ void Runner::Run() {  // Method/function defined inside the class
       peb_z.at(k) = peb(2);
       peb_refx.at(k) = peb_ref(0);
       peb_refz.at(k) = peb_ref(2);
+      tau_0.at(k) = bridgePtr->tau(0);
+      tau_1.at(k) = bridgePtr->tau(1);
+      tau_2.at(k) = bridgePtr->tau(2);
+      tau_3.at(k) = bridgePtr->tau(3);
+      tau_4.at(k) = bridgePtr->tau(4);
+      tau_ref0.at(k) = bridgePtr->tau_ref(0) * 7;
+      tau_ref1.at(k) = bridgePtr->tau_ref(1) * 7;
+      tau_ref2.at(k) = bridgePtr->tau_ref(2);
+      tau_ref3.at(k) = bridgePtr->tau_ref(3);
+      tau_ref4.at(k) = bridgePtr->tau_ref(4);
     }
   }
   if (plot == true) {
     Plots::Theta(N_run, theta_x, theta_y, theta_z, setp_x, setp_y, setp_z);
     Plots::JointPos(N_run, q0, q2, q0_ref, q2_ref);
     Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
+    Plots::Tau(N_run, tau_0, tau_1, tau_2, tau_3, tau_4, tau_ref0, tau_ref1, tau_ref2, tau_ref3, tau_ref4);
   }
 };
 
