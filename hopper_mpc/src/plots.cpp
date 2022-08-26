@@ -1,7 +1,3 @@
-//
-// Created by shuoy on 10/19/21.
-// Modified by bbokser starting on 06/26/22.
-//
 #include "hopper_mpc/plots.hpp"
 #include <vector>
 #include "Eigen/Core"
@@ -37,8 +33,10 @@ void Plots::OpSpacePos(int N, std::vector<double> peb_x, std::vector<double> peb
   plt::named_plot("peb_refz", timesteps, peb_refz, "g--");
 
   plt::subplot(3, 1, 3);
-  plt::named_plot("2D Pos", peb_x, peb_z, "r- ");
+  plt::named_plot("2D Pos", peb_x, peb_z, "r");
   plt::named_plot("2D Ref Pos", peb_refx, peb_refz, "go ");
+  plt::xlim(-1, 1);
+  plt::ylim(-0.7, 0.0);
 
   plt::legend();
   plt::show();

@@ -45,11 +45,11 @@ uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d 
     }
     peb_ref(2) = -h;  // pull leg up to prevent stubbing
   } else if (state == "Fall") {
-    peb_ref(2) = -h * 5.5 / 3;  // brace for impact
+    peb_ref(2) = -h * 2;  // brace for impact
   } else if (state == "Cmpr") {
-    peb_ref(2) = -h * 4.5 / 3;  // TODO: Try reducing gains for compression instead of changing position setpoint
+    peb_ref(2) = -h * 0.75;  // TODO: Try reducing gains for compression instead of changing position setpoint
   } else if (state == "Push") {
-    peb_ref(2) = -h * 5.5 / 3;  // pushoff
+    peb_ref(2) = -h * 2;  // pushoff
   }
 
   Q_ref.setFromTwoVectors(pf_ref, p);  // Q_ref = utils.Q_inv(utils.vec_to_quat(self.x_des - p))
@@ -70,18 +70,20 @@ uVals Gait::uKinInvVert(std::string state, std::string state_prev, Eigen::Vector
   if (state == "Rise") {
     peb_ref(2) = -model.h0;  // pull leg up to prevent stubbing
   } else if (state == "Fall") {
-    peb_ref(2) = -model.h0 * 5.5 / 3;  // brace for impact
+    peb_ref(2) = -model.h0 * 2;  // brace for impact
   } else if (state == "Cmpr") {
-    peb_ref(2) = -model.h0 * 4.5 / 3;  // TODO: Try reducing gains for compression instead of changing position setpoint
+    peb_ref(2) = -model.h0 * 1.5;  // TODO: Try reducing gains for compression instead of changing position setpoint
   } else if (state == "Push") {
-    peb_ref(2) = -model.h0 * 5.5 / 3;  // pushoff
+    peb_ref(2) = -model.h0 * 2;  // pushoff
   }
-  // double kp = model.k_kin(0) * 2;
-  // double kd = model.k_kin(1) * 2;
-  // u.block<2, 1>(0, 0) = legPtr->KinInvPosCtrl(peb_ref, kp, kd);
+  std::string ctrlMode = "Force";
+  Eigen::Vector3d veb_ref;
+  veb_ref.setZero();
+  u.block<2, 1>(0, 0) = legPtr->OpSpacePosCtrl(peb_ref, veb_ref);
   Eigen::Vector2d qla_ref;
-  qla_ref = legPtr->KinInv(peb_ref);
-  std::string ctrlMode = "Pos";
+  qla_ref.setZero();
+  // Eigen::Vector2d qla_ref = legPtr->KinInv(peb_ref);
+  // std::string ctrlMode = "Pos";
   u.block<3, 1>(2, 0) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
   return uVals{u, qla_ref, ctrlMode};
 }

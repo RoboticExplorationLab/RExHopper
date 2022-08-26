@@ -1,6 +1,7 @@
 #pragma once
 #include "Eigen/Core"
 #include "Eigen/Dense"
+#include "hopper_mpc/actuator.h"
 #include "hopper_mpc/bridge.h"
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/pid.h"
@@ -28,4 +29,9 @@ class MujocoBridge : public Bridge {  // The class
   double refresh_rate;
   std::unique_ptr<PID1> pid_q0Ptr;
   std::unique_ptr<PID1> pid_q2Ptr;
+  std::unique_ptr<Actuator> a0;
+  std::unique_ptr<Actuator> a1;
+  std::unique_ptr<Actuator> a2;
+  std::unique_ptr<Actuator> a3;
+  std::unique_ptr<Actuator> a4;
 };

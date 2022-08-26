@@ -53,3 +53,20 @@ struct Model {
   // Vectors of length 3 represent just the reaction wheel joints (q4, q5, q6). Used in Rwa class only.
   // Vectors of length 2 represent just the actuatable leg joints (q0, q2). Used for leg jacobian calculations.
 };
+
+struct ActuatorModel {
+  std::string name;
+  double v_max;
+  double kt;
+  double omega_max;
+  double tau_max;
+  double r;
+  double i_max;
+  double gr;
+};
+
+struct OutVals {
+  double tau_out;
+  double i;
+  double v;
+};

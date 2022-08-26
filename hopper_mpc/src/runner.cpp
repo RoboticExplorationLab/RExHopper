@@ -55,6 +55,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   // initialize variables
   gc_state = "Fall";
   gc_state_prev = gc_state;
+  gc_id = 2;
 
   ctrlMode = "Force";                                                // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
@@ -80,19 +81,18 @@ void Runner::Run() {  // Method/function defined inside the class
       q0_ref(N_run), q2_ref(N_run), peb_x(N_run), peb_z(N_run), peb_refx(N_run), peb_refz(N_run), tau_0(N_run), tau_1(N_run), tau_2(N_run),
       tau_3(N_run), tau_4(N_run), tau_ref0(N_run), tau_ref1(N_run), tau_ref2(N_run), tau_ref3(N_run), tau_ref4(N_run), dq_0(N_run),
       dq_1(N_run), dq_2(N_run), dq_3(N_run), dq_4(N_run), dq_ref0(N_run), dq_ref1(N_run), dq_ref2(N_run), dq_ref3(N_run), dq_ref4(N_run),
-      p_z(N_run), p_refz(N_run), sh_hist(N_run), s_hist(N_run);
+      p_z(N_run), p_refz(N_run), sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run);
 
   for (int k = 0; k < N_run; k++) {
     t += dt;
     auto [p, Q, v, w, qa, dqa, sh] = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);                              // grab first two actuator pos values
     bool s = ContactSchedule(t, 0);
-    GaitCycleUpdate(s, sh, v(2));  // TODO: should use v_g instead?
-
+    GaitCycleUpdate(s, sh, v(2));               // TODO: should use v_g instead?
     Eigen::Vector3d peb = legPtr->KinFwd();     // Pos of End-effector in Body frame (P.E.B.)
     Eigen::Vector3d pe = p + Q.matrix() * peb;  // position of the foot in world frame
 
-    auto [u_, qla_ref_, ctrlMode_] = gaitPtr->uKinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+    auto [u_, qla_ref_, ctrlMode_] = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
     peb_ref = gaitPtr->peb_ref;  // update peb_ref from gait class object
     u = u_;
     qla_ref = qla_ref_;
@@ -100,11 +100,9 @@ void Runner::Run() {  // Method/function defined inside the class
     // CircleTest(); // edits peb_ref in place
     // qla_ref = legPtr->KinInv(peb_ref);  // get desired leg actuator angles
     gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
-
     // std::cout << k << "\n";
     // std::cout << "u = " << u(0) << ", " << u(1) << ", " << u(2) << ", " << u(3) << ", "
     //           << ", " << u(4) << "\n";
-    // std::cout << "kinInv = " << qla_ref(0) * 180 / M_PI << ", " << qla_ref(1) * 180 / M_PI << "\n";
     // std::cout << "body frame foot pos = " << peb(0) << ", " << peb(1) << ", " << peb(2) << "\n";
     if (plot == true) {
       theta_x.at(k) = rwaPtr->theta(0);
@@ -142,29 +140,37 @@ void Runner::Run() {  // Method/function defined inside the class
       p_refz.at(k) = p_ref(2);
       sh_hist.at(k) = sh;
       s_hist.at(k) = s;
+
+      gc_state_hist.at(k) = gc_id;
     }
   }
+  bridgePtr->End();
   if (plot == true) {
+    Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
     Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
-    Plots::Plot2(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, 0);
+    Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
+                 gc_state_hist, 0);
     Plots::Plot3(N_run, "Theta vs Timesteps", "Theta_x", theta_x, setp_x, "Theta_y", theta_y, setp_y, "Theta_z", theta_z, setp_z, 0);
     Plots::Plot5(N_run, "Tau vs Timesteps", "Tau_0", tau_0, tau_ref0, "Tau_1", tau_1, tau_ref1, "Tau_2", tau_2, tau_ref2, "Tau_3", tau_3,
                  tau_ref3, "Tau_4", tau_4, tau_ref4, 60);
     Plots::Plot5(N_run, "dq vs Timesteps", "dq_0", dq_0, dq_0, "dq_1", dq_1, dq_1, "dq_2", dq_2, dq_2, "dq_3", dq_3, dq_3, "dq_4", dq_4,
                  dq_4, 0);
-    Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
   }
 };
 
 void Runner::GaitCycleUpdate(bool s, bool sh, double dz) {
   if (gc_state == "Cmpr" && dz >= 0) {
     gc_state = "Push";
+    gc_id = 0;
   } else if (gc_state == "Push" && s == false && sh == false) {
     gc_state = "Rise";
+    gc_id = 1;
   } else if (gc_state == "Rise" && dz <= 0) {
     gc_state = "Fall";
+    gc_id = 2;
   } else if (gc_state == "Fall" && sh == true) {
     gc_state = "Cmpr";
+    gc_id = 3;
   }
 };
 

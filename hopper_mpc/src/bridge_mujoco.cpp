@@ -140,6 +140,43 @@ void MujocoBridge::Init() {
   pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
   sh = 0;
 
+  // actuator models
+  ActuatorModel r80;
+  r80.name = "r80";
+  r80.v_max = 48;
+  r80.kt = 0.0868;
+  r80.omega_max = 4600 * (2 * M_PI / 60);
+  r80.tau_max = 4;
+  r80.r = 0.125;
+  r80.i_max = 46;
+  r80.gr = 1;
+
+  ActuatorModel rmdx10;
+  rmdx10.name = "rmdx10";
+  rmdx10.v_max = 48;
+  rmdx10.kt = 1.73 / 7;
+  rmdx10.omega_max = 250 * 7 * (2 * M_PI / 60);
+  rmdx10.tau_max = 50 / 7;
+  rmdx10.r = 0.3;
+  rmdx10.i_max = 30;
+  rmdx10.gr = 7;
+
+  ActuatorModel r100;
+  r100.name = "r100";
+  r100.v_max = 48;
+  r100.kt = 0.106;
+  r100.omega_max = 3800 * (2 * M_PI / 60);
+  r100.tau_max = 11.24;
+  r100.r = 0.051;
+  r100.i_max = 104;
+  r100.gr = 1;
+
+  a0.reset(new Actuator(rmdx10, dt));
+  a1.reset(new Actuator(rmdx10, dt));
+  a2.reset(new Actuator(r100, dt));
+  a3.reset(new Actuator(r100, dt));
+  a4.reset(new Actuator(r80, dt));
+
   // RENDERING STUFF
   double fps = 60;           // 60 frames rendered per real second
   double simhertz = 1 / dt;  // timesteps per simulated second
@@ -155,13 +192,24 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       u(0) = pid_q0Ptr->PIDControl(qa(0), qla_ref(0));
       u(1) = pid_q2Ptr->PIDControl(qa(1), qla_ref(1));
     }
+    // get dqa
+    if (fixed == true) {
+      dqa << d->qvel[0], d->qvel[2], d->qvel[4], d->qvel[5], d->qvel[6];
+    } else {
+      dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
+    }
     u = -u;
-    mj_step1(m, d);     // mj_step(m, d);
-    d->ctrl[0] = u(0);  // moves joint 0
-    d->ctrl[1] = u(1);  // moves joint 2
-    d->ctrl[2] = u(2);  // moves rw0  //requires a swap for some reason??
-    d->ctrl[3] = u(3);  // moves rw1
-    d->ctrl[4] = u(4);  // moves rwz
+    mj_step1(m, d);  // mj_step(m, d);
+    auto [tau0, i0, v0] = a0->Actuate(u(0), dqa(0));
+    auto [tau1, i1, v1] = a1->Actuate(u(1), dqa(1));
+    auto [tau2, i2, v2] = a2->Actuate(u(2), dqa(2));
+    auto [tau3, i3, v3] = a3->Actuate(u(3), dqa(3));
+    auto [tau4, i4, v4] = a4->Actuate(u(4), dqa(4));
+    d->ctrl[0] = tau0;  // moves joint 0
+    d->ctrl[1] = tau1;  // moves joint 2
+    d->ctrl[2] = tau2;  // moves rw0
+    d->ctrl[3] = tau3;  // moves rw1
+    d->ctrl[4] = tau4;  // moves rwz
     mj_step2(m, d);
 
     // get measurements
@@ -191,7 +239,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     sh = (d->sensordata[13] != 0);  // Contact detection, convert grf normal to bool
 
     // TODO: this data seems wrong...?
-    tau << d->sensordata[16], d->sensordata[19], d->sensordata[22], d->sensordata[25], d->sensordata[28];
+    tau << d->sensordata[15], d->sensordata[18], d->sensordata[21], d->sensordata[24], d->sensordata[27];
     tau_ref = u;
 
     t_refresh += 1;

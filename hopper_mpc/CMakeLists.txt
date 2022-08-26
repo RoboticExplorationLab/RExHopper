@@ -67,7 +67,8 @@ add_executable(${PROJECT_NAME}
   src/gait.cpp
   src/rwa.cpp
   src/pid.cpp
-  src/utils.cpp 
+  src/utils.cpp
+  src/actuator.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   mujoco::mujoco

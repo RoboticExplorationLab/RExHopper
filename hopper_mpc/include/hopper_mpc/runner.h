@@ -46,6 +46,8 @@ class Runner {  // The class
 
   std::string gc_state;  // gait cycle state
   std::string gc_state_prev;
+  int gc_id;
+
   Eigen::Matrix<double, 5, 1> u;        // control torques
   Eigen::Matrix<double, 2, 1> qla_ref;  // leg actuator position setpoints
   std::string ctrlMode;

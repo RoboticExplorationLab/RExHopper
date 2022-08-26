@@ -82,23 +82,38 @@
   </worldbody>
 
   <equality>
-		<connect anchor="0.27 0 0" body1="Link 1" body2="Link 3" name="equality_constraint" solimp="30 3 0.001 0.5 2"/>
+		<connect anchor="0.27 0 0" body1="Link 1" body2="Link 3" name="equality_constraint" solimp="10 1 0.001 0.5 2"/>
 	</equality>
 
-  <actuator>
-    <motor joint='Joint 0' name='q0' gear="7" forcelimited="true" forcerange="-50 50" ctrllimited="true" ctrlrange="-3.14 3.14"/>
+  <!-- <actuator>
+    <motor joint='Joint 0' name='q0' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-50 50" ctrllimited="true" ctrlrange="-3.14 3.14"/>
 	</actuator>
   <actuator>
-    <motor joint='Joint 2' name='q2' gear="7" forcelimited="true" forcerange="-50 50" ctrllimited="true" ctrlrange="-3.14 3.14"/>
+    <motor joint='Joint 2' name='q2' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-50 50" ctrllimited="true" ctrlrange="-3.14 3.14"/>
 	</actuator>
   <actuator>
-    <motor joint='joint_rw0' name='rw0' gear="1" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
+    <motor joint='joint_rw0' name='rw0' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
 	</actuator>
   <actuator>
-    <motor joint='joint_rw1' name='rw1' gear="1" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
+    <motor joint='joint_rw1' name='rw1' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
 	</actuator>
   <actuator>
-    <motor joint='joint_rwz' name='rwz' gear="1" forcelimited="true" forcerange="-4 4" ctrllimited="false"/>
+    <motor joint='joint_rwz' name='rwz' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-4 4" ctrllimited="false"/>
+	</actuator> -->
+    <actuator>
+    <motor joint='Joint 0' name='q0' gear="1 0 0 0 0 0" forcelimited="false" ctrllimited="false"/>
+	</actuator>
+  <actuator>
+    <motor joint='Joint 2' name='q2' gear="1 0 0 0 0 0" forcelimited="false" ctrllimited="false"/>
+	</actuator>
+  <actuator>
+    <motor joint='joint_rw0' name='rw0' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
+	</actuator>
+  <actuator>
+    <motor joint='joint_rw1' name='rw1' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
+	</actuator>
+  <actuator>
+    <motor joint='joint_rwz' name='rwz' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-4 4" ctrllimited="false"/>
 	</actuator>
 
   <contact>

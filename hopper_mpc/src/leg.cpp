@@ -15,10 +15,10 @@ Leg::Leg(Model model_, double dt_) {
   dq = model.dq_init.block<4, 1>(0, 0);
 
   dt = dt_;
-  double g = model.g;
+
   S_b = model.S.block<4, 4>(0, 0);  // actuator selection matrix (just the legs)
-  gb << 0, 0, g;                    // initialize body frame gravity vector
-  gb_init << 0, 0, g;
+  gb << 0, 0, model.g;              // initialize body frame gravity vector
+  gb_init << 0, 0, model.g;
   L0 = model.leg_dim(0);
   L1 = model.leg_dim(1);
   L2 = model.leg_dim(2);
@@ -27,7 +27,7 @@ Leg::Leg(Model model_, double dt_) {
   L5 = model.leg_dim(5);
 
   s_pol = model.s_pol;
-  K << model.K, model.K, model.K;
+  K << model.K, model.K, model.K * 7 / 5;
   UpdateGains(K, K * 0.02);
 };
 
@@ -48,6 +48,12 @@ void Leg::UpdateState(Eigen::Vector2d qa_in, Eigen::Quaterniond Q_base) {
   qa << q(0), q(2);  // same thing as qa = q_in, but okay
   dqa << dq(0), dq(2);
 };
+
+void Leg::UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd) {
+  // Use this to update wbc PD gains in real time
+  kp_diag = kp.asDiagonal();
+  kd_diag = kd.asDiagonal();
+}
 
 Eigen::Matrix<double, 2, 1> Leg::KinInv(Eigen::Vector3d p_ref) {
   double x = p_ref(0);
@@ -97,7 +103,7 @@ void Leg::GenMCG() {
 };
 
 void Leg::GenJac() {
-  sym::Jac<double>(q, dq, gb, model.leg_dim.transpose(), &Ja);  // TODO: Fix this
+  sym::Jac<double>(q, dq, gb, model.leg_dim, &Ja);  // TODO: Fix this
 };
 
 void Leg::GenMx() {
@@ -108,8 +114,10 @@ void Leg::GenMx() {
   Eigen::JacobiSVD<Eigen::Matrix<double, 3, 3> > svd(Mx_inv, Eigen::ComputeFullU);
   Eigen::Matrix<double, 3, 3> U = svd.matrixU();
   Eigen::Vector3d s = svd.singularValues();
-  Eigen::Matrix<double, 3, 3> V = U.transpose();
-
+  // Eigen::Matrix<double, 3, 3> V = U.transpose();
+  // std::cout << M.coeff(0, 0) << ", " << M.coeff(0, 1) << ", " << M.coeff(0, 2) << ", " << M.coeff(1, 0) << ", " << M.coeff(1, 1) << ", "
+  //           << M.coeff(1, 2) << ", " << M.coeff(2, 0) << ", " << M.coeff(2, 1) << ", " << M.coeff(2, 2) << "\n";
+  // std::cout << s(0) << ", " << s(1) << ", " << s(2) << "\n";
   for (int i = 0; i < 3; i++) {
     // cut off singular values which cause control problems
     if (s(i) < singularity_thresh) {
@@ -118,20 +126,14 @@ void Leg::GenMx() {
       s(i) = 1 / s(i);
     }
   }
-  Mx = V.transpose() * (s.asDiagonal() * U);
-}
-
-void Leg::UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd) {
-  // Use this to update wbc PD gains in real time
-  kp_diag = kp.asDiagonal();
-  kd_diag = kd.asDiagonal();
+  Mx = U * (s.asDiagonal() * U.transpose());  // V = U.transpose(), so V.transpose() = U
+  // std::cout << Mx.coeff(0, 0) << ", " << Mx.coeff(0, 1) << ", " << Mx.coeff(0, 2) << ", " << Mx.coeff(1, 0) << ", " << Mx.coeff(1, 1)
+  //           << ", " << Mx.coeff(1, 2) << ", " << Mx.coeff(2, 0) << ", " << Mx.coeff(2, 1) << ", " << Mx.coeff(2, 2) << "\n";
 }
 
 Eigen::Vector2d Leg::OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref) {
-  Eigen::Vector3d p;
-  p = KinFwd();
-  Eigen::Vector3d v;
-  v = GetVel();
+  Eigen::Vector3d p = KinFwd();
+  Eigen::Vector3d v = GetVel();
   Eigen::Vector3d pdd_ref;
   // pdd_ref = (p_ref - p) + (v_ref - v);
   pdd_ref = kp_diag * (p_ref - p) + kd_diag * (v_ref - v);
