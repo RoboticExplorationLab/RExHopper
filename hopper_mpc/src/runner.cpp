@@ -16,7 +16,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   g = model.g;  // should g be defined here?
   L = model.leg_dim;
-  h0 = model.h0;
+  h0 = 0.5;  // should match the number used in the mjcf!!
   J = model.inertia;
   mu = model.mu;
 
@@ -78,7 +78,9 @@ void Runner::Run() {  // Method/function defined inside the class
 
   std::vector<double> theta_x(N_run), theta_y(N_run), theta_z(N_run), setp_x(N_run), setp_y(N_run), setp_z(N_run), q0(N_run), q2(N_run),
       q0_ref(N_run), q2_ref(N_run), peb_x(N_run), peb_z(N_run), peb_refx(N_run), peb_refz(N_run), tau_0(N_run), tau_1(N_run), tau_2(N_run),
-      tau_3(N_run), tau_4(N_run), tau_ref0(N_run), tau_ref1(N_run), tau_ref2(N_run), tau_ref3(N_run), tau_ref4(N_run);
+      tau_3(N_run), tau_4(N_run), tau_ref0(N_run), tau_ref1(N_run), tau_ref2(N_run), tau_ref3(N_run), tau_ref4(N_run), dq_0(N_run),
+      dq_1(N_run), dq_2(N_run), dq_3(N_run), dq_4(N_run), dq_ref0(N_run), dq_ref1(N_run), dq_ref2(N_run), dq_ref3(N_run), dq_ref4(N_run),
+      p_z(N_run), p_refz(N_run), sh_hist(N_run), s_hist(N_run);
 
   for (int k = 0; k < N_run; k++) {
     t += dt;
@@ -90,7 +92,6 @@ void Runner::Run() {  // Method/function defined inside the class
     Eigen::Vector3d peb = legPtr->KinFwd();     // Pos of End-effector in Body frame (P.E.B.)
     Eigen::Vector3d pe = p + Q.matrix() * peb;  // position of the foot in world frame
 
-    // u = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
     auto [u_, qla_ref_, ctrlMode_] = gaitPtr->uKinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
     peb_ref = gaitPtr->peb_ref;  // update peb_ref from gait class object
     u = u_;
@@ -98,9 +99,7 @@ void Runner::Run() {  // Method/function defined inside the class
     ctrlMode = ctrlMode_;
     // CircleTest(); // edits peb_ref in place
     // qla_ref = legPtr->KinInv(peb_ref);  // get desired leg actuator angles
-
-    // u << 0.1, 0.1, 0.1, 0.1, 0.1;
-    gc_state_prev = gc_state;  // should be last
+    gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
 
     // std::cout << k << "\n";
     // std::cout << "u = " << u(0) << ", " << u(1) << ", " << u(2) << ", " << u(3) << ", "
@@ -132,13 +131,28 @@ void Runner::Run() {  // Method/function defined inside the class
       tau_ref2.at(k) = bridgePtr->tau_ref(2);
       tau_ref3.at(k) = bridgePtr->tau_ref(3);
       tau_ref4.at(k) = bridgePtr->tau_ref(4);
+
+      dq_0.at(k) = dqa(0);
+      dq_1.at(k) = dqa(1);
+      dq_2.at(k) = dqa(2);
+      dq_3.at(k) = dqa(3);
+      dq_4.at(k) = dqa(4);
+
+      p_z.at(k) = p(2);
+      p_refz.at(k) = p_ref(2);
+      sh_hist.at(k) = sh;
+      s_hist.at(k) = s;
     }
   }
   if (plot == true) {
-    Plots::Theta(N_run, theta_x, theta_y, theta_z, setp_x, setp_y, setp_z);
-    Plots::JointPos(N_run, q0, q2, q0_ref, q2_ref);
+    Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
+    Plots::Plot2(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, 0);
+    Plots::Plot3(N_run, "Theta vs Timesteps", "Theta_x", theta_x, setp_x, "Theta_y", theta_y, setp_y, "Theta_z", theta_z, setp_z, 0);
+    Plots::Plot5(N_run, "Tau vs Timesteps", "Tau_0", tau_0, tau_ref0, "Tau_1", tau_1, tau_ref1, "Tau_2", tau_2, tau_ref2, "Tau_3", tau_3,
+                 tau_ref3, "Tau_4", tau_4, tau_ref4, 60);
+    Plots::Plot5(N_run, "dq vs Timesteps", "dq_0", dq_0, dq_0, "dq_1", dq_1, dq_1, "dq_2", dq_2, dq_2, "dq_3", dq_3, dq_3, "dq_4", dq_4,
+                 dq_4, 0);
     Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
-    Plots::Tau(N_run, tau_0, tau_1, tau_2, tau_3, tau_4, tau_ref0, tau_ref1, tau_ref2, tau_ref3, tau_ref4);
   }
 };
 

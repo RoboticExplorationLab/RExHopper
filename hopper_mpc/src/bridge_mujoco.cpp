@@ -134,14 +134,15 @@ void MujocoBridge::Init() {
 
   // initialize variables
   qa_cal << model.q_init(0), model.q_init(2), 0, 0, 0;
-  double kp = 200;
-  pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kp * 0.02));
-  pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kp * 0.02));
+  double kp = model.k_kin(0);
+  double kd = model.k_kin(1);
+  pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kd));
+  pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
   sh = 0;
 
   // RENDERING STUFF
   double fps = 60;           // 60 frames rendered per real second
-  double simhertz = 1 / dt;  // 1000 steps per simulated second
+  double simhertz = 1 / dt;  // timesteps per simulated second
   // then only render visuals once every 16.66 timesteps
   refresh_rate = simhertz / fps;
   t_refresh += 0;
@@ -154,21 +155,22 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       u(0) = pid_q0Ptr->PIDControl(qa(0), qla_ref(0));
       u(1) = pid_q2Ptr->PIDControl(qa(1), qla_ref(1));
     }
-
-    // mj_step(m, d);
-    mj_step1(m, d);
-    d->ctrl[0] = -u(0);  // moves joint 0
-    d->ctrl[1] = -u(1);  // moves joint 2
-    d->ctrl[2] = -u(2);  // moves rw0  //requires a swap for some reason??
-    d->ctrl[3] = -u(3);  // moves rw1
-    d->ctrl[4] = -u(4);  // moves rwz
+    u = -u;
+    mj_step1(m, d);     // mj_step(m, d);
+    d->ctrl[0] = u(0);  // moves joint 0
+    d->ctrl[1] = u(1);  // moves joint 2
+    d->ctrl[2] = u(2);  // moves rw0  //requires a swap for some reason??
+    d->ctrl[3] = u(3);  // moves rw1
+    d->ctrl[4] = u(4);  // moves rwz
     mj_step2(m, d);
 
     // get measurements
     if (fixed == true) {
       qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
+      dqa << d->qvel[0], d->qvel[2], d->qvel[4], d->qvel[5], d->qvel[6];
     } else {
       qa_raw << d->qpos[7], d->qpos[9], d->qpos[11], d->qpos[12], d->qpos[13];
+      dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
       // first seven indices are for base pos and quat in floating body mode
     }
 
@@ -188,31 +190,25 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     w << d->sensordata[10], d->sensordata[11], d->sensordata[12];
     sh = (d->sensordata[13] != 0);  // Contact detection, convert grf normal to bool
 
-    tau << d->sensordata[16], d->sensordata[19], d->sensordata[22], d->sensordata[25],
-        d->sensordata[28];  // TODO: this data seems wrong...?
+    // TODO: this data seems wrong...?
+    tau << d->sensordata[16], d->sensordata[19], d->sensordata[22], d->sensordata[25], d->sensordata[28];
     tau_ref = u;
 
     t_refresh += 1;
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (t_refresh > refresh_rate) {
       // std::cout << "sh = " << sh << "\n ";
-      // std::cout << "contact = " << d->sensordata[13] << "\n ";
+      // std::cout << "contact normal force = " << d->sensordata[13] << "\n ";
       // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) <<
       // "\n";
       // std::cout << "corrected pos = " << qa(0) * 180 / M_PI << ", " << qa(1) * 180 / M_PI << ", " << qa(2) * 180 / M_PI << ", "
       //           << qa(3) * 180 / M_PI << ", " << qa(4) * 180 / M_PI << "\n";
-      // std::cout << "actuator force: " << (d->actuator_force[0]) << ", " << (d->actuator_force[1]) << ", " << (d->actuator_force[2]) << ",
-      // "
-      //           << (d->actuator_force[3]) << ", " << (d->actuator_force[4]) << ", " << (d->actuator_force[5]) << ", "
-      //           << (d->actuator_force[6]) << std::endl;
-      // std::cout << "ctrl: " << (d->ctrl[0]) << ", " << (d->ctrl[1]) << ", " << (d->ctrl[2]) << ", " << (d->ctrl[3]) << ", " <<
-      // (d->ctrl[4])
-      //           << ", " << (d->ctrl[5]) << ", " << (d->ctrl[6]) << std::endl;
+      // std::cout << "ctrl: " << d->ctrl[0] << ", " << d->ctrl[1] << ", " << d->ctrl[2] << ", " << d->ctrl[3] << ", " << d->ctrl[4] <<
+      // "\n";
 
       // visualization
       t_refresh = 0;  // reset refresh counter
       // 15 ms is a little smaller than 60 Hz.
-      // std::this_thread::sleep_for(std::chrono::milliseconds(15));
       // get framebuffer viewport
       viewport = {0, 0, 0, 0};
       glfwGetFramebufferSize(window, &viewport.width, &viewport.height);

@@ -93,9 +93,9 @@ int main(int argc, char* argv[]) {
               0, 0, 0, 1, 0, 
               0, 0, 0, 0, 1;  // clang-format on
   hopper.qa_home << 29 * M_PI / 180, -187 * M_PI / 180;
-  hopper.k_kin << 45, 45 * 0.02;
+  hopper.k_kin << 100, 100 * 0.02;
 
-  double dt = 0.001;
+  double dt = 0.0001;  // 10 kHz
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record);
   runner.Run();  // Call the method
   return 0;

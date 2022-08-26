@@ -13,10 +13,12 @@ Rwa::Rwa(double dt_) {
   b = -45 * M_PI / 180;
   sin45 = sin(45 * M_PI / 180);
 
-  double ku = 1800;  // 1600
-  kp_tau << ku, ku, ku * 0.5;
-  ki_tau << ku * 0.1, ku * 0.1, ku * 0.01;
-  kd_tau << ku * 0.04, ku * 0.04, ku * 0.005;  // ku * 0.04, ku * 0.04, ku * 0.005;
+  double ku = 200;  // TODO: Might want to increase this.
+  // use gain of 13 for CoM bisection search.
+  // can go as high as 1300 (not sure if necessary)
+  kp_tau << ku * 0.6, ku * 0.6, ku * 0.5 * 0.6;
+  ki_tau << ku * 0.56, ku * 0.56, ku * 0.5 * 0.56;        // ki_tau << ku * 0.1, ku * 0.1, ku * 0.01;
+  kd_tau << ku * 0.1875, ku * 0.1875, ku * 0.1875 * 0.5;  // ku * 0.04, ku * 0.04, ku * 0.005;
 
   // PID3 pid_tau(dt, kp_tau, ki_tau, kd_tau);
   pid_tauPtr.reset(new PID3(dt, kp_tau, ki_tau, kd_tau));
@@ -63,8 +65,9 @@ Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_b
 
 Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
   Eigen::Vector3d setp;
-  setp(0) = GetXRotatedAboutZ(Q_ref, a);
-  setp(1) = GetXRotatedAboutZ(Q_ref, b);
+  double adj = -0.34652 * M_PI / 180;
+  setp(0) = GetXRotatedAboutZ(Q_ref, a) + adj;
+  setp(1) = GetXRotatedAboutZ(Q_ref, b) - adj;
   setp(2) = z_ref;
   return setp;
 }
