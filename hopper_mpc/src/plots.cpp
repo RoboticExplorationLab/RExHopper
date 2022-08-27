@@ -37,8 +37,8 @@ void Plots::OpSpacePos(int N, std::vector<double> peb_x, std::vector<double> peb
   plt::named_plot("2D Ref Pos", peb_refx, peb_refz, "go ");
   plt::xlim(-1, 1);
   plt::ylim(-0.7, 0.0);
-
   plt::legend();
+
   plt::show();
 };
 
@@ -56,6 +56,7 @@ void Plots::Plot2(int N, std::string title, std::string name_1, std::vector<doub
   if (ylim != 0) {
     plt::ylim(-ylim, ylim);
   }
+  plt::legend();
 
   plt::subplot(2, 1, 2);
   plt::named_plot(name_2, timesteps, vec2, "r");
@@ -63,8 +64,8 @@ void Plots::Plot2(int N, std::string title, std::string name_1, std::vector<doub
   if (ylim != 0) {
     plt::ylim(-ylim, ylim);
   }
-
   plt::legend();
+
   plt::show();
 };
 
@@ -83,6 +84,7 @@ void Plots::Plot3(int N, std::string title, std::string name_1, std::vector<doub
   if (ylim != 0) {
     plt::ylim(-ylim, ylim);
   }
+  plt::legend();
 
   plt::subplot(3, 1, 2);
   plt::named_plot(name_2, timesteps, vec2, "r");
@@ -90,6 +92,7 @@ void Plots::Plot3(int N, std::string title, std::string name_1, std::vector<doub
   if (ylim != 0) {
     plt::ylim(-ylim, ylim);
   }
+  plt::legend();
 
   plt::subplot(3, 1, 3);
   plt::named_plot(name_3, timesteps, vec3, "r");
@@ -97,8 +100,8 @@ void Plots::Plot3(int N, std::string title, std::string name_1, std::vector<doub
   if (ylim != 0) {
     plt::ylim(-ylim, ylim);
   }
-
   plt::legend();
+
   plt::show();
 };
 
@@ -119,6 +122,7 @@ void Plots::Plot5(int N, std::string title, std::string name_1, std::vector<doub
   if (ylim != 0) {
     plt::ylim(-ylim, ylim);
   }
+  plt::legend();
 
   plt::subplot(5, 1, 2);
   plt::named_plot(name_2, timesteps, vec2, "r");
@@ -126,6 +130,7 @@ void Plots::Plot5(int N, std::string title, std::string name_1, std::vector<doub
   if (ylim != 0) {
     plt::ylim(-ylim, ylim);
   }
+  plt::legend();
 
   plt::subplot(5, 1, 3);
   plt::named_plot(name_3, timesteps, vec3, "r");
@@ -140,6 +145,7 @@ void Plots::Plot5(int N, std::string title, std::string name_1, std::vector<doub
   if (ylim != 0) {
     plt::ylim(-ylim, ylim);
   }
+  plt::legend();
 
   plt::subplot(5, 1, 5);
   plt::named_plot(name_5, timesteps, vec5, "r");
@@ -147,7 +153,7 @@ void Plots::Plot5(int N, std::string title, std::string name_1, std::vector<doub
   if (ylim != 0) {
     plt::ylim(-ylim, ylim);
   }
-
   plt::legend();
+
   plt::show();
 };

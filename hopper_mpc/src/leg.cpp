@@ -27,7 +27,7 @@ Leg::Leg(Model model_, double dt_) {
   L5 = model.leg_dim(5);
 
   s_pol = model.s_pol;
-  K << model.K, model.K, model.K * 7 / 5;
+  K << model.K * 7 / 5, model.K * 7 / 5, model.K;
   UpdateGains(K, K * 0.02);
 };
 

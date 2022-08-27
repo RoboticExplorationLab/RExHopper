@@ -53,10 +53,7 @@ double Rwa::GetXRotatedAboutZ(Eigen::Quaterniond Q_in, double z) {
 }
 
 Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base) {
-  // get body angle and setpoint in rw axes
-  double ref_a = GetXRotatedAboutZ(Q_ref, a);
-  double ref_b = GetXRotatedAboutZ(Q_ref, b);
-
+  // get body angle in rw axes
   theta(0) = GetXRotatedAboutZ(Q_base, a);
   theta(1) = GetXRotatedAboutZ(Q_base, b);
   theta(2) = 2 * asin(Q_base.z());  // z-axis of body quaternion
@@ -64,6 +61,7 @@ Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_b
 }
 
 Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
+  // get setpoint in rw axes
   Eigen::Vector3d setp;
   double adj = -0.34652 * M_PI / 180;
   setp(0) = GetXRotatedAboutZ(Q_ref, a) + adj;

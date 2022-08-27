@@ -1,4 +1,5 @@
 #include "hopper_mpc/gait.h"
+#include <iostream>
 #include "hopper_mpc/utils.hpp"
 
 Gait::Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<Leg>* legPtr_, std::shared_ptr<Rwa>* rwaPtr_) {
@@ -36,26 +37,26 @@ uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d 
 
   double k_b = (Utils::Clip(dist, 0.5, 1) + 2) / 3;
   double h = model.h0 * k_b;
-  double kr = 0.15 / k_b;                                  // speed cancellation constant
+  double kr = 0.0 / k_b;                                   // speed cancellation constant
   double kt = 0.4;                                         // leap period gain
   if (state == "Rise") {                                   // in first timestep after liftoff,
     if (state_prev == "Push") {                            // find new footstep position based on des and current speed
       pf_ref = v * kt * abs(v(2)) / 2 + kr * (v - v_ref);  // footstep in world frame for neutral motion + des acc
       pf_ref(2) = 0;                                       // enforce footstep is on ground plane
+      std::cout << pf_ref << "\n";
     }
     peb_ref(2) = -h;  // pull leg up to prevent stubbing
   } else if (state == "Fall") {
-    peb_ref(2) = -h * 2;  // brace for impact
+    peb_ref(2) = -h * 1.75;  // brace for impact
   } else if (state == "Cmpr") {
-    peb_ref(2) = -h * 0.75;  // TODO: Try reducing gains for compression instead of changing position setpoint
+    peb_ref(2) = -h * 1.5;  // TODO: Try reducing gains for compression instead of changing position setpoint
   } else if (state == "Push") {
-    peb_ref(2) = -h * 2;  // pushoff
+    peb_ref(2) = -h * 1.75;  // pushoff
   }
-
-  Q_ref.setFromTwoVectors(pf_ref, p);  // Q_ref = utils.Q_inv(utils.vec_to_quat(self.x_des - p))
-  // double kp = model.k_kin(0) * 2;
-  // double kd = model.k_kin(1) * 2;
-  // u.block<2, 1>(0, 0) = legPtr->KinInvPosCtrl(peb_ref, kp, kd);
+  Eigen::Vector3d v1;
+  v1 << 0, 0, -1;  // datum vector, chosen as aligned with z-axis (representing leg direction)
+  Q_ref.setFromTwoVectors(pf_ref - p, v1);
+  // Q_ref = Utils::VecToQuat(pf_ref - p);
   Eigen::Vector2d qla_ref;
   qla_ref = legPtr->KinInv(peb_ref);
   std::string ctrlMode = "Pos";

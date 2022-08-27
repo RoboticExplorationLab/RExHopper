@@ -22,8 +22,6 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   n_X = 13;
   n_U = 6;
-  X_0 << 0, 0, h0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-  X_f << 2.5, 0, h0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
   t_p = 0.8;                         // gait period, seconds
   phi_switch = 0.5;                  // switching phase, must be between 0 and 1. Percentage of gait spent in contact.
@@ -46,31 +44,40 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   } else {
     throw "Invalid bridge name! Use 'hardware', 'mujoco', or 'raisim'";
   }
+  // initialize state
+  p << 0, 0, model.h0;  // must match starting position in mjcf!!
+  Q.coeffs() << 0, 0, 0, 1;
+  v.setZero();
+  w.setZero();
+  // initialize reference state
+  p_ref << 2, 0, model.h0;
+  Q_ref.coeffs() << 0, 0, 0, 1;
+  v_ref.setZero();
+  w_ref.setZero();
 
-  legPtr = std::make_shared<Leg>(model, dt);
-  rwaPtr = std::make_shared<Rwa>(dt);
-  peb_ref << 0, 0, -model.h0 * 5 / 3;                             // desired operational space leg position in body frame
-  gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
-
-  // initialize variables
-  gc_state = "Fall";
+  // initialize gait cycle state
+  gc_state = "Cmpr";
   gc_state_prev = gc_state;
-  gc_id = 2;
+  gc_id = 3;
 
   ctrlMode = "Force";                                                // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
   qla_ref << qla_ref(0), qla_ref(1) + 0.5;
+  peb_ref << 0, 0, -model.h0 * 2;  // desired operational space leg position in body frame
+  veb_ref.setZero();               // desired operational space leg velocity
+  fb_ref.setZero();                // desired operational space leg force
+  u.setZero();                     // ctrl Torques
+  legPtr = std::make_shared<Leg>(model, dt);
+  rwaPtr = std::make_shared<Rwa>(dt);
 
-  veb_ref.setZero();  // desired operational space leg velocity
-  fb_ref.setZero();   // desired operational space leg force
-  u.setZero();        // ctrl Torques
+  gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
 
+  // variables for CircleTest
   x1 = 0;
   z1 = -0.4;
   z = -0.3;  // peb_ref(2);
   r = 0.1;
   flip = -1;
-  // X = X_0;  // initialize state to X_0
 };
 
 void Runner::Run() {  // Method/function defined inside the class
@@ -93,12 +100,10 @@ void Runner::Run() {  // Method/function defined inside the class
     Eigen::Vector3d pe = p + Q.matrix() * peb;  // position of the foot in world frame
 
     auto [u_, qla_ref_, ctrlMode_] = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
-    peb_ref = gaitPtr->peb_ref;  // update peb_ref from gait class object
     u = u_;
     qla_ref = qla_ref_;
     ctrlMode = ctrlMode_;
-    // CircleTest(); // edits peb_ref in place
-    // qla_ref = legPtr->KinInv(peb_ref);  // get desired leg actuator angles
+
     gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
     // std::cout << k << "\n";
     // std::cout << "u = " << u(0) << ", " << u(1) << ", " << u(2) << ", " << u(3) << ", "
@@ -117,8 +122,8 @@ void Runner::Run() {  // Method/function defined inside the class
       q2_ref.at(k) = qla_ref(1) * 180 / M_PI;
       peb_x.at(k) = peb(0);
       peb_z.at(k) = peb(2);
-      peb_refx.at(k) = peb_ref(0);
-      peb_refz.at(k) = peb_ref(2);
+      peb_refx.at(k) = gaitPtr->peb_ref(0);
+      peb_refz.at(k) = gaitPtr->peb_ref(2);
       tau_0.at(k) = bridgePtr->tau(0);
       tau_1.at(k) = bridgePtr->tau(1);
       tau_2.at(k) = bridgePtr->tau(2);
@@ -162,7 +167,8 @@ void Runner::GaitCycleUpdate(bool s, bool sh, double dz) {
   if (gc_state == "Cmpr" && dz >= 0) {
     gc_state = "Push";
     gc_id = 0;
-  } else if (gc_state == "Push" && s == false && sh == false) {
+    // } else if (gc_state == "Push" && s == false && sh == false) {
+  } else if (gc_state == "Push" && sh == false) {
     gc_state = "Rise";
     gc_id = 1;
   } else if (gc_state == "Rise" && dz <= 0) {
@@ -223,5 +229,5 @@ void Runner::CircleTest() {
   peb_ref(0) = x;
   peb_ref(2) = z;
 
-  std::cout << "peb_ref = " << peb_ref(0) << ", " << peb_ref(1) << ", " << peb_ref(2) << "\n";
+  // std::cout << "peb_ref = " << peb_ref(0) << ", " << peb_ref(1) << ", " << peb_ref(2) << "\n";
 }

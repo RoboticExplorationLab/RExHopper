@@ -55,11 +55,8 @@ class Runner {  // The class
   Eigen::Vector3d veb_ref;  // body frame end effector vel reference
   Eigen::Vector3d fb_ref;   // body frame end effector force ref
 
-  int n_X;                           // number of sim states
-  int n_U;                           // number of sim controls
-  Eigen::Matrix<double, 13, 1> X_0;  // init state
-  Eigen::Matrix<double, 13, 1> X_f;  // final state
-  Eigen::Matrix<double, 13, 1> X;    // current state
+  int n_X;  // number of sim states
+  int n_U;  // number of sim controls
 
   double x1;
   double z1;
