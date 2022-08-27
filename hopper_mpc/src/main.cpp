@@ -8,7 +8,7 @@
 int main(int argc, char* argv[]) {
   argparse::ArgumentParser program("Hopper");
 
-  program.add_argument("ctrl").help("mpc, wbc_raibert, wbc_vert, or wbc_static");
+  program.add_argument("ctrl").help("mpc, raibert, stand");
 
   program.add_argument("N_run").help("number of timesteps the sim runs for").scan<'i', int>();
 

@@ -45,20 +45,20 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
     throw "Invalid bridge name! Use 'hardware', 'mujoco', or 'raisim'";
   }
   // initialize state
-  p << 0, 0, model.h0;  // must match starting position in mjcf!!
+  p << 0, 0, 0.5;  // must match starting position in mjcf!!
   Q.coeffs() << 0, 0, 0, 1;
   v.setZero();
   w.setZero();
   // initialize reference state
-  p_ref << 2, 0, model.h0;
+  p_ref << 2, 0, 0.5;
   Q_ref.coeffs() << 0, 0, 0, 1;
   v_ref.setZero();
   w_ref.setZero();
 
   // initialize gait cycle state
-  gc_state = "Cmpr";
+  gc_state = "Fall";
   gc_state_prev = gc_state;
-  gc_id = 3;
+  gc_id = 2;
 
   ctrlMode = "Force";                                                // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
@@ -71,6 +71,9 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   rwaPtr = std::make_shared<Rwa>(dt);
 
   gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
+
+  k_changed = 0;
+  sh_saved = 0;
 
   // variables for CircleTest
   x1 = 0;
@@ -95,16 +98,25 @@ void Runner::Run() {  // Method/function defined inside the class
     auto [p, Q, v, w, qa, dqa, sh] = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);                              // grab first two actuator pos values
     bool s = ContactSchedule(t, 0);
+    sh = ContactCheck(sh, sh_prev, k);
     GaitCycleUpdate(s, sh, v(2));               // TODO: should use v_g instead?
     Eigen::Vector3d peb = legPtr->KinFwd();     // Pos of End-effector in Body frame (P.E.B.)
     Eigen::Vector3d pe = p + Q.matrix() * peb;  // position of the foot in world frame
 
-    auto [u_, qla_ref_, ctrlMode_] = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
-    u = u_;
-    qla_ref = qla_ref_;
-    ctrlMode = ctrlMode_;
+    if (ctrl == "raibert") {
+      auto [u_, qla_ref_, ctrlMode_] = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+      u = u_;
+      qla_ref = qla_ref_;
+      ctrlMode = ctrlMode_;
+    } else if (ctrl == "stand") {
+      auto [u_, qla_ref_, ctrlMode_] = gaitPtr->uKinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+      u = u_;
+      qla_ref = qla_ref_;
+      ctrlMode = ctrlMode_;
+    }
 
     gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
+    sh_prev = sh;
     // std::cout << k << "\n";
     // std::cout << "u = " << u(0) << ", " << u(1) << ", " << u(2) << ", " << u(3) << ", "
     //           << ", " << u(4) << "\n";
@@ -167,8 +179,7 @@ void Runner::GaitCycleUpdate(bool s, bool sh, double dz) {
   if (gc_state == "Cmpr" && dz >= 0) {
     gc_state = "Push";
     gc_id = 0;
-    // } else if (gc_state == "Push" && s == false && sh == false) {
-  } else if (gc_state == "Push" && sh == false) {
+  } else if (gc_state == "Push" && s == false && sh == false) {
     gc_state = "Rise";
     gc_id = 1;
   } else if (gc_state == "Rise" && dz <= 0) {
@@ -181,7 +192,7 @@ void Runner::GaitCycleUpdate(bool s, bool sh, double dz) {
 };
 
 bool Runner::ContactSchedule(double t, double t0) {
-  int phi = int((t - t0) / t_p) % 1;
+  double phi = std::fmod((t - t0) / t_p, 1);
   return phi < phi_switch ? 1 : 0;
 }
 
@@ -214,6 +225,20 @@ Eigen::MatrixXd Runner::RefTraj(Eigen::Matrix<double, 12, 1> x_0, Eigen::Matrix<
   Eigen::MatrixXd x_ref(x_ref_0.rows() + x_ref_sit.rows(), x_ref_0.cols());
   x_ref << x_ref_0, x_ref_sit;
   return x_ref;  // TODO: sine wave for mpc
+}
+
+bool Runner::ContactCheck(bool sh, bool sh_prev, int k) {
+  // if contact has just been made, freeze contact detection to True for x timesteps
+  // or if contact has just been lost, freeze contact detection to False for x timesteps
+  // protects against vibration/bouncing-related bugs
+  if ((sh_prev != sh) && (k - k_changed > 10)) {
+    k_changed = k;
+    sh_saved = sh;
+  }
+  if (k - k_changed <= 10) {
+    sh = sh_saved;
+  }
+  return sh;
 }
 
 void Runner::CircleTest() {

@@ -13,7 +13,7 @@ Rwa::Rwa(double dt_) {
   b = -45 * M_PI / 180;
   sin45 = sin(45 * M_PI / 180);
 
-  double ku = 200;  // TODO: Might want to increase this.
+  double ku = 200;  // 200 TODO: Might want to increase this.
   // use gain of 13 for CoM bisection search.
   // can go as high as 1300 (not sure if necessary)
   kp_tau << ku * 0.6, ku * 0.6, ku * 0.5 * 0.6;
@@ -63,7 +63,7 @@ Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_b
 Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
   // get setpoint in rw axes
   Eigen::Vector3d setp;
-  double adj = -0.34652 * M_PI / 180;
+  double adj = 0;  // -0.34652 * M_PI / 180;
   setp(0) = GetXRotatedAboutZ(Q_ref, a) + adj;
   setp(1) = GetXRotatedAboutZ(Q_ref, b) - adj;
   setp(2) = z_ref;

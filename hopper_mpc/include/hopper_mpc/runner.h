@@ -58,6 +58,11 @@ class Runner {  // The class
   int n_X;  // number of sim states
   int n_U;  // number of sim controls
 
+  // contact checker variables
+  int k_changed;
+  bool sh_saved;
+  bool sh_prev;
+
   double x1;
   double z1;
   double z;
@@ -90,5 +95,6 @@ class Runner {  // The class
   bool ContactMap(int N, double dt, double ts, double t0);
   Eigen::MatrixXd RefTraj(Eigen::Matrix<double, 12, 1> x_in, Eigen::Matrix<double, 12, 1> x_f);
   void GaitCycleUpdate(bool s, bool sh, double dz);
+  bool ContactCheck(bool sh, bool sh_prev, int k);
   void CircleTest();
 };

@@ -236,8 +236,13 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     }
     v << d->sensordata[7], d->sensordata[8], d->sensordata[9];
     w << d->sensordata[10], d->sensordata[11], d->sensordata[12];
-    sh = (d->sensordata[13] != 0);  // Contact detection, convert grf normal to bool
-
+    double grf_normal = d->sensordata[13];
+    // sh = (grf_normal != 0);  // Contact detection, convert grf normal to bool
+    if (grf_normal >= 50) {  // check if contact is legit
+      sh = true;
+    } else {
+      sh = false;
+    }
     // TODO: this data seems wrong...?
     tau << d->sensordata[15], d->sensordata[18], d->sensordata[21], d->sensordata[24], d->sensordata[27];
     tau_ref = u;
@@ -245,6 +250,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     t_refresh += 1;
     // std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (t_refresh > refresh_rate) {
+      // std::cout << "grf_normal = " << grf_normal << "\n ";
       // std::cout << "sh = " << sh << "\n ";
       // std::cout << "contact normal force = " << d->sensordata[13] << "\n ";
       // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) <<

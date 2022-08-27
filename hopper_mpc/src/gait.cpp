@@ -16,6 +16,8 @@ Gait::Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<L
   z_ref = 0;
   peb_ref = peb_ref_;
   pf_ref.setZero();
+  peb_ref(0) = -0.002938125;  //-0.002938125 falls forward;  //-0.0029346875 falls backward;
+  peb_ref(2) = -model.h0 * 1.5;
 }
 
 uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v,
@@ -37,13 +39,13 @@ uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d 
 
   double k_b = (Utils::Clip(dist, 0.5, 1) + 2) / 3;
   double h = model.h0 * k_b;
-  double kr = 0.0 / k_b;                                   // speed cancellation constant
+  double kr = 0.02 / k_b;                                  // speed cancellation constant
   double kt = 0.4;                                         // leap period gain
   if (state == "Rise") {                                   // in first timestep after liftoff,
     if (state_prev == "Push") {                            // find new footstep position based on des and current speed
       pf_ref = v * kt * abs(v(2)) / 2 + kr * (v - v_ref);  // footstep in world frame for neutral motion + des acc
       pf_ref(2) = 0;                                       // enforce footstep is on ground plane
-      std::cout << pf_ref << "\n";
+      // std::cout << pf_ref << "\n";
     }
     peb_ref(2) = -h;  // pull leg up to prevent stubbing
   } else if (state == "Fall") {
