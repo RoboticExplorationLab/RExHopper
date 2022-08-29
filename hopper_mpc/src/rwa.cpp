@@ -13,7 +13,7 @@ Rwa::Rwa(double dt_) {
   b = -45 * M_PI / 180;
   sin45 = sin(45 * M_PI / 180);
 
-  double ku = 200;  // 200 TODO: Might want to increase this.
+  double ku = 1200;  // 200 TODO: Might want to increase this.
   // use gain of 13 for CoM bisection search.
   // can go as high as 1300 (not sure if necessary)
   kp_tau << ku * 0.6, ku * 0.6, ku * 0.5 * 0.6;
@@ -22,8 +22,8 @@ Rwa::Rwa(double dt_) {
 
   // PID3 pid_tau(dt, kp_tau, ki_tau, kd_tau);
   pid_tauPtr.reset(new PID3(dt, kp_tau, ki_tau, kd_tau));
-  double ks = 0.;  // 0.00002
-  kp_vel << ks, ks, ks * 2;
+  double ks = 2;
+  kp_vel << ks, ks, ks;
   ki_vel << ks * 0.1, ks * 0.1, ks * 0.1;
   kd_vel << 0, 0, 0;
   pid_velPtr.reset(new PID3(dt, kp_vel, ki_vel, kd_vel));

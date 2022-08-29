@@ -63,12 +63,12 @@ class Runner {  // The class
   bool sh_saved;
   bool sh_prev;
 
+  // circletest vars
   double x1;
   double z1;
   double z;
   double r;
   int flip;
-  Eigen::MatrixXd x_ref_0;
 
   Model model;
   int N_run;         // number of timesteps in sim
@@ -92,8 +92,9 @@ class Runner {  // The class
   std::shared_ptr<Rwa> rwaPtr;
 
   bool ContactSchedule(double t, double t0);
-  bool ContactMap(int N, double dt, double ts, double t0);
-  Eigen::MatrixXd RefTraj(Eigen::Matrix<double, 12, 1> x_in, Eigen::Matrix<double, 12, 1> x_f);
+  std::vector<bool> ContactMap(int N, double dt, double ts, double t0);
+  std::vector<bool> ContactUpdate(std::vector<bool> C, int k);
+  trajVals GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vector3d p_final);
   void GaitCycleUpdate(bool s, bool sh, double dz);
   bool ContactCheck(bool sh, bool sh_prev, int k);
   void CircleTest();

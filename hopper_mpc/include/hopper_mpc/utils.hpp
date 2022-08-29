@@ -16,6 +16,7 @@ class Utils {
   static Eigen::Matrix3d Skew(Eigen::Vector3d vec);
   static Eigen::Matrix3d PseudoInverse(const Eigen::Matrix3d& mat);
   static Eigen::Quaterniond VecToQuat(Eigen::Vector3d v2);
+  static double AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2);
   static double WrapToPi(double a);
   static double Clip(double n, double lower, double upper);
 };

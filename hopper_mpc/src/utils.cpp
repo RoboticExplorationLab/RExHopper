@@ -79,7 +79,7 @@ Eigen::Quaterniond Utils::VecToQuat(Eigen::Vector3d v2) {
     Eigen::Vector3d u2;
     u2 = v2.normalized();
     if (u1.isApprox(-u2)) {
-      Q.coeffs().block<3, 1>(0, 0).array() = (v1.cross(v2)).squaredNorm();
+      Q.coeffs().block<3, 1>(0, 0).array() = (v1.cross(v2)).norm();
     } else {
       Eigen::Vector3d u_half;
       u_half = (u1 + u2).normalized();
@@ -91,6 +91,12 @@ Eigen::Quaterniond Utils::VecToQuat(Eigen::Vector3d v2) {
   return Q;
 }
 
+double Utils::AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2) {
+  Eigen::Quaterniond Qd;
+  Qd = Q1.inverse() * Q2;
+
+  return 2 * atan2(Qd.vec().norm(), Qd.w());
+}
 // Eigen::Matrix4d L(Eigen::Quaterniond Q) {
 //   Eigen::Matrix4d LQ;
 //   LQ(0, 0) = Q.w();

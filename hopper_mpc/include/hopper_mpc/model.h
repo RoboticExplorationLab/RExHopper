@@ -17,6 +17,11 @@ struct uVals {
   std::string ctrlMode;
 };
 
+struct trajVals {
+  std::vector<Eigen::Vector3d> p_refv;
+  std::vector<Eigen::Vector3d> v_refv;
+};
+
 struct Model {
   std::string name;
   std::string csvpath;

@@ -30,7 +30,7 @@ class Gait {  // The class
 
   Model model;
   double dt;  // timestep size
-
+  double x_adj;
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;
   std::unique_ptr<PID3> pid_vPtr;
