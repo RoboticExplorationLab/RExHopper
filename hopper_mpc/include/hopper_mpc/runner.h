@@ -4,7 +4,7 @@
 #include "hopper_mpc/bridge.h"
 #include "hopper_mpc/bridge_hardware.h"
 #include "hopper_mpc/bridge_mujoco.h"
-#include "hopper_mpc/bridge_raisim.h"
+// #include "hopper_mpc/bridge_raisim.h"
 #include "hopper_mpc/gait.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"

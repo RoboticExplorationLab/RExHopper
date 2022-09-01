@@ -42,7 +42,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   } else if (bridge_ == "mujoco") {
     bridgePtr.reset(new MujocoBridge(model, dt, fixed, record));
   } else if (bridge_ == "raisim") {
-    bridgePtr.reset(new RaisimBridge(model, dt, fixed, record));
+    // bridgePtr.reset(new RaisimBridge(model, dt, fixed, record));
   } else {
     throw "Invalid bridge name! Use 'hardware', 'mujoco', or 'raisim'";
   }

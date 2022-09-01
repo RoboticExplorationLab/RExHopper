@@ -23,8 +23,9 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(mujoco REQUIRED)
-find_package(raisim CONFIG REQUIRED)
 find_package(glfw3 REQUIRED)
+# find_package(raisim CONFIG REQUIRED)
+
 
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(PythonLibs REQUIRED)
@@ -59,7 +60,7 @@ add_executable(${PROJECT_NAME}
   src/main.cpp
   src/runner.cpp
   src/bridge.cpp
-  src/bridge_raisim.cpp
+  # src/bridge_raisim.cpp
   src/bridge_mujoco.cpp
   src/bridge_hardware.cpp
   src/plots.cpp
@@ -76,7 +77,7 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   mujoco::mujoco
   glfw
-  raisim::raisim
+  # raisim::raisim
   pthread
   ${PYTHON_LIBRARIES}
   # python3.8
