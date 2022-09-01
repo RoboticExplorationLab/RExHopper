@@ -9,6 +9,8 @@ set(CMAKE_THREAD_PREFER_PTHREAD ON)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+
 find_package(catkin REQUIRED)
 
 catkin_package(
@@ -23,6 +25,7 @@ catkin_package(
 # ##########
 include_directories(
   include
+  /usr/include
   ${catkin_INCLUDE_DIRS}
 )
 

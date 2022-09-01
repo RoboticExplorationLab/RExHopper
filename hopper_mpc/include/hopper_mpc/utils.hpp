@@ -12,8 +12,11 @@ class Utils {
   Utils();
   // static Eigen::Matrix<int, 4, 3> H;
   // static Eigen::Matrix<int, 4, 4> T;
-  static Eigen::Vector3d quat_to_euler(Eigen::Quaterniond quat);  // this function returns yaw angle within -pi to pi
-  static Eigen::Matrix3d skew(Eigen::Vector3d vec);
-  static Eigen::Matrix3d pseudo_inverse(const Eigen::Matrix3d& mat);
+  static Eigen::Vector3d QuatToEuler(Eigen::Quaterniond quat);  // this function returns yaw angle within -pi to pi
+  static Eigen::Matrix3d Skew(Eigen::Vector3d vec);
+  static Eigen::Matrix3d PseudoInverse(const Eigen::Matrix3d& mat);
+  static Eigen::Quaterniond VecToQuat(Eigen::Vector3d v2);
+  static double AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2);
   static double WrapToPi(double a);
+  static double Clip(double n, double lower, double upper);
 };

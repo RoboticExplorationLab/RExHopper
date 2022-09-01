@@ -22,11 +22,12 @@ find_package(catkin REQUIRED COMPONENTS
   ${CATKIN_PACKAGE_DEPENDENCIES}
 )
 
-#find_package(mujoco REQUIRED)
+find_package(mujoco REQUIRED)
 find_package(raisim CONFIG REQUIRED)
-#find_package(glfw3 REQUIRED)
+find_package(glfw3 REQUIRED)
 
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(PythonLibs REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS 
@@ -45,20 +46,37 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  ${PYTHON_INCLUDE_DIRS}
 )
+
+# # python stuff
+# find_package(PythonLibs REQUIRED)
+# add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+# include_directories(${PYTHON_INCLUDE_DIRS})
+# target_link_libraries(hopper_mpc ${PYTHON_LIBRARIES})
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/runner.cpp
+  src/bridge.cpp
   src/bridge_raisim.cpp
+  src/bridge_mujoco.cpp
+  # src/bridge_hardware.cpp
+  src/plots.cpp
   src/leg.cpp 
-  src/utils.cpp 
+  src/gait.cpp
+  src/rwa.cpp
+  src/pid.cpp
+  src/utils.cpp
+  src/actuator.cpp
 )
 target_link_libraries(${PROJECT_NAME}
-  #mujoco::mujoco
-  #glfw
+  mujoco::mujoco
+  glfw
   raisim::raisim
   pthread
+  ${PYTHON_LIBRARIES}
+  # python3.8
 )
 
 #########################
@@ -89,4 +107,5 @@ catkin_add_gtest(${PROJECT_NAME}-test
   test/test_hopper_mpc.cpp
 )
 target_link_libraries(${PROJECT_NAME}-test gtest_main)
+
 

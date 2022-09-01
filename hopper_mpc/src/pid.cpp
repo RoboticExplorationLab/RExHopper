@@ -2,47 +2,47 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/utils.hpp"
 
-PID1::PID1(double dt, double kp, double ki, double kd) {
-  dt_ = dt;
-  kp_ = kp;
-  ki_ = ki;
-  kd_ = kd;
-  inp_prev_ = 0;
+PID1::PID1(double dt_, double kp_, double ki_, double kd_) {
+  dt = dt_;
+  kp = kp_;
+  ki = ki_;
+  kd = kd_;
+  inp_prev = 0;
 };  // constructor
 
 double PID1::PIDControl(double input, double setp) {
-  err_ = input - setp;
-  inp_diff_ = (input - inp_prev_) / dt_;
-  u_ = kp_ * err_ + ki_ * err_sum_ * dt_ + kd_ * inp_diff_;
-  inp_prev_ = input;
-  err_sum_ += err_;
-  return u_;
+  err = input - setp;
+  inp_diff = (input - inp_prev) / dt;
+  u = kp * err + ki * err_sum * dt + kd * inp_diff;
+  inp_prev = input;
+  err_sum += err;
+  return u;
 };
 
-PID3::PID3(double dt, Eigen::Vector3d kp, Eigen::Vector3d ki, Eigen::Vector3d kd) {
-  dt_ = dt;
-  kp_diag_ = kp.asDiagonal();
-  ki_diag_ = ki.asDiagonal();
-  kd_diag_ = kd.asDiagonal();
-  inp_prev_.setZero();
+PID3::PID3(double dt_, Eigen::Vector3d kp_, Eigen::Vector3d ki_, Eigen::Vector3d kd_) {
+  dt = dt_;
+  kp_diag = kp_.asDiagonal();
+  ki_diag = ki_.asDiagonal();
+  kd_diag = kd_.asDiagonal();
+  inp_prev.setZero();
 };  // constructor
 
 Eigen::Vector3d PID3::PIDControl(Eigen::Vector3d input, Eigen::Vector3d setp) {
-  err_ = input - setp;
-  inp_diff_ = (input - inp_prev_) / dt_;
-  u_ = kp_diag_ * err_ + ki_diag_ * err_sum_ * dt_ + kd_diag_ * inp_diff_;
-  inp_prev_ = input;
-  err_sum_ += err_;
-  return u_;
+  err = input - setp;
+  inp_diff = (input - inp_prev) / dt;
+  u = kp_diag * err + ki_diag * err_sum * dt + kd_diag * inp_diff;
+  inp_prev = input;
+  err_sum += err;
+  return u;
 };
 
 Eigen::Vector3d PID3::PIDControlWrapped(Eigen::Vector3d input, Eigen::Vector3d setp) {
   for (int i = 0; i < 3; i++) {
-    err_(i) = Utils::WrapToPi(input(i) - setp(i));
+    err(i) = Utils::WrapToPi(input(i) - setp(i));
   }
-  inp_diff_ = (input - inp_prev_) / dt_;
-  u_ = kp_diag_ * err_ + ki_diag_ * err_sum_ * dt_ + kd_diag_ * inp_diff_;
-  inp_prev_ = input;
-  err_sum_ += err_;
-  return u_;
+  inp_diff = (input - inp_prev) / dt;
+  u = kp_diag * err + ki_diag * err_sum * dt + kd_diag * inp_diff;
+  inp_prev = input;
+  err_sum += err;
+  return u;
 };

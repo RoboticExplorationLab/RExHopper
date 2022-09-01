@@ -9,7 +9,7 @@
 
 Utils::Utils(){};
 
-Eigen::Vector3d Utils::quat_to_euler(Eigen::Quaterniond quat) {
+Eigen::Vector3d Utils::QuatToEuler(Eigen::Quaterniond quat) {
   Eigen::Vector3d rst;
 
   // order https://github.com/libigl/eigen/blob/master/Eigen/src/Geometry/Quaternion.h
@@ -37,7 +37,7 @@ Eigen::Vector3d Utils::quat_to_euler(Eigen::Quaterniond quat) {
   return rst;
 };
 
-Eigen::Matrix3d Utils::skew(Eigen::Vector3d vec) {
+Eigen::Matrix3d Utils::Skew(Eigen::Vector3d vec) {
   Eigen::Matrix3d rst;
   rst.setZero();
   rst << 0, -vec(2), vec(1), vec(2), 0, -vec(0), -vec(1), vec(0), 0;
@@ -45,7 +45,7 @@ Eigen::Matrix3d Utils::skew(Eigen::Vector3d vec) {
 };
 
 // https://gist.github.com/pshriwise/67c2ae78e5db3831da38390a8b2a209f
-Eigen::Matrix3d Utils::pseudo_inverse(const Eigen::Matrix3d& mat) {
+Eigen::Matrix3d Utils::PseudoInverse(const Eigen::Matrix3d& mat) {
   Eigen::JacobiSVD<Eigen::Matrix3d> svd(mat, Eigen::ComputeFullU | Eigen::ComputeFullV);
   double epsilon = std::numeric_limits<double>::epsilon();
   // For a non-square matrix
@@ -61,6 +61,42 @@ double Utils::WrapToPi(double a) {
   return fmod(a + M_PI, 2 * M_PI) - M_PI;
 };
 
+double Utils::Clip(double n, double lower, double upper) {
+  return std::max(lower, std::min(n, upper));
+}
+
+Eigen::Quaterniond Utils::VecToQuat(Eigen::Vector3d v2) {
+  // Conversion of line vector to quaternion rotation b/t it and a datum vector v1
+  //   v1 = np.array([0, 0, -1])  # datum vector, chosen as aligned with z-axis (representing leg direction)
+  Eigen::Vector3d v1;
+  v1 << 0, 0, -1;  // datum vector, chosen as aligned with z-axis (representing leg direction)
+  Eigen::Vector3d u1;
+  u1 = v1.normalized();
+  Eigen::Quaterniond Q;
+  if ((v2.squaredNorm() == 0.0) || (isnan(v2.array()).any())) {
+    Q.coeffs() << 0, 0, 0, 1;
+  } else {
+    Eigen::Vector3d u2;
+    u2 = v2.normalized();
+    if (u1.isApprox(-u2)) {
+      Q.coeffs().block<3, 1>(0, 0).array() = (v1.cross(v2)).norm();
+    } else {
+      Eigen::Vector3d u_half;
+      u_half = (u1 + u2).normalized();
+      Q.w() = u1.transpose() * u_half;
+      Q.coeffs().block<3, 1>(0, 0) = u1.cross(u_half);
+      Q.normalize();
+    }
+  }
+  return Q;
+}
+
+double Utils::AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2) {
+  Eigen::Quaterniond Qd;
+  Qd = Q1.inverse() * Q2;
+
+  return 2 * atan2(Qd.vec().norm(), Qd.w());
+}
 // Eigen::Matrix4d L(Eigen::Quaterniond Q) {
 //   Eigen::Matrix4d LQ;
 //   LQ(0, 0) = Q.w();
