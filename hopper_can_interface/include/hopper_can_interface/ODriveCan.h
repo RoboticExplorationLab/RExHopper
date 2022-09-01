@@ -4,6 +4,10 @@
 
 #include "hopper_can_interface/CanInterface.h"
 
+#include <map>
+#include <string>
+#include <vector>
+
 namespace hopper {
 namespace can {
 
@@ -69,12 +73,21 @@ class ODriveCan final : private CanInterface {
     CMD_ID_CANOPEN_HEARTBEAT_MESSAGE = 0x700
   };
 
+  struct ActuatorStatus {
+    uint32_t node_id;
+    uint32_t axisError;
+    uint8_t axisState;
+  };
+
+  struct EncoderEstimate {
+    uint32_t node_id;
+    float pos;
+    float vel;
+  };
+
   ODriveCan(const Channel channel, const BandRate bandRate);
 
-  void initialize() {
-    // Forward interface
-    Base::initialize();
-  }
+  void initialize(const std::map<std::string, int>& actuatorNameToNodeID);
 
   void sendMessage(int axis_id, int cmd_id, bool remote_transmission_request, int length, uint8_t* signal_bytes);
 
@@ -106,8 +119,8 @@ class ODriveCan final : private CanInterface {
   void SetVelocityGains(int axis_id, float velocity_gain, float velocity_integrator_gain);
 
   // // Getters
-  // float GetPosition(int axis_id);
-  // float GetVelocity(int axis_id);
+  float GetPosition(int axis_id);
+  float GetVelocity(int axis_id);
   // int32_t GetEncoderShadowCount(int axis_id);
   // int32_t GetEncoderCountInCPR(int axis_id);
   // float GetIqSetpoint(int axis_id);
@@ -129,6 +142,16 @@ class ODriveCan final : private CanInterface {
 
   // State helper
   bool RunState(int axis_id, int requested_state);
+
+ private:
+  inline uint32_t encodeCanMsgID(int node_id, CommandId_t cmd_id) { return (node_id << 5U) | cmd_id; };
+  // Callbacks
+  void heartBeatCallback(int node_id, const TPCANMsg& msg);
+  void encoderEstimateCallback(int node_id, const TPCANMsg& msg);
+
+  std::map<std::string, int> actuatorNameToNodeID_;
+  std::vector<ActuatorStatus> actuatorsStatus_;
+  std::vector<EncoderEstimate> encoderEstimate_;
 };
 }  // namespace can
 }  // namespace hopper

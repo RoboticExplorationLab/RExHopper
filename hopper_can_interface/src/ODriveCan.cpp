@@ -1,5 +1,6 @@
 #include "hopper_can_interface/ODriveCan.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace hopper {
@@ -9,6 +10,35 @@ constexpr float feedforwardFactor = 1 / 0.001;
 }  // namespace
 
 ODriveCan::ODriveCan(const Channel channel, const BandRate bandRate) : Base(channel, bandRate) {}
+
+void ODriveCan::initialize(const std::map<std::string, int>& actuatorNameToNodeID) {
+  actuatorNameToNodeID_ = actuatorNameToNodeID;
+  
+  actuatorsStatus_.reserve(actuatorNameToNodeID_.size());
+
+  encoderEstimate_.reserve(actuatorNameToNodeID_.size());
+  
+  for (auto itr = actuatorNameToNodeID_.cbegin(); itr != actuatorNameToNodeID_.cend(); itr++) {
+    int node_id = itr->second;
+    subscribeTopic(encodeCanMsgID(itr->second, CMD_ID_ODRIVE_HEARTBEAT_MESSAGE),
+                   [node_id, this](const TPCANMsg& msg) {heartBeatCallback(node_id, msg); });  // Heartbeat
+
+    subscribeTopic(encodeCanMsgID(itr->second, CMD_ID_GET_ENCODER_ESTIMATES), [node_id, this](const TPCANMsg& msg) {
+      encoderEstimateCallback(node_id, msg);
+    });  // EncoderEstimate
+
+    EncoderEstimate eEstimate{};
+    eEstimate.node_id = itr->second;
+    encoderEstimate_.push_back(eEstimate);
+
+    ActuatorStatus aStatus{};
+    aStatus.node_id = itr->second;
+    actuatorsStatus_.push_back(aStatus);
+
+  }
+  // Forward interface
+  Base::initialize();
+}
 
 void ODriveCan::sendMessage(int axis_id, int cmd_id, bool remote_transmission_request, int length, uint8_t* signal_bytes) {
   TPCANMsg msg;
@@ -180,33 +210,57 @@ void ODriveCan::SetVelocityGains(int axis_id, float velocity_gain, float velocit
   sendMessage(axis_id, CMD_ID_SET_VEL_GAINS, false, 8, msg_data);
 }
 
-// //////////// Get functions ///////////
+// //////////// Callback functions ///////////
 
-float ODriveCan::GetPosition(int axis_id) {
-  uint8_t msg_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-  sendMessage(axis_id, CMD_ID_GET_ENCODER_ESTIMATES, true, 8, msg_data);
-
-  float_t output;
-  *((uint8_t*)(&output) + 0) = msg_data[0];
-  *((uint8_t*)(&output) + 1) = msg_data[1];
-  *((uint8_t*)(&output) + 2) = msg_data[2];
-  *((uint8_t*)(&output) + 3) = msg_data[3];
-  return output;
+void ODriveCan::heartBeatCallback(int node_id, const TPCANMsg& msg) {
+  auto itr = std::find_if(actuatorsStatus_.begin(), actuatorsStatus_.end(), [&](const ActuatorStatus& s) { return s.node_id == node_id; });
+  if (itr == actuatorsStatus_.end()) {
+    return;
+  } else {
+    itr->axisError = *((uint32_t*)&msg.DATA[0]);
+    itr->axisState = *((uint8_t*)&msg.DATA[4]);
+  }
 }
 
-// float ODriveCan::GetVelocity(int axis_id) {
-//   uint8_t msg_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+void ODriveCan::encoderEstimateCallback(int node_id, const TPCANMsg& msg) {
+  auto itr = encoderEstimate_.begin();
+  for (; itr != encoderEstimate_.end(); itr++) {
+    if (itr->node_id == node_id){
+      break;
+    }
+  }
+  if (itr == encoderEstimate_.end()) {
+    throw std::runtime_error("[OdriveCan::encoderEstimateCallback] Error: Cannot find encoder node_id, id = " + std::to_string(node_id));
+  } else {
+    itr->pos = *((float*)&msg.DATA[0]);
+    itr->vel = *((float*)&msg.DATA[4]);
+  }
+}
 
-//   sendMessage(axis_id, CMD_ID_GET_ENCODER_ESTIMATES, true, 8, msg_data);
+// //////////// Get functions ///////////
 
-//   float_t output;
-//   *((uint8_t*)(&output) + 0) = msg_data[4];
-//   *((uint8_t*)(&output) + 1) = msg_data[5];
-//   *((uint8_t*)(&output) + 2) = msg_data[6];
-//   *((uint8_t*)(&output) + 3) = msg_data[7];
-//   return output;
-// }
+float ODriveCan::GetPosition(int node_id) {
+  auto itr = encoderEstimate_.begin();
+  for (; itr != encoderEstimate_.end(); itr++) {
+    if (itr->node_id == node_id){
+      break;
+    }
+  }
+  if (itr == encoderEstimate_.end()) {
+    throw std::runtime_error("[OdriveCan::GetPosition] Error: Cannot find encoder node_id");
+  } else {
+    return itr->pos;
+  }  // return itr->pos;
+}
+
+float ODriveCan::GetVelocity(int node_id) {
+  auto itr = std::find_if(encoderEstimate_.begin(), encoderEstimate_.end(), [&](const EncoderEstimate& s) { return s.node_id == node_id; });
+  if (itr == encoderEstimate_.end()) {
+    return 0;
+  } else {
+    return itr->vel;
+  }
+}
 
 // int32_t ODriveCan::GetEncoderShadowCount(int axis_id) {
 //   uint8_t msg_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};

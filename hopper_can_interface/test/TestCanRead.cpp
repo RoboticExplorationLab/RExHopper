@@ -50,18 +50,21 @@ void worker() {
 
     msgBuffer.updateFromBuffer();
 
-    std::cout << "Receive ID: " << msgBuffer.get().ID << " LEN: " << static_cast<int>(msgBuffer.get().LEN)
-              << " DATA: " << dataToHex(msgBuffer.get().DATA, msgBuffer.get().LEN) << "Ave: " << timer.getAverageInMilliseconds()
-              << " missCounter: " << msgBuffer.getMissCounter() << "\n";
+    float pos = *((float*)&msgBuffer.get().DATA[0]);
+    float vel = *((float*)&msgBuffer.get().DATA[4]);
+    std::cout << pos << ", " << vel << "\n";
+    // std::cout << "Receive ID: " << msgBuffer.get().ID << " LEN: " << static_cast<int>(msgBuffer.get().LEN)
+    //           << " DATA: " << dataToHex(msgBuffer.get().DATA, msgBuffer.get().LEN) << "Ave: " << timer.getAverageInMilliseconds()
+    //           << " missCounter: " << msgBuffer.getMissCounter() << "\n";
 
     timer.startTimer();
   }
 }
 
 int main() {
-  CanInterface can2(Channel::CAN2, BandRate::BAUD_1M);
+  CanInterface can2(Channel::CAN3, BandRate::BAUD_1M);
 
-  can2.subscribeTopic(0x22, [&](const TPCANMsg& msg) {
+  can2.subscribeTopic(0x09, [&](const TPCANMsg& msg) {
     msgBuffer.writeMsgToBuffer(msg);
     {
       std::lock_guard<std::mutex> lock(receivedMutex);

@@ -10,15 +10,17 @@ using namespace hopper::can;
 
 int main(int argc, char** argv) {
   ODriveCan ODrive(Channel::CAN3, BandRate::BAUD_1M);
-  ODrive.initialize();
+  ODrive.initialize({{"test", 0}});
   double dir = 1;
   const double torque = 0.05;
-  ODrive.SetControllerModes(0, ODriveCan::TORQUE_CONTROL);
-  ODrive.RunState(0, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
+  // ODrive.SetControllerModes(0, ODriveCan::TORQUE_CONTROL);
+  // ODrive.RunState(0, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
 
   while (true) {
     std::this_thread::sleep_for(std::chrono::seconds(2));
     dir = -dir;
-    ODrive.SetTorque(0, dir * torque);
+    // ODrive.SetTorque(0, dir * torque);
+    float pos = ODrive.GetPosition(0);
+    std::cout << "Encoder pos = " << pos << "\n";
   }
 }
