@@ -21,6 +21,6 @@ int main(int argc, char** argv) {
     dir = -dir;
     // ODrive.SetTorque(0, dir * torque);
     float pos = ODrive.GetPosition(0);
-    std::cout << "Encoder pos = ", << pos << "\n":
+    std::cout << "Encoder pos = " << pos << "\n";
   }
 }

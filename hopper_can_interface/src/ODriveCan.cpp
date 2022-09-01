@@ -3,25 +3,50 @@
 #include <algorithm>
 #include <cstring>
 
+#include <string>
+// for ToHex
+// #include <iomanip>
+#include <iostream>
+// #include <sstream>
+// #include <bitset>
+// remove when done
+
 namespace hopper {
 namespace can {
 namespace {
 constexpr float feedforwardFactor = 1 / 0.001;
 }  // namespace
 
+
+// std::string toGex(int num) {
+//   std::stringstream ss;
+//   ss << "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << num;
+//   return ss.str();
+// }
+
 ODriveCan::ODriveCan(const Channel channel, const BandRate bandRate) : Base(channel, bandRate) {}
 
 void ODriveCan::initialize(const std::map<std::string, int>& actuatorNameToNodeID) {
   actuatorNameToNodeID_ = actuatorNameToNodeID;
-
+  
   actuatorsStatus_.reserve(actuatorNameToNodeID_.size());
-  encoderEstimate_.reserve(actuatorNameToNodeID_.size());
-  for (auto itr = actuatorNameToNodeID_.cbegin(); itr != actuatorNameToNodeID_.cend(); itr++) {
-    subscribeTopic(encodeCanMsgID(itr->second, CMD_ID_ODRIVE_HEARTBEAT_MESSAGE),
-                   [&](const TPCANMsg& msg) { heartBeatCallback(itr->second, msg); });  // Heartbeat
 
-    subscribeTopic(encodeCanMsgID(itr->second, CMD_ID_GET_ENCODER_ESTIMATES),
-                   [&](const TPCANMsg& msg) { encoderEstimateCallback(itr->second, msg); });  // EncoderEstimate
+  encoderEstimate_.reserve(actuatorNameToNodeID_.size());
+  
+  for (auto itr = actuatorNameToNodeID_.cbegin(); itr != actuatorNameToNodeID_.cend(); itr++) {std::cout << itr->second << "\n";
+    int node_id = itr->second;
+    subscribeTopic(encodeCanMsgID(itr->second, CMD_ID_ODRIVE_HEARTBEAT_MESSAGE),
+                   [node_id, this](const TPCANMsg& msg) {heartBeatCallback(node_id, msg); });  // Heartbeat
+
+    subscribeTopic(encodeCanMsgID(itr->second, CMD_ID_GET_ENCODER_ESTIMATES), [node_id, this](const TPCANMsg& msg) {
+      // std::cout << itr->second << "\n";
+      encoderEstimateCallback(node_id, msg);
+
+      // std::cout << toGex(msg.DATA[0])<<", "<<toGex(msg.DATA[1]) << ", " << toGex(msg.DATA[2]) <<", " << toGex(msg.DATA[3]) << ", " << toGex(msg.DATA[4])<<", "<<toGex(msg.DATA[5]) << ", " << toGex(msg.DATA[6]) <<", " << toGex(msg.DATA[7]) << "\n";  // first to check if can interface received the message from odrive correctly
+      // once you're sure it's being received, check the encoderestimatecallback fn and see if it's correctly decoded
+      // Thirdly check if decoded message is stored to preallocated memory space correctly encoderestimate_
+      //also this is not optimal-- have to do a line search though not a big deal for 2 devices per bus
+    });  // EncoderEstimate
 
     EncoderEstimate eEstimate{};
     eEstimate.node_id = itr->second;
@@ -30,8 +55,12 @@ void ODriveCan::initialize(const std::map<std::string, int>& actuatorNameToNodeI
     ActuatorStatus aStatus{};
     aStatus.node_id = itr->second;
     actuatorsStatus_.push_back(aStatus);
-  }
 
+  }
+    // for (const auto &e: encoderEstimate_){
+    // std::cout << "nodeid: " << e.node_id << "\n";
+    // };  // EncoderEstimate
+    // exit(0);
   // Forward interface
   Base::initialize();
 }
@@ -219,24 +248,38 @@ void ODriveCan::heartBeatCallback(int node_id, const TPCANMsg& msg) {
 }
 
 void ODriveCan::encoderEstimateCallback(int node_id, const TPCANMsg& msg) {
-  auto itr = std::find_if(encoderEstimate_.begin(), encoderEstimate_.end(), [&](const EncoderEstimate& s) { return s.node_id == node_id; });
+  auto itr = encoderEstimate_.begin();
+  for (; itr != encoderEstimate_.end(); itr++) {
+    if (itr->node_id == node_id){
+      break;
+    }
+  }
   if (itr == encoderEstimate_.end()) {
-    return;
+    // std::cout << *((float*)&msg.DATA[0])<< ", " << *((float*)&msg.DATA[4]) << "\n";
+    throw std::runtime_error("[OdriveCan::encoderEstimateCallback] Error: Cannot find encoder node_id, id = " + std::to_string(node_id));
   } else {
     itr->pos = *((float*)&msg.DATA[0]);
     itr->vel = *((float*)&msg.DATA[4]);
+    // std::cout << itr->pos << ", " << itr->vel << "\n";
   }
+    // itr->pos = *((float*)&msg.DATA[0]);
+    // itr->vel = *((float*)&msg.DATA[4]);
 }
 
 // //////////// Get functions ///////////
 
 float ODriveCan::GetPosition(int node_id) {
-  auto itr = std::find_if(encoderEstimate_.begin(), encoderEstimate_.end(), [&](const EncoderEstimate& s) { return s.node_id == node_id; });
+  auto itr = encoderEstimate_.begin();
+  for (; itr != encoderEstimate_.end(); itr++) {
+    if (itr->node_id == node_id){
+      break;
+    }
+  }
   if (itr == encoderEstimate_.end()) {
-    return 0;
+    throw std::runtime_error("[OdriveCan::GetPosition] Error: Cannot find encoder node_id");
   } else {
     return itr->pos;
-  }
+  }  // return itr->pos;
 }
 
 float ODriveCan::GetVelocity(int node_id) {
