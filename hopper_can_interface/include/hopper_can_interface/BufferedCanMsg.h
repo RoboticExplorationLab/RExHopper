@@ -2,9 +2,9 @@
 
 #include <PCANBasic.h>
 
+#include <atomic>
 #include <memory>
 #include <mutex>
-#include <atomic>
 
 namespace hopper {
 namespace can {

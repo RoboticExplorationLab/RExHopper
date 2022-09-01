@@ -15,7 +15,7 @@ add_compile_options(
 set(OpenGL_GL_PREFERENCE GLVND)
 
 set(CATKIN_PACKAGE_DEPENDENCIES
-  # hopper_can_interface
+  hopper_can_interface
 )
 
 find_package(catkin REQUIRED COMPONENTS
@@ -61,7 +61,7 @@ add_executable(${PROJECT_NAME}
   src/bridge.cpp
   src/bridge_raisim.cpp
   src/bridge_mujoco.cpp
-  # src/bridge_hardware.cpp
+  src/bridge_hardware.cpp
   src/plots.cpp
   src/leg.cpp 
   src/gait.cpp
@@ -69,6 +69,9 @@ add_executable(${PROJECT_NAME}
   src/pid.cpp
   src/utils.cpp
   src/actuator.cpp
+  ../hopper_can_interface/src/ODriveCan.cpp
+  ../hopper_can_interface/src/CanInterface.cpp
+  ../hopper_can_interface/src/BufferedCanMsg.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   mujoco::mujoco
@@ -77,6 +80,8 @@ target_link_libraries(${PROJECT_NAME}
   pthread
   ${PYTHON_LIBRARIES}
   # python3.8
+  pcanbasic 
+  Threads::Threads
 )
 
 #########################

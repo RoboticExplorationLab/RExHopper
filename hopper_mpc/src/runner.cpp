@@ -38,7 +38,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   // class definitions
   if (bridge_ == "hardware") {
-    // bridgePtr_.reset(new HardwareBridge(model, dt, g_, mu_, fixed, record));
+    bridgePtr.reset(new HardwareBridge(model, dt, fixed, record));
   } else if (bridge_ == "mujoco") {
     bridgePtr.reset(new MujocoBridge(model, dt, fixed, record));
   } else if (bridge_ == "raisim") {

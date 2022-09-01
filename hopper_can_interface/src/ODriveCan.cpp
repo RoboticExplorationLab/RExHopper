@@ -13,19 +13,18 @@ ODriveCan::ODriveCan(const Channel channel, const BandRate bandRate) : Base(chan
 
 void ODriveCan::initialize(const std::map<std::string, int>& actuatorNameToNodeID) {
   actuatorNameToNodeID_ = actuatorNameToNodeID;
-  
+
   actuatorsStatus_.reserve(actuatorNameToNodeID_.size());
 
   encoderEstimate_.reserve(actuatorNameToNodeID_.size());
-  
+
   for (auto itr = actuatorNameToNodeID_.cbegin(); itr != actuatorNameToNodeID_.cend(); itr++) {
     int node_id = itr->second;
     subscribeTopic(encodeCanMsgID(itr->second, CMD_ID_ODRIVE_HEARTBEAT_MESSAGE),
-                   [node_id, this](const TPCANMsg& msg) {heartBeatCallback(node_id, msg); });  // Heartbeat
+                   [node_id, this](const TPCANMsg& msg) { heartBeatCallback(node_id, msg); });  // Heartbeat
 
-    subscribeTopic(encodeCanMsgID(itr->second, CMD_ID_GET_ENCODER_ESTIMATES), [node_id, this](const TPCANMsg& msg) {
-      encoderEstimateCallback(node_id, msg);
-    });  // EncoderEstimate
+    subscribeTopic(encodeCanMsgID(itr->second, CMD_ID_GET_ENCODER_ESTIMATES),
+                   [node_id, this](const TPCANMsg& msg) { encoderEstimateCallback(node_id, msg); });  // EncoderEstimate
 
     EncoderEstimate eEstimate{};
     eEstimate.node_id = itr->second;
@@ -34,7 +33,6 @@ void ODriveCan::initialize(const std::map<std::string, int>& actuatorNameToNodeI
     ActuatorStatus aStatus{};
     aStatus.node_id = itr->second;
     actuatorsStatus_.push_back(aStatus);
-
   }
   // Forward interface
   Base::initialize();
@@ -225,7 +223,7 @@ void ODriveCan::heartBeatCallback(int node_id, const TPCANMsg& msg) {
 void ODriveCan::encoderEstimateCallback(int node_id, const TPCANMsg& msg) {
   auto itr = encoderEstimate_.begin();
   for (; itr != encoderEstimate_.end(); itr++) {
-    if (itr->node_id == node_id){
+    if (itr->node_id == node_id) {
       break;
     }
   }
@@ -242,7 +240,7 @@ void ODriveCan::encoderEstimateCallback(int node_id, const TPCANMsg& msg) {
 float ODriveCan::GetPosition(int node_id) {
   auto itr = encoderEstimate_.begin();
   for (; itr != encoderEstimate_.end(); itr++) {
-    if (itr->node_id == node_id){
+    if (itr->node_id == node_id) {
       break;
     }
   }
@@ -250,13 +248,18 @@ float ODriveCan::GetPosition(int node_id) {
     throw std::runtime_error("[OdriveCan::GetPosition] Error: Cannot find encoder node_id");
   } else {
     return itr->pos;
-  }  // return itr->pos;
+  }
 }
 
 float ODriveCan::GetVelocity(int node_id) {
-  auto itr = std::find_if(encoderEstimate_.begin(), encoderEstimate_.end(), [&](const EncoderEstimate& s) { return s.node_id == node_id; });
+  auto itr = encoderEstimate_.begin();
+  for (; itr != encoderEstimate_.end(); itr++) {
+    if (itr->node_id == node_id) {
+      break;
+    }
+  }
   if (itr == encoderEstimate_.end()) {
-    return 0;
+    throw std::runtime_error("[OdriveCan::GetPosition] Error: Cannot find encoder node_id");
   } else {
     return itr->vel;
   }
