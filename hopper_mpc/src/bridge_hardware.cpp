@@ -8,13 +8,13 @@ HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool recor
 void HardwareBridge::Init() {
   ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
   node_id_q0 = 0;
-  node_id_rwl = 2;
+  node_id_rwl = 3;
 
   ODriveCANright.reset(new ODriveCan(Channel::CAN3, BandRate::BAUD_1M));
   node_id_q2 = 1;
-  node_id_rwr = 3;
+  node_id_rwr = 2;
 
-  ODriveCANyaw.reset(new ODriveCan(Channel::CAN2, BandRate::BAUD_1M));
+  ODriveCANyaw.reset(new ODriveCan(Channel::CAN1, BandRate::BAUD_1M));
   node_id_rwz = 4;
 
   // init variables
@@ -34,7 +34,7 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
-  Home(ODriveCANleft, node_id_q0, 1);
+  Home(ODriveCANleft, node_id_q0, -1);
   Home(ODriveCANright, node_id_q2, -1);
   q_offset_ = GetJointPosRaw();  // read the encoder positions at home
 
@@ -42,6 +42,11 @@ void HardwareBridge::Init() {
   SetPosCtrl(ODriveCANleft, node_id_q0, model.q_init(0));
   SetPosCtrl(ODriveCANright, node_id_q2, model.q_init(2));
   ctrlMode_prev = "Pos";
+
+  p.setZero();
+  Q.coeffs() << 0, 0, 0, 1;
+  v.setZero();
+  w.setZero();
 }
 
 void HardwareBridge::SetPosCtrl(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {
@@ -62,8 +67,8 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
   ODrive->SetControllerModes(node_id, ODriveCan::VELOCITY_CONTROL);
   ODrive->RunState(node_id, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
   ODrive->SetVelocity(node_id, vel * dir);
-  // assume that at the end of 5 seconds it has found home
-  std::this_thread::sleep_for(std::chrono::seconds(5));
+  // assume that at the end of 2 seconds it has found home
+  std::this_thread::sleep_for(std::chrono::seconds(2));
   // TODO: More complex but reliable homing procedure?
   ODrive->SetVelocity(node_id, 0);  // stop the motor
 }
