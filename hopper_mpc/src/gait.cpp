@@ -95,7 +95,7 @@ uVals Gait::uKinInvVert(std::string state, std::string state_prev, Eigen::Vector
   } else if (state == "Push") {
     peb_ref(2) = -model.h0 * 2;  // pushoff
   }
-  std::string ctrlMode = "Force";
+  std::string ctrlMode = "Torque";
   Eigen::Vector3d veb_ref;
   veb_ref.setZero();
   u.block<2, 1>(0, 0) = legPtr->OpSpacePosCtrl(peb_ref, veb_ref);

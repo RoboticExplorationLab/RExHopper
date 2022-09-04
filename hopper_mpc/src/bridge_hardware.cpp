@@ -34,9 +34,13 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
+  std::cout << "Starting homing procedure... \n";
   Home(ODriveCANleft, node_id_q0, -1);
   Home(ODriveCANright, node_id_q2, -1);
   q_offset_ = GetJointPosRaw();  // read the encoder positions at home
+  std::cout << "Finished homing procedure... \n Joint positions are at " << GetJointPos()
+            << "Please shut down robot now if not homed correctly! You have 5 seconds. \n";
+  std::this_thread::sleep_for(std::chrono::seconds(5));
 
   // after calibration, prepare for pos control
   SetPosCtrl(ODriveCANleft, node_id_q0, model.q_init(0));
@@ -67,16 +71,19 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
   ODrive->SetControllerModes(node_id, ODriveCan::VELOCITY_CONTROL);
   ODrive->RunState(node_id, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
   ODrive->SetVelocity(node_id, vel * dir);
-  // assume that at the end of 2 seconds it has found home
-  std::this_thread::sleep_for(std::chrono::seconds(2));
-  // TODO: More complex but reliable homing procedure?
+  // assume that at the end of X seconds it has found home
+  float iq_measured = 0;
+  while (iq_measured < 5.0) {
+    iq_measured = ODrive->GetIQMeasured(node_id);  // current measurement
+    std::this_thread::sleep_for(std::chrono::seconds(0.1));
+  }
   ODrive->SetVelocity(node_id, 0);  // stop the motor
 }
 
 Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPosRaw() {
   Eigen::Matrix<double, 5, 1> qa;
-  qa(0) = ODriveCANleft->GetPosition(node_id_q0) * 2 * M_PI + model.qa_home(0);
-  qa(1) = ODriveCANright->GetPosition(node_id_q2) * 2 * M_PI + model.qa_home(1);
+  qa(0) = ODriveCANleft->GetPosition(node_id_q0) * 2 * M_PI;
+  qa(1) = ODriveCANright->GetPosition(node_id_q2) * 2 * M_PI;
   qa(2) = ODriveCANright->GetPosition(node_id_rwr) * 2 * M_PI;
   qa(3) = ODriveCANleft->GetPosition(node_id_rwl) * 2 * M_PI;
   qa(4) = ODriveCANyaw->GetPosition(node_id_rwz) * 2 * M_PI;
@@ -85,6 +92,8 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPosRaw() {
 
 Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPos() {
   Eigen::Matrix<double, 5, 1> qa = GetJointPosRaw();
+  qa(0) += model.qa_home(0);
+  qa(1) += model.qa_home(1);
   qa = qa - q_offset_;  // change encoder reading to match model
   return qa;
 }

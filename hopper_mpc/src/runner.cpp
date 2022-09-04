@@ -41,10 +41,10 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
     bridgePtr.reset(new HardwareBridge(model, dt, fixed, record));
   } else if (bridge_ == "mujoco") {
     bridgePtr.reset(new MujocoBridge(model, dt, fixed, record));
-  } else if (bridge_ == "raisim") {
+    // } else if (bridge_ == "raisim") {
     // bridgePtr.reset(new RaisimBridge(model, dt, fixed, record));
   } else {
-    throw "Invalid bridge name! Use 'hardware', 'mujoco', or 'raisim'";
+    throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
   // initialize state
   p << 0, 0, 0.5;  // must match starting position in mjcf!!
@@ -66,7 +66,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   // Cmpr 3
   gc_state_prev = gc_state;
 
-  ctrlMode = "Force";                                                // "Torque&Pos"
+  ctrlMode = "Torque";                                               // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
   qla_ref << qla_ref(0), qla_ref(1) + 0.5;
   peb_ref << 0, 0, -model.h0 * 2;  // desired operational space leg position in body frame
@@ -128,6 +128,11 @@ void Runner::Run() {  // Method/function defined inside the class
       u = u_;
       qla_ref = qla_ref_;
       ctrlMode = ctrlMode_;
+    } else if (ctrl == "idle") {
+      u << 0, 0, 0, 0, 0;  // do nothing
+      ctrlMode = "Torque";
+    } else {
+      throw "Invalid ctrl name! Use 'raibert', 'stand', or 'idle'";
     }
 
     gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
@@ -179,10 +184,10 @@ void Runner::Run() {  // Method/function defined inside the class
   bridgePtr->End();
   if (plot == true) {
     // Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
-    // Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
-    Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
-                 gc_state_hist, 0);
-    Plots::Plot3(N_run, "Theta vs Timesteps", "Theta_x", theta_x, setp_x, "Theta_y", theta_y, setp_y, "Theta_z", theta_z, setp_z, 0);
+    Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
+    // Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
+    //              gc_state_hist, 0);
+    // Plots::Plot3(N_run, "Theta vs Timesteps", "Theta_x", theta_x, setp_x, "Theta_y", theta_y, setp_y, "Theta_z", theta_z, setp_z, 0);
     // Plots::Plot5(N_run, "Tau vs Timesteps", "Tau_0", tau_0, tau_ref0, "Tau_1", tau_1, tau_ref1, "Tau_2", tau_2, tau_ref2, "Tau_3", tau_3,
     //              tau_ref3, "Tau_4", tau_4, tau_ref4, 60);
     Plots::Plot5(N_run, "dq vs Timesteps", "dq_0", dq_0, dq_0, "dq_1", dq_1, dq_1, "dq_2", dq_2, dq_2, "dq_3", dq_3, dq_3, "dq_4", dq_4,
