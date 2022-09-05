@@ -1,6 +1,7 @@
 #include "hopper_mpc/bridge_hardware.h"
 #include <cstring>
 #include <filesystem>
+#include <future>
 #include <iostream>
 
 HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_) {}
@@ -73,9 +74,14 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
   ODrive->SetVelocity(node_id, vel * dir);
   // assume that at the end of X seconds it has found home
   float iq_measured = 0;
+
   while (iq_measured < 5.0) {
-    iq_measured = ODrive->GetIQMeasured(node_id);  // current measurement
-    std::this_thread::sleep_for(std::chrono::seconds(0.1));
+    // iq_measured = ODrive->GetIqMeasured(node_id);  // current measurement
+    auto aSyncFn = std::async(
+        std::launch::async, [&ODrive](int node_id) { return ODrive->GetIqMeasured(node_id); }, node_id);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    iq_measured = aSyncFn.get();
+    std::cout << "iq_measured = " << iq_measured << "\n";
   }
   ODrive->SetVelocity(node_id, 0);  // stop the motor
 }

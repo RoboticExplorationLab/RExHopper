@@ -304,18 +304,18 @@ float ODriveCan::GetVelocity(int node_id) {
 //   return output;
 // }
 
-// float ODriveCan::GetIqMeasured(int axis_id) {
-//   uint8_t msg_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+float ODriveCan::GetIqMeasured(int axis_id) {
+  uint8_t msg_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-//   sendMessage(axis_id, CMD_ID_GET_IQ, true, 8, msg_data);
+  sendMessage(axis_id, CMD_ID_GET_IQ, true, 8, msg_data);
 
-//   float_t output;
-//   *((uint8_t*)(&output) + 0) = msg_data[4];
-//   *((uint8_t*)(&output) + 1) = msg_data[5];
-//   *((uint8_t*)(&output) + 2) = msg_data[6];
-//   *((uint8_t*)(&output) + 3) = msg_data[7];
-//   return output;
-// }
+  float output;
+  *((uint8_t*)(&output) + 0) = msg_data[4];
+  *((uint8_t*)(&output) + 1) = msg_data[5];
+  *((uint8_t*)(&output) + 2) = msg_data[6];
+  *((uint8_t*)(&output) + 3) = msg_data[7];
+  return output;
+}
 
 // float ODriveCan::GetSensorlessPosition(int axis_id) {
 //   uint8_t msg_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
