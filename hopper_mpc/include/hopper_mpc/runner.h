@@ -74,6 +74,7 @@ class Runner {  // The class
   int N_run;         // number of timesteps in sim
   double dt;         // timestep size
   std::string ctrl;  // controller
+  std::string bridge; // bridge (interface)
   bool plot;
   bool fixed;
   bool spr;

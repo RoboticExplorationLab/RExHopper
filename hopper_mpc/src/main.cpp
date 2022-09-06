@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
   hopper.qa_home << 29 * M_PI / 180, -187 * M_PI / 180;
   hopper.k_kin << 200, 200 * 0.02;
 
-  double dt = 0.0001;  // 10 kHz
+  double dt = 0.001;  // 1 kHz
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record);
   runner.Run();  // Call the method
   return 0;

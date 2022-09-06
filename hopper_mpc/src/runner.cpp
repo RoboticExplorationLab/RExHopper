@@ -1,6 +1,7 @@
 #include "hopper_mpc/runner.h"
 #include <Eigen/StdVector>
 #include <iostream>
+#include <chrono>  // for high_resolution_clock
 #include "Eigen/Dense"
 #include "hopper_mpc/plots.hpp"
 
@@ -10,6 +11,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   N_run = N_run_;
   dt = dt_;
   ctrl = ctrl_;
+  bridge = bridge_;
   plot = plot_;
   fixed = fixed_;
   spr = spr_;
@@ -91,7 +93,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
 void Runner::Run() {  // Method/function defined inside the class
   bridgePtr->Init();
-  double t = -dt;
+  double t = 0;
 
   std::vector<double> theta_x(N_run), theta_y(N_run), theta_z(N_run), setp_x(N_run), setp_y(N_run), setp_z(N_run), q0(N_run), q2(N_run),
       q0_ref(N_run), q2_ref(N_run), peb_x(N_run), peb_z(N_run), peb_refx(N_run), peb_refz(N_run), tau_0(N_run), tau_1(N_run), tau_2(N_run),
@@ -105,8 +107,14 @@ void Runner::Run() {  // Method/function defined inside the class
   bool s = 0;
 
   auto [p_refv, v_refv] = GenRefTraj(p, v, p_ref);
+
+  double max_elapsed;
+
+  auto t0_chrono = std::chrono::high_resolution_clock::now();// Record start time
+
   for (int k = 0; k < N_run; k++) {
-    t += dt;
+    auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
+    
     auto [p, Q, v, w, qa, dqa, sh] = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);                              // grab first two actuator pos values
     s = C.at(k);                                                               // bool s = ContactSchedule(t, 0);
@@ -180,8 +188,32 @@ void Runner::Run() {  // Method/function defined inside the class
 
       gc_state_hist.at(k) = gc_id;
     }
+
+    t += dt;  // theoretical time
+    // this would screw with simulator animation so only use for hardware
+    if (bridge == "hardware"){
+      auto t_after = std::chrono::high_resolution_clock::now();  // current time
+      std::chrono::duration<double> tk_chrono = t_after - t0_chrono;  // measured time w.r.t. the initialization of loop
+      if (tk_chrono.count() >= t) {
+        std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
+        // throw(std::runtime_error("Missed 'real time' deadline"));
+      }
+      else {
+        int remainder = (t - tk_chrono.count()) * 1000;
+        std::this_thread::sleep_for(std::chrono::milliseconds(remainder));
+      }
+      // std::chrono::duration<double> elapsed = t_after - t_before;
+      // std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+      // if (elapsed.count() > max_elapsed){
+      //   max_elapsed = elapsed.count();
+      // }
+    }
+
   }
   bridgePtr->End();
+
+  // std::cout << "Max elapsed: " << max_elapsed << " s\n";
+
   if (plot == true) {
     // Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
     Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
