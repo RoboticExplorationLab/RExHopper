@@ -16,6 +16,18 @@ std::vector<double> Plots::GenRange(int N) {
   return timesteps;
 }
 
+void Plots::Grf(int N, std::vector<double> grf_normal) {
+  std::vector<double> timesteps(N);
+  timesteps = GenRange(N);
+
+  plt::figure_size(1200, 780);
+  plt::title("Normal GRF vs Timesteps");
+
+  plt::plot(timesteps, grf_normal, "r");
+
+  plt::show();
+};
+
 void Plots::OpSpacePos(int N, std::vector<double> peb_x, std::vector<double> peb_z, std::vector<double> peb_refx,
                        std::vector<double> peb_refz) {
   std::vector<double> timesteps(N);

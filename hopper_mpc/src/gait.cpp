@@ -58,7 +58,7 @@ uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d 
       // std::cout << "dist = " << dist << "\n";
       // std::cout << "pf_ref = " << pf_ref(0) << ", " << pf_ref(1) << ", " << pf_ref(2) << ", and v_ref = " << v_ref(0) << ", " << v_ref(1)
       //           << ", " << v_ref(2) << "\n";
-      std::cout << "pf_ref = " << pf_ref(0) << ", " << pf_ref(1) << ", " << pf_ref(2) << "\n";
+      // std::cout << "pf_ref = " << pf_ref(0) << ", " << pf_ref(1) << ", " << pf_ref(2) << "\n";
       // std::cout << Utils::AngleBetween(Q, Q_up) * 180 / M_PI << "\n";
     }
     peb_ref << x_adj, 0, -h_cmprss;  // pull leg up to prevent stubbing
