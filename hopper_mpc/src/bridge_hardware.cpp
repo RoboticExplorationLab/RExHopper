@@ -80,10 +80,10 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     dq = GetJointVel()(node_id) / (2 * M_PI);
   }
-  ODrive->SetVelocity(node_id, 0);  // stop the motor so you can read position
+  ODrive->SetVelocity(node_id, 0);                 // stop the motor so you can read position
   q_offset_(node_id) = GetJointPosRaw()(node_id);  // read the encoder positions at home
-  SetTorCtrl(ODrive, node_id);  // switch to torque control so it is pliable!
-  ODrive->SetLimits(node_id, 20, 20);  // set limits back to normal TODO: Change current limit when you're confident
+  SetTorCtrl(ODrive, node_id);                     // switch to torque control so it is pliable!
+  ODrive->SetLimits(node_id, 20, 20);              // set limits back to normal TODO: Change current limit when you're confident
 }
 
 Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPosRaw() {

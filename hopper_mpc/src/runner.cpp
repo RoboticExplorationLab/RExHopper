@@ -1,7 +1,7 @@
 #include "hopper_mpc/runner.h"
 #include <Eigen/StdVector>
-#include <iostream>
 #include <chrono>  // for high_resolution_clock
+#include <iostream>
 #include "Eigen/Dense"
 #include "hopper_mpc/plots.hpp"
 
@@ -110,11 +110,11 @@ void Runner::Run() {  // Method/function defined inside the class
 
   double max_elapsed;
 
-  auto t0_chrono = std::chrono::high_resolution_clock::now();// Record start time
+  auto t0_chrono = std::chrono::high_resolution_clock::now();  // Record start time
 
   for (int k = 0; k < N_run; k++) {
     auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
-    
+
     auto [p, Q, v, w, qa, dqa, sh] = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);                              // grab first two actuator pos values
     s = C.at(k);                                                               // bool s = ContactSchedule(t, 0);
@@ -191,14 +191,13 @@ void Runner::Run() {  // Method/function defined inside the class
 
     t += dt;  // theoretical time
     // this would screw with simulator animation so only use for hardware
-    if (bridge == "hardware"){
-      auto t_after = std::chrono::high_resolution_clock::now();  // current time
+    if (bridge == "hardware") {
+      auto t_after = std::chrono::high_resolution_clock::now();       // current time
       std::chrono::duration<double> tk_chrono = t_after - t0_chrono;  // measured time w.r.t. the initialization of loop
       if (tk_chrono.count() >= t) {
         std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
         // throw(std::runtime_error("Missed 'real time' deadline"));
-      }
-      else {
+      } else {
         int remainder = (t - tk_chrono.count()) * 1000;
         std::this_thread::sleep_for(std::chrono::milliseconds(remainder));
       }
@@ -208,7 +207,6 @@ void Runner::Run() {  // Method/function defined inside the class
       //   max_elapsed = elapsed.count();
       // }
     }
-
   }
   bridgePtr->End();
 

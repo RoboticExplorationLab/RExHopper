@@ -71,10 +71,10 @@ class Runner {  // The class
   int flip;
 
   Model model;
-  int N_run;         // number of timesteps in sim
-  double dt;         // timestep size
-  std::string ctrl;  // controller
-  std::string bridge; // bridge (interface)
+  int N_run;           // number of timesteps in sim
+  double dt;           // timestep size
+  std::string ctrl;    // controller
+  std::string bridge;  // bridge (interface)
   bool plot;
   bool fixed;
   bool spr;
