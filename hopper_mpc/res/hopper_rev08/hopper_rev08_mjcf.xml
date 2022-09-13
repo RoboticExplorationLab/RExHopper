@@ -137,11 +137,16 @@
     <velocimeter  name='base-linear-velocity' site='imu'/>
     <gyro  name='base-angular-velocity' site='imu'/>
     <touch  name='contact sensor' site='contact_sensor'/>
-    <torque  name='tau0' site='tau0'/>
-    <torque  name='tau1' site='tau1'/>
-    <torque  name='tau2' site='tau2'/>
-    <torque  name='tau3' site='tau3'/>
-    <torque  name='tau4' site='tau4'/>
+    <actuatorfrc name='tau0' actuator='q0'/>
+    <actuatorfrc name='tau1' actuator='q2'/>
+    <actuatorfrc name='tau2' actuator='rw0'/>
+    <actuatorfrc name='tau3' actuator='rw1'/>
+    <actuatorfrc name='tau4' actuator='rwz'/>
+    <force name='force0' site='tau0'/>
+    <force  name='force1' site='tau1'/>
+    <force  name='force2' site='tau2'/>
+    <force  name='force3' site='tau3'/>
+    <force  name='force4' site='tau4'/>
   </sensor>
 
 </mujoco>

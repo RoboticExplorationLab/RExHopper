@@ -99,7 +99,11 @@ void Runner::Run() {  // Method/function defined inside the class
       q0_ref(N_run), q2_ref(N_run), peb_x(N_run), peb_z(N_run), peb_refx(N_run), peb_refz(N_run), tau_0(N_run), tau_1(N_run), tau_2(N_run),
       tau_3(N_run), tau_4(N_run), tau_ref0(N_run), tau_ref1(N_run), tau_ref2(N_run), tau_ref3(N_run), tau_ref4(N_run), dq_0(N_run),
       dq_1(N_run), dq_2(N_run), dq_3(N_run), dq_4(N_run), dq_ref0(N_run), dq_ref1(N_run), dq_ref2(N_run), dq_ref3(N_run), dq_ref4(N_run),
-      p_z(N_run), p_refz(N_run), sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run);
+      p_z(N_run), p_refz(N_run), sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), grf_normal(N_run);
+
+  std::vector<double> rfx(N_run), rfy(N_run), rfz(N_run);
+  int joint_id = 1;  // joint to check reaction forces at
+  std::string rf_name = "Reaction Force on Joint " + std::to_string(joint_id) + " vs Timesteps";
 
   double t0 = 0.75 * t_p;  // pretend you're starting 0.75 of the way throught the gait cycle for Fall
   std::vector<bool> C(N_run);
@@ -187,6 +191,11 @@ void Runner::Run() {  // Method/function defined inside the class
       s_hist.at(k) = s;
 
       gc_state_hist.at(k) = gc_id;
+
+      grf_normal.at(k) = bridgePtr->grf_normal;
+      rfx.at(k) = bridgePtr->rf_x(joint_id);
+      rfy.at(k) = bridgePtr->rf_y(joint_id);
+      rfz.at(k) = bridgePtr->rf_z(joint_id);
     }
 
     t += dt;  // theoretical time
@@ -213,7 +222,8 @@ void Runner::Run() {  // Method/function defined inside the class
   // std::cout << "Max elapsed: " << max_elapsed << " s\n";
 
   if (plot == true) {
-    // Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
+    Plots::Grf(N_run, grf_normal);
+    Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
     Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
     Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
                  gc_state_hist, 0);
@@ -222,6 +232,7 @@ void Runner::Run() {  // Method/function defined inside the class
                  tau_ref3, "Tau_4", tau_4, tau_ref4, 60);
     Plots::Plot5(N_run, "dq vs Timesteps", "dq_0", dq_0, dq_0, "dq_1", dq_1, dq_1, "dq_2", dq_2, dq_2, "dq_3", dq_3, dq_3, "dq_4", dq_4,
                  dq_4, 0);
+    Plots::Plot3(N_run, rf_name, "F_x", rfx, rfx, "F_y", rfy, rfy, "F_z", rfz, rfz, 0);
   }
 }
 
