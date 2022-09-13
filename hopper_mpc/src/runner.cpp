@@ -105,7 +105,7 @@ void Runner::Run() {  // Method/function defined inside the class
   std::vector<bool> C(N_run);
   C = ContactMap(N_run, dt, t0, 0);
   bool s = 0;
-
+  bool sh = 0;
   auto [p_refv, v_refv] = GenRefTraj(p, v, p_ref);
 
   double max_elapsed;
@@ -215,11 +215,11 @@ void Runner::Run() {  // Method/function defined inside the class
   if (plot == true) {
     // Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
     Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
-    // Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
-    //              gc_state_hist, 0);
-    // Plots::Plot3(N_run, "Theta vs Timesteps", "Theta_x", theta_x, setp_x, "Theta_y", theta_y, setp_y, "Theta_z", theta_z, setp_z, 0);
-    // Plots::Plot5(N_run, "Tau vs Timesteps", "Tau_0", tau_0, tau_ref0, "Tau_1", tau_1, tau_ref1, "Tau_2", tau_2, tau_ref2, "Tau_3", tau_3,
-    //              tau_ref3, "Tau_4", tau_4, tau_ref4, 60);
+    Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
+                 gc_state_hist, 0);
+    Plots::Plot3(N_run, "Theta vs Timesteps", "Theta_x", theta_x, setp_x, "Theta_y", theta_y, setp_y, "Theta_z", theta_z, setp_z, 0);
+    Plots::Plot5(N_run, "Tau vs Timesteps", "Tau_0", tau_0, tau_ref0, "Tau_1", tau_1, tau_ref1, "Tau_2", tau_2, tau_ref2, "Tau_3", tau_3,
+                 tau_ref3, "Tau_4", tau_4, tau_ref4, 60);
     Plots::Plot5(N_run, "dq vs Timesteps", "dq_0", dq_0, dq_0, "dq_1", dq_1, dq_1, "dq_2", dq_2, dq_2, "dq_3", dq_3, dq_3, "dq_4", dq_4,
                  dq_4, 0);
   }

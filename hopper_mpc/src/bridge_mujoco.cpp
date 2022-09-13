@@ -251,7 +251,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     // std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (t_refresh > refresh_rate) {
       // std::cout << "grf_normal = " << grf_normal << "\n ";
-      // std::cout << "sh = " << sh << "\n ";
+      std::cout << "sh = " << sh << "\n ";
       // std::cout << "v = " << v(0) << ", " << v(1) << ", " << v(2) << "\n ";
       // std::cout << "contact normal force = " << d->sensordata[13] << "\n ";
       // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) <<
