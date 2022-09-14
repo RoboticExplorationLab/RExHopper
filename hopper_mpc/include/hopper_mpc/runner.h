@@ -58,6 +58,8 @@ class Runner {  // The class
   int n_X;  // number of sim states
   int n_U;  // number of sim controls
 
+  double ts;  // starting time
+
   // contact checker variables
   int k_changed;
   bool sh_saved;
@@ -92,11 +94,12 @@ class Runner {  // The class
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;
 
-  bool ContactSchedule(double t, double t0);
-  std::vector<bool> ContactMap(int N, double dt, double ts, double t0);
+  bool ContactSchedule(double t);
+  std::vector<bool> ContactMap(int N, double dt, double t);
   std::vector<bool> ContactUpdate(std::vector<bool> C, int k);
   trajVals GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vector3d p_final);
   void GaitCycleUpdate(bool s, bool sh, double dz);
+  int GaitCycleRef(double t);
   bool ContactCheck(bool sh, bool sh_prev, int k);
   void CircleTest();
 };
