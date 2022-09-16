@@ -74,7 +74,7 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
   }
   // std::cout << "dq_measured = " << dq << "\n";
   ODrive->SetVelocity(node_id, 0);                   // stop the motor so you can read position
-  q_offset(node_id) = ODrive->GetPosition(node_id);  // read the encoder positions at home
+  q_offset(node_id) = ODrive->GetPosition(node_id);  // read the RAW encoder position at home
   SetTorCtrlMode(ODrive, node_id);                   // switch to torque control so it is pliable!
   ODrive->SetLimits(node_id, 10, 5);                 // set limits back to normal
   //                             ^ TODO: Increase current limit when you're ready
@@ -151,7 +151,7 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointVel() {
 Eigen::Vector2d HardwareBridge::ConvertToODrivePos(Eigen::Vector2d qa) {
   // convert joint pos back to ODrive pos (turns instead of radians, no homed/offset, no gear ratio, motor polarity)
   Eigen::Vector2d qo;
-  qo(0) = (-model.qa_home(0) - qa(0)) * 7 / (2 * M_PI) + q_offset(0);
+  qo(0) = (-model.qa_home(0) + qa(0)) * -7 / (2 * M_PI) + q_offset(0);
   qo(1) = (-model.qa_home(1) + qa(1)) * 7 / (2 * M_PI) + q_offset(1);
   // qo(2) = qa(2) / (2 * M_PI);
   // qo(3) = qa(3) / (2 * M_PI);  // polarity?

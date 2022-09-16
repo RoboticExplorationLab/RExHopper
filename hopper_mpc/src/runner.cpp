@@ -241,7 +241,7 @@ void Runner::Run() {  // Method/function defined inside the class
 
   if (plot == true) {
     // Plots::Grf(N_run, grf_normal);
-    // Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
+    Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
     Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
     // Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
     //              gc_state_ref, 0);
@@ -378,7 +378,7 @@ trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vec
 
 void Runner::CircleTest() {
   // edits peb_ref in-place
-  z += 0.001 * flip;  // std::cout << z << "\n";
+  z += 0.0005 * flip;  // std::cout << z << "\n";
   if (z <= -0.5 || z >= -0.3) {
     flip *= -1;
   }
