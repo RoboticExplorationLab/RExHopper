@@ -13,7 +13,7 @@ Rwa::Rwa(double dt_) {
   b = -45 * M_PI / 180;
   sin45 = sin(45 * M_PI / 180);
 
-  double ku = 1200;  // 200 TODO: Might want to increase this.
+  double ku = 200;  // 200 TODO: Might want to increase this.
   // use gain of 13 for CoM bisection search.
   // can go as high as 1300 (not sure if necessary)
   kp_tau << ku * 0.6, ku * 0.6, ku * 0.5 * 0.6;

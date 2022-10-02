@@ -237,13 +237,8 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     v << d->sensordata[7], d->sensordata[8], d->sensordata[9];
     w << d->sensordata[10], d->sensordata[11], d->sensordata[12];
     grf_normal = d->sensordata[13];
-    // sh = (grf_normal != 0);  // Contact detection, convert grf normal to bool
-    if (grf_normal >= 50) {  // check if contact is legit
-      sh = true;
-    } else {
-      sh = false;
-    }
-    // TODO: this data seems wrong...?
+    sh = grf_normal >= 60 ? true : false;  // check if contact is legit
+
     tau << d->sensordata[14], d->sensordata[15], d->sensordata[16], d->sensordata[17], d->sensordata[18];
     tau_ref = u;
 
@@ -255,13 +250,9 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     // std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (t_refresh > refresh_rate) {
       // std::cout << "grf_normal = " << grf_normal << "\n ";
-      // std::cout << "sh = " << sh << "\n ";
-      // std::cout << "v = " << v(0) << ", " << v(1) << ", " << v(2) << "\n ";
-      // std::cout << "contact normal force = " << d->sensordata[13] << "\n ";
-      // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) <<
-      // "\n";
-      // std::cout << "corrected pos = " << qa(0) * 180 / M_PI << ", " << qa(1) * 180 / M_PI << ", " << qa(2) * 180 / M_PI << ", "
-      //           << qa(3) * 180 / M_PI << ", " << qa(4) * 180 / M_PI << "\n";
+      // std::cout << "bridge sh = " << sh << "\n ";
+      // std::cout << "raw pos = " << qa_raw_.transpose() << "\n";
+      // std::cout << "corrected pos = " << qa.transpose() << "\n";
       // std::cout << "ctrl: " << d->ctrl[0] << ", " << d->ctrl[1] << ", " << d->ctrl[2] << ", " << d->ctrl[3] << ", " << d->ctrl[4] <<
       // "\n";
 

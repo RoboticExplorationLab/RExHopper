@@ -3,16 +3,15 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/argparse.hpp"
 #include "hopper_mpc/runner.h"
-// include "yaml-cpp/yaml.h"
 
 int main(int argc, char* argv[]) {
   argparse::ArgumentParser program("Hopper");
 
-  program.add_argument("ctrl").help("mpc, raibert, stand");
+  program.add_argument("ctrl").help("mpc, raibert, stand, idle, or circle");
 
   program.add_argument("N_run").help("number of timesteps the sim runs for").scan<'i', int>();
 
-  program.add_argument("bridge").help("hardware, mujoco, or raisim");
+  program.add_argument("bridge").help("hardware or mujoco");
 
   program.add_argument("--plot").help("enable plotting").default_value(false).implicit_value(true);
 
@@ -59,9 +58,6 @@ int main(int argc, char* argv[]) {
     record = true;
   }
 
-  // auto input = yaml.parse(program.get("filename"))
-  // model.mass = input["mass"]
-  // model.csvpath = input["csvpath"]
   Model hopper;
   hopper.name = "rw";
   hopper.csvpath = "res/hopper_rev08/urdf/hopper_rev08.csv";
@@ -100,9 +96,9 @@ int main(int argc, char* argv[]) {
               0, 0, 0, 1, 0, 
               0, 0, 0, 0, 1;  // clang-format on
   hopper.qa_home << 29 * M_PI / 180, -187 * M_PI / 180;
-  hopper.k_kin << 200, 200 * 0.02;
+  hopper.k_kin << 45, 45 * 0.02;
 
-  double dt = 0.0001;  // 10 kHz
+  double dt = 0.001;  // 1 kHz
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record);
   runner.Run();  // Call the method
   return 0;
