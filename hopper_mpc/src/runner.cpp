@@ -226,7 +226,7 @@ void Runner::Run() {  // Method/function defined inside the class
         // throw(std::runtime_error("Missed 'real time' deadline"));
       } else {
         int remainder = (t - tk_chrono.count()) * 1000;
-        std::this_thread::sleep_for(std::chrono::milliseconds(remainder));
+        std::this_thread::sleep_for(std::chrono::milliseconds(std::max(0, remainder - 1)));
       }
       // std::chrono::duration<double> elapsed = t_after - t_before;
       // std::cout << "Elapsed time: " << elapsed.count() << " s\n";
@@ -235,16 +235,17 @@ void Runner::Run() {  // Method/function defined inside the class
       // }
     }
   }
+  std::cout << "End Control. \n";
   bridgePtr->End();
 
   // std::cout << "Max elapsed: " << max_elapsed << " s\n";
 
   if (plot == true) {
-    Plots::Grf(N_run, grf_normal);
-    // Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
-    // Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
-    Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
-                 gc_state_ref, 0);
+    // Plots::Grf(N_run, grf_normal);
+    Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
+    Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
+    // Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
+    //              gc_state_ref, 0);
     // Plots::Plot3(N_run, "Theta vs Timesteps", "Theta_x", theta_x, setp_x, "Theta_y", theta_y, setp_y, "Theta_z", theta_z, setp_z, 0);
     // Plots::Plot5(N_run, "Tau vs Timesteps", "Tau_0", tau_0, tau_ref0, "Tau_1", tau_1, tau_ref1, "Tau_2", tau_2, tau_ref2, "Tau_3", tau_3,
     //              tau_ref3, "Tau_4", tau_4, tau_ref4, 60);
@@ -293,7 +294,7 @@ int Runner::GaitCycleRef(double t) {
 
 bool Runner::ContactSchedule(double t) {
   double phi = std::fmod(t / t_p, 1);
-  std::cout << phi << "\n";
+  // std::cout << phi << "\n";
   return phi < phi_switch ? true : false;
 }
 
@@ -302,7 +303,7 @@ std::vector<bool> Runner::ContactMap(int N, double dt, double t) {
   std::vector<bool> C(N);
   for (int k = 0; k < N; k++) {
     C.at(k) = ContactSchedule(t);
-    std::cout << C.at(k) << "\n";
+    // std::cout << C.at(k) << "\n";
     t += dt;
   }
   return C;
@@ -377,7 +378,7 @@ trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vec
 
 void Runner::CircleTest() {
   // edits peb_ref in-place
-  z += 0.001 * flip;  // std::cout << z << "\n";
+  z += 0.0005 * flip;  // std::cout << z << "\n";
   if (z <= -0.5 || z >= -0.3) {
     flip *= -1;
   }
