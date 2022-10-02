@@ -190,8 +190,9 @@ void Runner::Run() {  // Method/function defined inside the class
       tau_2.at(k) = bridgePtr->tau(2);
       tau_3.at(k) = bridgePtr->tau(3);
       tau_4.at(k) = bridgePtr->tau(4);
-      tau_ref0.at(k) = bridgePtr->tau_ref(0) * 7;
-      tau_ref1.at(k) = bridgePtr->tau_ref(1) * 7;
+      // NOTE: magnitude of tau_ref depends on whether gr is being handled by actuator.cpp or simulator/hardware
+      tau_ref0.at(k) = bridgePtr->tau_ref(0);
+      tau_ref1.at(k) = bridgePtr->tau_ref(1);
       tau_ref2.at(k) = bridgePtr->tau_ref(2);
       tau_ref3.at(k) = bridgePtr->tau_ref(3);
       tau_ref4.at(k) = bridgePtr->tau_ref(4);
@@ -287,7 +288,6 @@ int Runner::GaitCycleRef(double t) {
   } else {
     gc_id_ref = 3;
   }
-  // std::cout << "phi = " << phi << ", gc_id_ref = " << gc_id_ref << "\n";
   return gc_id_ref;
 }
 
