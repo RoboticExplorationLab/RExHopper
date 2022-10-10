@@ -1,6 +1,20 @@
 #pragma once
 #include "Eigen/Dense"
 
+// struct stateVec {
+//   Eigen::Vector3d p;
+//   Eigen::Quaterniond Q;
+//   Eigen::Vector3d v;
+//   Eigen::Vector3d w;
+// };
+
+struct ctrlState {
+  Eigen::Vector3d p;
+  Eigen::Quaterniond Q;
+  Eigen::Vector3d v;
+  Eigen::Vector3d w;
+};
+
 struct retVals {  // Declare a local structure
   Eigen::Matrix<double, 3, 1> p;
   Eigen::Quaterniond Q;
