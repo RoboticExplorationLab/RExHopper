@@ -14,9 +14,9 @@
 
 // implement a basic error state KF to estimate robot pose
 // assume orientation is known from an IMU (state.root_rot_mat)
-class Ekf {
+class Kf {
  public:
-  Ekf();
+  Kf();
   // Ekf(bool assume_flat_ground_);
   void InitState(Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v, Eigen::Vector3d w);
   void EstUpdate(Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v, Eigen::Vector3d w, double dt);

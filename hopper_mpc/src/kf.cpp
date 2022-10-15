@@ -1,6 +1,6 @@
 #include "hopper_mpc/kf.h"
 
-Ekf::Ekf() {
+Kf::Kf() {
   // constructor
   eye3.setIdentity();
   // C is fixed
@@ -28,7 +28,7 @@ Ekf::Ekf() {
   B.setZero();
 }
 
-void Ekf::InitState(Eigen::Quaterniond Q_base, Eigen::Vector3d pfb) {
+void Kf::InitState(Eigen::Quaterniond Q_base, Eigen::Vector3d pfb) {
   filter_initialized = true;
   P.setIdentity();
   P = P * 3;
@@ -39,7 +39,7 @@ void Ekf::InitState(Eigen::Quaterniond Q_base, Eigen::Vector3d pfb) {
   x.segment<3>(9) = Q_base.matrix() * pfb + x.segment<3>(0);
 }
 
-void Ekf::EstUpdate(Eigen::Quaterniond Q_base, Eigen::Vector3d pfb, Eigen::Vector3d vfb, Eigen::Vector3d a_imu, double dt, bool c) {
+void Kf::EstUpdate(Eigen::Quaterniond Q_base, Eigen::Vector3d pfb, Eigen::Vector3d vfb, Eigen::Vector3d a_imu, double dt, bool c) {
   // update A B using latest dt
   A.block<3, 3>(0, 3) = dt * eye3;
   B.block<3, 3>(3, 0) = dt * eye3;

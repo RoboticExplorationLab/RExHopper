@@ -20,13 +20,15 @@ set(CATKIN_PACKAGE_DEPENDENCIES
 
 find_package(catkin REQUIRED COMPONENTS
   ${CATKIN_PACKAGE_DEPENDENCIES}
+  roscpp
+  # rospy
+  # std_msgs
+  geometry_msgs
 )
 
 find_package(mujoco REQUIRED)
 find_package(glfw3 REQUIRED)
 # find_package(raisim CONFIG REQUIRED)
-
-
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(PythonLibs REQUIRED)
 
@@ -66,6 +68,7 @@ add_executable(${PROJECT_NAME}
   src/plots.cpp
   src/leg.cpp 
   src/gait.cpp
+  # src/kf.cpp
   src/rwa.cpp
   src/pid.cpp
   src/utils.cpp
@@ -83,7 +86,12 @@ target_link_libraries(${PROJECT_NAME}
   # python3.8
   pcanbasic 
   Threads::Threads
+  # mocap_node ${catkin_LIBRARIES}
 )
+
+add_executable(mocap_node src/mocap_node.cpp)
+target_link_libraries(mocap_node ${catkin_LIBRARIES})
+# add_dependencies(mocap_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 #########################
 ###   CLANG TOOLING   ###
