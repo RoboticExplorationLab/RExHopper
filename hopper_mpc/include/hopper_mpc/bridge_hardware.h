@@ -7,9 +7,8 @@
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "string"
-// // ros
-// #include <geometry_msgs/PoseStamped.h>
-// #include <ros/ros.h>
+
+#include "hopper_mpc/mocap_node.h"
 
 using namespace hopper::can;
 
@@ -44,7 +43,8 @@ class HardwareBridge : public Bridge {  // The class
   void SetJointPos(Eigen::Vector2d qla_ref);  // only need pos control for leg actuators afaik
   void SetJointTorque(Eigen::Matrix<double, 5, 1> u);
   double TurnsToRadians(double turns);
-  // void MocapCallback(const geometry_msgs::PoseStamped::ConstPtr& opti_msg);
+
+  std::unique_ptr<MocapNode> mocapPtr;
   // double posEst_prev;
   // int count;
 };

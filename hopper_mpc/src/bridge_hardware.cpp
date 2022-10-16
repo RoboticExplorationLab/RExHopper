@@ -8,6 +8,9 @@
 HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_) {}
 
 void HardwareBridge::Init() {
+  mocapPtr.reset(new MocapNode());
+  mocapPtr->Init();
+
   ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
   node_id_q0 = 0;
   node_id_rwl = 3;
@@ -35,14 +38,6 @@ void HardwareBridge::Init() {
   ODriveCANleft->initialize(mapCANleft);
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
-
-  // // std::mutex ekf_data_mutex;
-  // // sub mocap data
-  // int argc = 0;
-  // char **argv = NULL;
-  // ros::init(argc, argv, "mocap");
-  // mocap_msg_ = geometry_msgs::PoseStamped();
-  // sub_mocap_ = nh.subscribe("/mocap_node/Robot_2/pose", 1, &HardwareBridge::MocapCallback, this);
 
   std::cout << "Starting homing procedure. \n";
   Home(ODriveCANleft, node_id_q0, -1);
@@ -110,7 +105,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   dqa = GetJointVel();
 
   // state estimation
-
+  mocapPtr->MocapSpin();
   // end state estimation
   ctrlMode_prev = ctrlMode;
   return retVals{p, Q, v, w, qa, dqa, sh};

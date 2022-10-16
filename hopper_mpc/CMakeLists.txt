@@ -69,6 +69,7 @@ add_executable(${PROJECT_NAME}
   src/leg.cpp 
   src/gait.cpp
   # src/kf.cpp
+  # src/mocap_node.cpp
   src/rwa.cpp
   src/pid.cpp
   src/utils.cpp
