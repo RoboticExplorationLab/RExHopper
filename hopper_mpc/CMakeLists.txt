@@ -69,7 +69,7 @@ add_executable(${PROJECT_NAME}
   src/leg.cpp 
   src/gait.cpp
   # src/kf.cpp
-  # src/mocap_node.cpp
+  src/mocap_node.cpp
   src/rwa.cpp
   src/pid.cpp
   src/utils.cpp
@@ -87,11 +87,9 @@ target_link_libraries(${PROJECT_NAME}
   # python3.8
   pcanbasic 
   Threads::Threads
-  # mocap_node ${catkin_LIBRARIES}
+  ${catkin_LIBRARIES}
 )
 
-add_executable(mocap_node src/mocap_node.cpp)
-target_link_libraries(mocap_node ${catkin_LIBRARIES})
 # add_dependencies(mocap_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 #########################
