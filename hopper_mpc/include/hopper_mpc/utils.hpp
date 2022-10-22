@@ -19,4 +19,5 @@ class Utils {
   static double AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2);
   static double WrapToPi(double a);
   static double Clip(double n, double lower, double upper);
+  static double PolyFit(const std::vector<double>& t, const std::vector<double>& v, int k, double t_new);
 };

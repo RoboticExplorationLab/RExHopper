@@ -6,6 +6,7 @@
 #include "hopper_mpc/bridge_mujoco.h"
 // #include "hopper_mpc/bridge_raisim.h"
 #include "hopper_mpc/gait.h"
+#include "hopper_mpc/kf.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/rwa.h"
@@ -90,6 +91,7 @@ class Runner {  // The class
 
   std::unique_ptr<Bridge> bridgePtr;
   std::unique_ptr<Gait> gaitPtr;
+  std::unique_ptr<Kf> kfPtr;
 
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;

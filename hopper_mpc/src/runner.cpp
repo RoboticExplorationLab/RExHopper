@@ -80,6 +80,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   rwaPtr = std::make_shared<Rwa>(dt);
 
   gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
+  kfPtr.reset(new Kf(dt));
 
   k_changed = 0;
   sh_saved = 0;
@@ -121,6 +122,7 @@ void Runner::Run() {  // Method/function defined inside the class
 
   retVals retvals;
   uVals uvals;
+  kfVals kfvals;
 
   for (int k = 0; k < N_run; k++) {
     auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
@@ -133,12 +135,28 @@ void Runner::Run() {  // Method/function defined inside the class
     qa = retvals.qa;
     dqa = retvals.dqa;
     sh = ContactCheck(retvals.sh, sh_prev, k);
-
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);  // grab first two actuator pos values
-    s = C.at(k);                                   // bool s = ContactSchedule(t, 0);
-    GaitCycleUpdate(s, sh, v(2));                  // TODO: should use v_global instead?
     Eigen::Vector3d peb = legPtr->KinFwd();        // Pos of End-effector in Body frame (P.E.B.)
     Eigen::Vector3d pe = p + Q.matrix() * peb;     // position of the foot in world frame
+
+    if (bridge == "hardware") {
+      // run kalman filter only if using hardware bridge (for now)
+      // TODO: Add noise to simulator sensors?
+      // http://biorobotics.ri.cmu.edu/papers/paperUploads/Online_Kinematic_Calibration_for_Legged_Robots.pdf
+      // get accurate velocity estimate while in contact using eq.20
+      Eigen::Vector3d v_contact = -Q.matrix() * (legPtr->GetVel() + Utils::Skew(w) * peb);
+      v = (1 - sh) * v + sh * v_contact;                       // switch b/t flight and contact version of vel estimation
+      Eigen::Vector3d ve = v + Q.matrix() * legPtr->GetVel();  // velocity of the foot in world frame
+      kfvals = kfPtr->EstUpdate(p, v, pe, ve, Q, a_imu, sh);   // use kalman filter
+      p = kfvals.p;
+      v = kfvals.v;
+      pe = kfvals.pf;
+      ve = kfvals.vf;
+    }
+
+    s = C.at(k);                   // bool s = ContactSchedule(t, 0);
+    GaitCycleUpdate(s, sh, v(2));  // TODO: should use v_global instead?
+
     // if ((gc_state == "Cmpr") && (gc_state_prev == "Fall")) {
     //   C = ContactUpdate(C, k);
     //   std::cout << "p = " << pe(0) << ", " << pe(1) << ", " << pe(2) << "\n";

@@ -2,13 +2,12 @@
 
 #include "hopper_can_interface/ODriveCan.h"
 #include "hopper_mpc/bridge.h"
+#include "hopper_mpc/mocap_node.h"
 #include "hopper_mpc/model.h"
 // std
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "string"
-
-#include "hopper_mpc/mocap_node.h"
 
 using namespace hopper::can;
 
@@ -45,6 +44,13 @@ class HardwareBridge : public Bridge {  // The class
   double TurnsToRadians(double turns);
 
   std::unique_ptr<MocapNode> mocapPtr;
+  Eigen::Vector3d p_prev;
+
+  std::vector<double> px_hist;
+  std::vector<double> py_hist;
+  std::vector<double> pz_hist;
+  std::vector<double> t_hist;
   // double posEst_prev;
   // int count;
+  double t_mocap;
 };
