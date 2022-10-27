@@ -37,8 +37,8 @@ catkin_package(
     include
     ${EIGEN3_INCLUDE_DIRS}
 #  LIBRARIES hopper_mpc
- CATKIN_DEPENDS
-   ${CATKIN_PACKAGE_DEPENDENCIES}
+  CATKIN_DEPENDS
+    ${CATKIN_PACKAGE_DEPENDENCIES}
 #  DEPENDS system_lib
 )
 
@@ -49,7 +49,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
-  ${PYTHON_INCLUDE_DIRS}
+  ${PYTHON_INCLUDE_DIRS}  # // remove?
 )
 
 # # python stuff
@@ -57,6 +57,19 @@ include_directories(
 # add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 # include_directories(${PYTHON_INCLUDE_DIRS})
 # target_link_libraries(hopper_mpc ${PYTHON_LIBRARIES})
+
+# mscl stuff
+# set(BOOST_ROOT "/usr/share/c++-mscl/Boost")
+# find_package(Boost 1.68 REQUIRED)
+
+# find_library(MSCL_LIB_PATH NAMES libmscl.so PATHS "/usr/share/c++-mscl" DOC "MSCL Library" NO_DEFAULT_PATH)
+# set(MSCL_INC_PATH "/usr/share/c++-mscl/source")
+# set(MSCL_LIB "/usr/share/c++-mscl")
+
+# Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
+add_library( mscl SHARED IMPORTED )
+# You can define two import-locations: one for debug and one for release.
+set_target_properties( mscl PROPERTIES IMPORTED_LOCATION /usr/share/c++-mscl/libmscl.so )
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
@@ -68,26 +81,29 @@ add_executable(${PROJECT_NAME}
   src/plots.cpp
   src/leg.cpp 
   src/gait.cpp
-  # src/kf.cpp
+  src/kf.cpp
   src/mocap_node.cpp
   src/rwa.cpp
   src/pid.cpp
   src/utils.cpp
   src/actuator.cpp
+  # src/cx5.cpp 
+  # src/wt901.cpp
   ../hopper_can_interface/src/ODriveCan.cpp
   ../hopper_can_interface/src/CanInterface.cpp
   ../hopper_can_interface/src/BufferedCanMsg.cpp
 )
 target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES}
   mujoco::mujoco
   glfw
-  # raisim::raisim
   pthread
-  ${PYTHON_LIBRARIES}
-  # python3.8
   pcanbasic 
   Threads::Threads
-  ${catkin_LIBRARIES}
+  mscl
+  # raisim::raisim
+  ${PYTHON_LIBRARIES}  # remove?
+  # python3.8
 )
 
 
@@ -116,7 +132,8 @@ endif (cmake_clang_tools_FOUND)
 
 # Add gtest based cpp test target and link libraries
 catkin_add_gtest(${PROJECT_NAME}-test 
-  test/test_hopper_mpc.cpp
+  test/test_hopper_wt901.cpp
+  test/test_hopper_cx5.cpp
 )
 target_link_libraries(${PROJECT_NAME}-test gtest_main)
 

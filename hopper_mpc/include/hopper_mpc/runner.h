@@ -52,6 +52,8 @@ class Runner {  // The class
   Eigen::Matrix<double, 5, 1> u;        // control torques
   Eigen::Matrix<double, 2, 1> qla_ref;  // leg actuator position setpoints
   std::string ctrlMode;
+  Eigen::Vector3d pe;
+  Eigen::Vector3d ve;
   Eigen::Vector3d peb_ref;  // body frame end effector position reference
   Eigen::Vector3d veb_ref;  // body frame end effector vel reference
   Eigen::Vector3d fb_ref;   // body frame end effector force ref

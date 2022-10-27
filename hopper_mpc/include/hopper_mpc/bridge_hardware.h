@@ -2,6 +2,7 @@
 
 #include "hopper_can_interface/ODriveCan.h"
 #include "hopper_mpc/bridge.h"
+#include "hopper_mpc/cx5.h"
 #include "hopper_mpc/mocap_node.h"
 #include "hopper_mpc/model.h"
 // std

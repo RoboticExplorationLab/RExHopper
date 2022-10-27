@@ -3,7 +3,7 @@
 #include "hopper_mpc/leg.h"
 
 // state estimator parameters
-#define CONTROL_SIZE 6
+#define CONTROL_SIZE 3
 #define STATE_SIZE 12
 #define MEAS_SIZE 12  // TODO: Change these
 #define PROCESS_NOISE_PIMU 0.01
@@ -13,7 +13,7 @@
 #define SENSOR_NOISE_VIMU_REL_FOOT 0.1
 #define SENSOR_NOISE_ZFOOT 0.001
 
-struct yhatVals {
+struct kfVals {
   Eigen::Vector3d p;
   Eigen::Vector3d v;
   Eigen::Vector3d pf;
@@ -26,8 +26,8 @@ class Kf {
  public:
   Kf(double dt_);
   void InitState(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf);
-  yHat EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Quaterniond Q, Eigen::Vector3d a_imu,
-                 bool c);
+  kfVals EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Quaterniond Q,
+                   Eigen::Vector3d a_imu, bool c);
 
  private:
   bool filter_initialized = false;
