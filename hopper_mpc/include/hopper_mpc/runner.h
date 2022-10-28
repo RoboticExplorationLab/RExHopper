@@ -32,15 +32,21 @@ class Runner {  // The class
   int N_c;            // number of timesteps spent in contact
   int N_sit;          // number of timesteps to "sit" at end of traj
 
+  // --- if it is body frame it MUST have a b at the end of the name! --- //
+  // --- otherwise assume world frame! --- //
+
   Eigen::Vector3d p;     // base world frame position
   Eigen::Quaterniond Q;  // base world frame quaternion
-  Eigen::Vector3d v;     // base body frame velocity
-  Eigen::Vector3d w;     // base body frame rotational velocity
+  Eigen::Vector3d v;     // base world frame velocity
+  Eigen::Vector3d wb;    // base body frame rotational velocity
+  Eigen::Vector3d w;     // base world frame rotational velocity
+  Eigen::Vector3d ab;    // base body frame acceleration
+  Eigen::Vector3d a;     // base world frame acceleration
 
   Eigen::Vector3d p_ref;     // base world frame position
   Eigen::Quaterniond Q_ref;  // base world frame quaternion
-  Eigen::Vector3d v_ref;     // base body frame velocity
-  Eigen::Vector3d w_ref;     // base body frame rotational velocity
+  Eigen::Vector3d v_ref;     // base world frame velocity
+  Eigen::Vector3d w_ref;     // base world frame rotational velocity
 
   Eigen::Matrix<double, 5, 1> qa;
   Eigen::Matrix<double, 5, 1> dqa;

@@ -234,8 +234,11 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       Q.y() = d->sensordata[5];
       Q.z() = d->sensordata[6];
     }
+
     v << d->sensordata[7], d->sensordata[8], d->sensordata[9];
-    w << d->sensordata[10], d->sensordata[11], d->sensordata[12];
+
+    wb << d->sensordata[10], d->sensordata[11], d->sensordata[12];
+
     grf_normal = d->sensordata[13];
     sh = grf_normal >= 60 ? true : false;  // check if contact is legit
 
@@ -245,6 +248,8 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     rf_x << d->sensordata[19], d->sensordata[22], d->sensordata[25], d->sensordata[28], d->sensordata[31];
     rf_y << d->sensordata[20], d->sensordata[23], d->sensordata[26], d->sensordata[29], d->sensordata[32];
     rf_z << d->sensordata[21], d->sensordata[24], d->sensordata[27], d->sensordata[30], d->sensordata[33];
+
+    ab << d->sensordata[34], d->sensordata[35], d->sensordata[36];  // accelerometer
 
     t_refresh += 1;
     // std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -278,7 +283,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     End();
   }
 
-  return retVals{p, Q, v, w, qa, dqa, sh};
+  return retVals{p, Q, v, wb, ab, qa, dqa, sh};
 }
 
 void MujocoBridge::End() {

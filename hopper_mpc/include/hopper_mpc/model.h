@@ -16,10 +16,11 @@ struct ctrlState {
 };
 
 struct retVals {  // Declare a local structure
-  Eigen::Matrix<double, 3, 1> p;
+  Eigen::Vector3d p;
   Eigen::Quaterniond Q;
-  Eigen::Matrix<double, 3, 1> v;    // linear vel in global frame
-  Eigen::Matrix<double, 3, 1> w;    // angular vel in global frame (is this relative to CoM or global origin???)
+  Eigen::Vector3d v;                // linear vel in WORLD frame
+  Eigen::Vector3d wb;               // angular vel in BODY frame
+  Eigen::Vector3d ab;               // linear acceleration in BODY frame
   Eigen::Matrix<double, 5, 1> qa;   // actuated joint positions
   Eigen::Matrix<double, 5, 1> dqa;  // actuated joint velocities
   bool sh;

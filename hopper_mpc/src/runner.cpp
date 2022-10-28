@@ -117,9 +117,7 @@ void Runner::Run() {  // Method/function defined inside the class
   auto v_refv = trajvals.v_refv;
 
   double max_elapsed;
-
   auto t0_chrono = std::chrono::high_resolution_clock::now();  // Record start time
-
   retVals retvals;
   uVals uvals;
   kfVals kfvals;
@@ -129,25 +127,28 @@ void Runner::Run() {  // Method/function defined inside the class
 
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
     Q = retvals.Q;
-    w = retvals.w;
+    wb = retvals.wb;
+    w = Q.matrix() * wb;  // angular vel in the world frame
+    ab = retvals.ab;
+    a = Q.matrix() * ab;  // acceleration in the world frame
     qa = retvals.qa;
     dqa = retvals.dqa;
     sh = ContactCheck(retvals.sh, sh_prev, k);
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);  // grab first two actuator pos values
     Eigen::Vector3d peb = legPtr->KinFwd();        // pos of end-effector in body frame (P.E.B.)
     Eigen::Vector3d veb = legPtr->GetVel();        // vel of end-effector in body frame (V.E.B.)
-    if (bridge == "hardware") {
+    bool kf_use = true;                            // use kalman filter
+    if (kf_use == true) {
       // http://biorobotics.ri.cmu.edu/papers/paperUploads/Online_Kinematic_Calibration_for_Legged_Robots.pdf
       // get accurate velocity estimate while in contact using eq.20
       Eigen::Vector3d p_hat = retvals.p;
-      Eigen::Vector3d v_hat_flight = retvals.v;                                    // world frame vel est in flight
-      Eigen::Vector3d v_hat_contact = -Q.matrix() * (veb + Utils::Skew(w) * peb);  // world frame vel est in contact
+      Eigen::Vector3d v_hat_flight = retvals.v;                                     // world frame vel est in flight
+      Eigen::Vector3d v_hat_contact = -Q.matrix() * (veb + Utils::Skew(wb) * peb);  // world frame vel est in contact
       Eigen::Vector3d v_hat = (1 - sh) * v_hat_flight + sh * v_hat_contact;   // switch b/t flight and contact version of vel estimation
       Eigen::Vector3d ve_hat = (1 - sh) * (v_hat_flight + Q.matrix() * veb);  // velocity of the foot in world frame (0 when in contact)
       Eigen::Vector3d pe_hat = p + Q.matrix() * peb;                          // position of the foot in world frame
-      Eigen::Vector3d a_imu;
-      a_imu.setZero();                                                            // temporary
-      kfvals = kfPtr->EstUpdate(retvals.p, v_hat, pe_hat, ve_hat, Q, a_imu, sh);  // use kalman filter
+
+      kfvals = kfPtr->EstUpdate(p_hat, v_hat, pe_hat, ve_hat, Q, a, sh);  // use kalman filter
       p = kfvals.p;
       v = kfvals.v;
       pe = kfvals.pf;

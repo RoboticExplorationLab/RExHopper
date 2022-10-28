@@ -143,10 +143,11 @@
     <actuatorfrc name='tau3' actuator='rw1'/>
     <actuatorfrc name='tau4' actuator='rwz'/>
     <force name='force0' site='tau0'/>
-    <force  name='force1' site='tau1'/>
-    <force  name='force2' site='tau2'/>
-    <force  name='force3' site='tau3'/>
-    <force  name='force4' site='tau4'/>
+    <force name='force1' site='tau1'/>
+    <force name='force2' site='tau2'/>
+    <force name='force3' site='tau3'/>
+    <force name='force4' site='tau4'/>
+    <accelerometer  name='base-accelerometer' site='imu'/>
   </sensor>
 
 </mujoco>
