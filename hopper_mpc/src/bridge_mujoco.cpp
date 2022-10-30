@@ -2,10 +2,12 @@
 #include "mujoco/glfw3.h"
 #include "mujoco/mujoco.h"
 // for sleep timers
+
 #include <chrono>
 #include <iostream>
 #include <thread>
-
+// for getcwd()
+#include <unistd.h>
 mjModel* m;      // MuJoCo model
 mjData* d;       // MuJoCo data
 mjvCamera cam;   // abstract camera
@@ -80,13 +82,22 @@ MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool record_) 
 
 void MujocoBridge::Init() {
   char error[ERROR_SIZE] = "Could not load binary model";
+
+  std::string path_mjcf;
   if (fixed == true) {
-    str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf_fixed.xml";
+    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf_fixed.xml";
   } else {
-    str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+    // str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
   }
-  char* dir = new char[150];  // just needs to be larger than the actual string
-  strcpy(dir, str.c_str());
+  char* cwd;
+  char buff[PATH_MAX + 1];
+  cwd = getcwd(buff, PATH_MAX + 1);  // get current working directory
+  std::string path_cwd = cwd;
+  str = path_cwd + path_mjcf;  // combine current directory with relative path for mjcf
+
+  char* dir = new char[PATH_MAX + 1];  // just needs to be larger than the actual string
+  strcpy(dir, str.c_str());            // converting back to char... probably wasteful but whatevs
   if (std::strlen(dir) > 4 && !std::strcmp(dir + std::strlen(dir) - 4, ".mjb")) {
     m = mj_loadModel(dir, 0);
   } else {
