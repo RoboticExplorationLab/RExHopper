@@ -1,13 +1,17 @@
 #include "hopper_mpc/wt901.h"
 
 Wt901::Wt901() {
-  ucDevAddr = 0x50;
-  i2c = mraa::I2c(I2C_BUS);
-  i2c.address(ucDevAddr);
+  ucDevAddr = 0x50;  // from the manual
+  // how we know which bus to use:
+  // https://github.com/up-board/up-community/wiki/Pinout_Xtreme
+  // i2c_designware.3 -> I2C channel on hat (pin 3,5 on HAT)
+  // ls /sys/bus/pci/devices/0000\:00\:19.0/i2c_designware*/ | grep i2c
+  i2cPtr.reset(new mraa::I2c(3));
+  i2cPtr->address(ucDevAddr);
 }
 
 void Wt901::ReadRegisters(unsigned char addressToRead, unsigned char bytesToRead, uint8_t* dest) {
-  i2c.readBytesReg(addressToRead, dest, bytesToRead);
+  i2cPtr->readBytesReg(addressToRead, dest, bytesToRead);
   // Wire.beginTransmission(deviceAddr);
   // Wire.write(addressToRead);
   // Wire.endTransmission(false);  // endTransmission but keep the connection active

@@ -60,7 +60,7 @@ void HardwareBridge::Init() {
   p.setZero();
   Q.coeffs() << 0, 0, 0, 1;  // is this correct?
   v.setZero();
-  w.setZero();
+  wb.setZero();
   p_prev.setZero();
 
   int N_lookback = 6;

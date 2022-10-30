@@ -67,9 +67,9 @@ include_directories(
 # set(MSCL_LIB "/usr/share/c++-mscl")
 
 # Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
-add_library( mscl SHARED IMPORTED )
-# You can define two import-locations: one for debug and one for release.
-set_target_properties( mscl PROPERTIES IMPORTED_LOCATION /usr/share/c++-mscl/libmscl.so )
+# add_library( mscl SHARED IMPORTED )
+# # You can define two import-locations: one for debug and one for release.
+# set_target_properties( mscl PROPERTIES IMPORTED_LOCATION /usr/share/c++-mscl/libmscl.so )
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
@@ -88,7 +88,7 @@ add_executable(${PROJECT_NAME}
   src/utils.cpp
   src/actuator.cpp
   # src/cx5.cpp 
-  # src/wt901.cpp
+  src/wt901.cpp
   ../hopper_can_interface/src/ODriveCan.cpp
   ../hopper_can_interface/src/CanInterface.cpp
   ../hopper_can_interface/src/BufferedCanMsg.cpp
@@ -100,7 +100,8 @@ target_link_libraries(${PROJECT_NAME}
   pthread
   pcanbasic 
   Threads::Threads
-  mscl
+  mraa
+  # mscl
   # raisim::raisim
   ${PYTHON_LIBRARIES}  # remove?
   # python3.8
@@ -133,8 +134,11 @@ endif (cmake_clang_tools_FOUND)
 # Add gtest based cpp test target and link libraries
 catkin_add_gtest(${PROJECT_NAME}-test 
   test/test_hopper_wt901.cpp
-  test/test_hopper_cx5.cpp
+  src/wt901.cpp
+  # test/test_hopper_cx5.cpp
 )
-target_link_libraries(${PROJECT_NAME}-test gtest_main)
+target_link_libraries(${PROJECT_NAME}-test 
+  gtest_main 
+  mraa)
 
 

@@ -5,13 +5,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <iostream>
+#include <memory>
 #include "Eigen/Dense"
 
 /* mraa headers */
 #include "mraa/common.hpp"
 #include "mraa/i2c.hpp"
-
-#define I2C_BUS 0
 
 #define SAVE 0x00
 #define CALSW 0x01
@@ -144,8 +143,10 @@ class Wt901 {  // The class
   wt901Vals Collect();
 
  private:
-  unsigned char ucDevAddr;
-  mraa::I2c i2c;
+  // unsigned char ucDevAddr;
+  uint8_t ucDevAddr;
+  std::unique_ptr<mraa::I2c> i2cPtr;
+  // mraa::I2c i2c;
   void ReadRegisters(unsigned char addressToRead, unsigned char bytesToRead, uint8_t* dest);
   void GetTime();
   void GetAcc();
