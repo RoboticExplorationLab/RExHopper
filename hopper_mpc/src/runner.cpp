@@ -6,7 +6,7 @@
 #include "hopper_mpc/plots.hpp"
 
 Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
-               bool record_) {
+               bool record_, bool ignore_kf_) {
   model = model_;
   N_run = N_run_;
   dt = dt_;
@@ -16,6 +16,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   fixed = fixed_;
   spr = spr_;
   record = record_;
+  ignore_kf = ignore_kf_;
 
   g = model.g;  // should g be defined here?
   L = model.leg_dim;
@@ -137,8 +138,8 @@ void Runner::Run() {  // Method/function defined inside the class
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);  // grab first two actuator pos values
     Eigen::Vector3d peb = legPtr->KinFwd();        // pos of end-effector in body frame (P.E.B.)
     Eigen::Vector3d veb = legPtr->GetVel();        // vel of end-effector in body frame (V.E.B.)
-    bool kf_use = true;                            // use kalman filter
-    if (kf_use == true) {
+
+    if (ignore_kf == false) {
       // http://biorobotics.ri.cmu.edu/papers/paperUploads/Online_Kinematic_Calibration_for_Legged_Robots.pdf
       // get accurate velocity estimate while in contact using eq.20
       Eigen::Vector3d p_hat = retvals.p;
@@ -163,11 +164,6 @@ void Runner::Run() {  // Method/function defined inside the class
     s = C.at(k);                   // bool s = ContactSchedule(t, 0);
     GaitCycleUpdate(s, sh, v(2));  // TODO: should use v_global instead?
 
-    // if ((gc_state == "Cmpr") && (gc_state_prev == "Fall")) {
-    //   C = ContactUpdate(C, k);
-    //   std::cout << "p = " << pe(0) << ", " << pe(1) << ", " << pe(2) << "\n";
-    // }
-
     if (ctrl == "raibert") {
       uvals = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
       u = uvals.u;
@@ -191,9 +187,7 @@ void Runner::Run() {  // Method/function defined inside the class
 
     gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
     sh_prev = sh;
-    // std::cout << k << "\n";
-    // std::cout << "u = " << u.transpose() << "\n";
-    // std::cout << "body frame foot pos = " << peb.transpose() << "\n";
+
     if (plot == true) {
       theta_x.at(k) = rwaPtr->theta(0);
       theta_y.at(k) = rwaPtr->theta(1);
@@ -270,13 +264,13 @@ void Runner::Run() {  // Method/function defined inside the class
     // Plots::Grf(N_run, grf_normal);
     Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
     Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
-    // Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
-    //              gc_state_ref, 0);
+    Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
+                 gc_state_ref, 0);
     // Plots::Plot3(N_run, "Theta vs Timesteps", "Theta_x", theta_x, setp_x, "Theta_y", theta_y, setp_y, "Theta_z", theta_z, setp_z, 0);
     // Plots::Plot5(N_run, "Tau vs Timesteps", "Tau_0", tau_0, tau_ref0, "Tau_1", tau_1, tau_ref1, "Tau_2", tau_2, tau_ref2, "Tau_3", tau_3,
     //              tau_ref3, "Tau_4", tau_4, tau_ref4, 60);
-    Plots::Plot5(N_run, "dq vs Timesteps", "dq_0", dq_0, dq_0, "dq_1", dq_1, dq_1, "dq_2", dq_2, dq_2, "dq_3", dq_3, dq_3, "dq_4", dq_4,
-                 dq_4, 0);
+    // Plots::Plot5(N_run, "dq vs Timesteps", "dq_0", dq_0, dq_0, "dq_1", dq_1, dq_1, "dq_2", dq_2, dq_2, "dq_3", dq_3, dq_3, "dq_4", dq_4,
+    //              dq_4, 0);
     // Plots::Plot3(N_run, rf_name, "F_x", rfx, rfx, "F_y", rfy, rfy, "F_z", rfz, rfz, 0);
   }
 }

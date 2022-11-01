@@ -6,7 +6,7 @@ Wt901::Wt901() {
   // https://github.com/up-board/up-community/wiki/Pinout_Xtreme
   // i2c_designware.3 -> I2C channel on hat (pin 3,5 on HAT)
   // ls /sys/bus/pci/devices/0000\:00\:19.0/i2c_designware*/ | grep i2c
-  i2cPtr.reset(new mraa::I2c(3));
+  i2cPtr.reset(new mraa::I2c(0));
   i2cPtr->address(ucDevAddr);
 }
 

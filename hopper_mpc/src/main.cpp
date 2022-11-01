@@ -21,6 +21,8 @@ int main(int argc, char* argv[]) {
 
   program.add_argument("--record").help("record video").default_value(false).implicit_value(true);
 
+  program.add_argument("--ignore_kf").help("ignore kalman filter").default_value(false).implicit_value(true);
+
   try {
     program.parse_args(argc, argv);
   } catch (const std::runtime_error& err) {
@@ -40,6 +42,7 @@ int main(int argc, char* argv[]) {
   bool spr = false;
   bool fixed = false;
   bool record = false;
+  bool ignore_kf = false;
 
   if (program["--plot"] == true) {
     std::cout << "Plotting enabled" << std::endl;
@@ -56,6 +59,10 @@ int main(int argc, char* argv[]) {
   if (program["--record"] == true) {
     std::cout << "Recording enabled" << std::endl;
     record = true;
+  }
+  if (program["--ignore_kf"] == true) {
+    std::cout << "Ignoring Kalman filter" << std::endl;
+    ignore_kf = true;
   }
 
   Model hopper;
@@ -99,7 +106,7 @@ int main(int argc, char* argv[]) {
   hopper.k_kin << 45, 45 * 0.02;
 
   double dt = 0.001;  // 1 kHz
-  Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record);
+  Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record, ignore_kf);
   runner.Run();  // Call the method
   return 0;
 }
