@@ -26,8 +26,8 @@ class Kf {
  public:
   Kf(double dt_);
   void InitState(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf);
-  kfVals EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Quaterniond Q,
-                   Eigen::Vector3d a_imu, bool c);
+  kfVals EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Quaterniond Q, Eigen::Vector3d a,
+                   Eigen::Vector3d ae, bool c);
 
  private:
   bool filter_initialized = false;

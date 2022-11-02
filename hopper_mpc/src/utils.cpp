@@ -37,6 +37,15 @@ Eigen::Vector3d Utils::QuatToEuler(Eigen::Quaterniond quat) {
   return rst;
 };
 
+Eigen::Quaterniond Utils::EulerToQuat(const double roll, const double pitch, const double yaw) {
+  Eigen::AngleAxisd rollAngle(roll, Eigen::Vector3d::UnitX());
+  Eigen::AngleAxisd pitchAngle(pitch, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
+
+  Eigen::Quaterniond q = yawAngle * pitchAngle * rollAngle;
+  return q;
+}
+
 Eigen::Matrix3d Utils::Skew(Eigen::Vector3d vec) {
   Eigen::Matrix3d rst;
   rst.setZero();

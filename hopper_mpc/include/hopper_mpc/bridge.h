@@ -2,6 +2,18 @@
 
 #include "hopper_mpc/model.h"
 
+struct retVals {  // Declare a local structure
+  Eigen::Vector3d p;
+  Eigen::Quaterniond Q;
+  Eigen::Vector3d v;                // linear vel in WORLD frame
+  Eigen::Vector3d wb;               // angular vel in BODY frame
+  Eigen::Vector3d ab;               // linear acceleration in BODY frame
+  Eigen::Vector3d aef;              // linear foot acceleration in FOOT frame
+  Eigen::Matrix<double, 5, 1> qa;   // actuated joint positions
+  Eigen::Matrix<double, 5, 1> dqa;  // actuated joint velocities
+  bool sh;
+};
+
 class Bridge {                                                  // The class
  public:                                                        // Access specifier
   Bridge(Model model_, double dt_, bool fixed_, bool record_);  // constructor
@@ -27,9 +39,10 @@ class Bridge {                                                  // The class
 
   Eigen::Vector3d p;
   Eigen::Quaterniond Q;
-  Eigen::Vector3d v;   // linear vel in WORLD frame
-  Eigen::Vector3d wb;  // angular vel in BODY frame
-  Eigen::Vector3d ab;  // linear acc in BODY frame
+  Eigen::Vector3d v;    // linear vel in WORLD frame
+  Eigen::Vector3d wb;   // angular vel in BODY frame
+  Eigen::Vector3d ab;   // linear acc in BODY frame
+  Eigen::Vector3d aef;  // linear foot acc in FOOT frame
 
   Eigen::Matrix<double, 5, 1> qa;
   Eigen::Matrix<double, 5, 1> dqa;

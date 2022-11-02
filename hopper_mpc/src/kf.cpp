@@ -31,8 +31,8 @@ void Kf::InitState(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eig
   filter_initialized = true;
 }
 
-kfVals Kf::EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Quaterniond Q,
-                     Eigen::Vector3d a_imu, bool c) {
+kfVals Kf::EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Quaterniond Q, Eigen::Vector3d a,
+                     Eigen::Vector3d ae, bool c) {
   // actual measurement
   y.block<3, 1>(0, 0) = p;   // fk estimation
   y.block<3, 1>(3, 0) = v;   // fk estimation
@@ -58,7 +58,7 @@ kfVals Kf::EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, E
   xhat = xbar + L * (y - C * xbar);
   P = (eye_state - L * C) * Pbar;
   // process update
-  Eigen::Vector3d u = Q.matrix() * a_imu + Eigen::Vector3d(0, 0, -9.81);  // control input u = R*a + a_g
+  Eigen::Vector3d u = Q.matrix() * a + Eigen::Vector3d(0, 0, -9.81);  // control input u = R*a + a_g
   xbar = A * xhat + B * u;
   Pbar = A * P * A.transpose() + W;
   // recompute Kalman gain

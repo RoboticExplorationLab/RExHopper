@@ -15,17 +15,6 @@ struct ctrlState {
   Eigen::Vector3d w;
 };
 
-struct retVals {  // Declare a local structure
-  Eigen::Vector3d p;
-  Eigen::Quaterniond Q;
-  Eigen::Vector3d v;                // linear vel in WORLD frame
-  Eigen::Vector3d wb;               // angular vel in BODY frame
-  Eigen::Vector3d ab;               // linear acceleration in BODY frame
-  Eigen::Matrix<double, 5, 1> qa;   // actuated joint positions
-  Eigen::Matrix<double, 5, 1> dqa;  // actuated joint velocities
-  bool sh;
-};
-
 struct uVals {
   Eigen::Matrix<double, 5, 1> u;
   Eigen::Matrix<double, 2, 1> qla_ref;

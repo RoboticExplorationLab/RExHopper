@@ -132,12 +132,18 @@ void Runner::Run() {  // Method/function defined inside the class
     w = Q.matrix() * wb;  // angular vel in the world frame
     ab = retvals.ab;
     a = Q.matrix() * ab;  // acceleration in the world frame
+
     qa = retvals.qa;
     dqa = retvals.dqa;
     sh = ContactCheck(retvals.sh, sh_prev, k);
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);  // grab first two actuator pos values
     Eigen::Vector3d peb = legPtr->KinFwd();        // pos of end-effector in body frame (P.E.B.)
     Eigen::Vector3d veb = legPtr->GetVel();        // vel of end-effector in body frame (V.E.B.)
+
+    Eigen::Matrix3d R2 = Utils::EulerToQuat(0.0, legPtr->q(2), 0.0).matrix();  // check to make sure this stuff works
+    Eigen::Matrix3d R3 = Utils::EulerToQuat(0.0, legPtr->q(3), 0.0).matrix();
+    aeb = R3 * (R2 * retvals.aef);
+    ae = Q.matrix() * aeb;
 
     if (skip_kf == false) {
       // http://biorobotics.ri.cmu.edu/papers/paperUploads/Online_Kinematic_Calibration_for_Legged_Robots.pdf
@@ -149,7 +155,7 @@ void Runner::Run() {  // Method/function defined inside the class
       Eigen::Vector3d ve_hat = (1 - sh) * (v_hat_flight + Q.matrix() * veb);  // velocity of the foot in world frame (0 when in contact)
       Eigen::Vector3d pe_hat = p + Q.matrix() * peb;                          // position of the foot in world frame
 
-      kfvals = kfPtr->EstUpdate(p_hat, v_hat, pe_hat, ve_hat, Q, a, sh);  // use kalman filter
+      kfvals = kfPtr->EstUpdate(p_hat, v_hat, pe_hat, ve_hat, Q, a, ae, sh);  // use kalman filter
       p = kfvals.p;
       v = kfvals.v;
       pe = kfvals.pf;

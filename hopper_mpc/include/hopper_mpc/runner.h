@@ -42,6 +42,8 @@ class Runner {  // The class
   Eigen::Vector3d w;     // base world frame rotational velocity
   Eigen::Vector3d ab;    // base body frame acceleration
   Eigen::Vector3d a;     // base world frame acceleration
+  Eigen::Vector3d aeb;   // foot body frame acceleration
+  Eigen::Vector3d ae;    // foot world frame acceleration
 
   Eigen::Vector3d p_ref;     // base world frame position
   Eigen::Quaterniond Q_ref;  // base world frame quaternion

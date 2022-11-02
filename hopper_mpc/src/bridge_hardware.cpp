@@ -144,14 +144,19 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   // get Q and w from IMU
 
   // get ae and we from foot IMU
+  double imu_angle = 8.9592122 * M_PI / 180;
+  Eigen::Matrix3d R1 = Utils::EulerToQuat(imu_angle, 0.0, 0.0).matrix();
+  Eigen::Matrix3d R2 = Utils::EulerToQuat(0, 0, 0.5 * M_PI).matrix();
+
   wt901Vals wt901vals = wt901Ptr->Collect();
   Eigen::Vector3d ae_raw = wt901vals.acc;
   Eigen::Vector3d we_raw = wt901vals.omega;
+  aef = R2 * (R1 * ae_raw);
   // --- end state estimation --- //
 
   ctrlMode_prev = ctrlMode;
   p_prev = p;
-  return retVals{p, Q, v, wb, ab, qa, dqa, sh};
+  return retVals{p, Q, v, wb, ab, aef, qa, dqa, sh};
 }
 
 void HardwareBridge::SetPosCtrlMode(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {
