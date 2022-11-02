@@ -12,16 +12,6 @@ Wt901::Wt901() {
 
 void Wt901::ReadRegisters(unsigned char addressToRead, unsigned char bytesToRead, uint8_t* dest) {
   i2cPtr->readBytesReg(addressToRead, dest, bytesToRead);
-  // Wire.beginTransmission(deviceAddr);
-  // Wire.write(addressToRead);
-  // Wire.endTransmission(false);  // endTransmission but keep the connection active
-
-  // Wire.requestFrom(deviceAddr, bytesToRead);  // Ask for bytes, once done, bus is released by default
-
-  // while (Wire.available() < bytesToRead)
-  //   ;  // Hang out until we get the # of bytes we expect
-
-  // for (int x = 0; x < bytesToRead; x++) dest[x] = Wire.read();
 }
 
 void Wt901::GetTime() {

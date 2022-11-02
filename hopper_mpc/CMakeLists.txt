@@ -58,19 +58,6 @@ include_directories(
 # include_directories(${PYTHON_INCLUDE_DIRS})
 # target_link_libraries(hopper_mpc ${PYTHON_LIBRARIES})
 
-# mscl stuff
-# set(BOOST_ROOT "/usr/share/c++-mscl/Boost")
-# find_package(Boost 1.68 REQUIRED)
-
-# find_library(MSCL_LIB_PATH NAMES libmscl.so PATHS "/usr/share/c++-mscl" DOC "MSCL Library" NO_DEFAULT_PATH)
-# set(MSCL_INC_PATH "/usr/share/c++-mscl/source")
-# set(MSCL_LIB "/usr/share/c++-mscl")
-
-# Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
-# add_library( mscl SHARED IMPORTED )
-# # You can define two import-locations: one for debug and one for release.
-# set_target_properties( mscl PROPERTIES IMPORTED_LOCATION /usr/share/c++-mscl/libmscl.so )
-
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/runner.cpp
@@ -103,7 +90,7 @@ target_link_libraries(${PROJECT_NAME}
   mraa
   # mscl
   # raisim::raisim
-  ${PYTHON_LIBRARIES}  # remove?
+  ${PYTHON_LIBRARIES}
   # python3.8
 )
 
@@ -125,7 +112,6 @@ endif (cmake_clang_tools_FOUND)
 #############
 ## Install ##
 #############
-
 
 #############
 ## Testing ##

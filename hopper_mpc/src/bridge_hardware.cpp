@@ -9,6 +9,8 @@ HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool recor
 
 void HardwareBridge::Init() {
   mocapPtr.reset(new MocapNode());
+  wt901Ptr.reset(new Wt901());
+  // cx5Ptr.reset(new Cx5());
   // mocapPtr->Init();
 
   ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
@@ -141,6 +143,10 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
 
   // get Q and w from IMU
 
+  // get ae and we from foot IMU
+  wt901Vals wt901vals = wt901Ptr->Collect();
+  Eigen::Vector3d ae_raw = wt901vals.acc;
+  Eigen::Vector3d we_raw = wt901vals.omega;
   // --- end state estimation --- //
 
   ctrlMode_prev = ctrlMode;

@@ -1,3 +1,4 @@
+#pragma once
 #include "mscl/mscl.h"
 // https://lord-microstrain.github.io/MSCL/Documentation/Getting%20Started/index.html#communicating-with-a-node-210
 

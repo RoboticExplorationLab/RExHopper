@@ -5,6 +5,7 @@
 // #include "hopper_mpc/cx5.h"
 #include "hopper_mpc/mocap_node.h"
 #include "hopper_mpc/model.h"
+#include "hopper_mpc/wt901.h"
 // std
 #include "Eigen/Core"
 #include "Eigen/Dense"
@@ -45,6 +46,9 @@ class HardwareBridge : public Bridge {  // The class
   double TurnsToRadians(double turns);
 
   std::unique_ptr<MocapNode> mocapPtr;
+  std::unique_ptr<Wt901> wt901Ptr;
+  // std::unique_ptr<Cx5> cx5Ptr;
+
   Eigen::Vector3d p_prev;
 
   std::vector<double> px_hist;

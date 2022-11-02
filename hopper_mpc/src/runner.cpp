@@ -6,7 +6,7 @@
 #include "hopper_mpc/plots.hpp"
 
 Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
-               bool record_, bool ignore_kf_) {
+               bool record_, bool skip_kf_) {
   model = model_;
   N_run = N_run_;
   dt = dt_;
@@ -16,7 +16,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   fixed = fixed_;
   spr = spr_;
   record = record_;
-  ignore_kf = ignore_kf_;
+  skip_kf = skip_kf_;
 
   g = model.g;  // should g be defined here?
   L = model.leg_dim;
@@ -139,7 +139,7 @@ void Runner::Run() {  // Method/function defined inside the class
     Eigen::Vector3d peb = legPtr->KinFwd();        // pos of end-effector in body frame (P.E.B.)
     Eigen::Vector3d veb = legPtr->GetVel();        // vel of end-effector in body frame (V.E.B.)
 
-    if (ignore_kf == false) {
+    if (skip_kf == false) {
       // http://biorobotics.ri.cmu.edu/papers/paperUploads/Online_Kinematic_Calibration_for_Legged_Robots.pdf
       // get accurate velocity estimate while in contact using eq.20
       Eigen::Vector3d p_hat = retvals.p;

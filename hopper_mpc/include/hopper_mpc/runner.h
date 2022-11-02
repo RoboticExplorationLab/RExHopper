@@ -15,7 +15,7 @@ class Runner {  // The class
 
  public:  // Access specifier
   Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool record_,
-         bool ignore_kf_);  // constructor
+         bool skip_kf_);  // constructor
 
   void Run();
 
@@ -90,7 +90,7 @@ class Runner {  // The class
   bool fixed;
   bool spr;
   bool record;
-  bool ignore_kf;
+  bool skip_kf;
   double g;  // gravitational constant
 
   Eigen::VectorXd L;
