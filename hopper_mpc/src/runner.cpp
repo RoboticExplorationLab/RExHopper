@@ -261,11 +261,12 @@ void Runner::Run() {  // Method/function defined inside the class
   // std::cout << "Max elapsed: " << max_elapsed << " s\n";
 
   if (plot == true) {
-    Plots::Plot3(N_run, "Position vs Time", "p", p_vec, p_raw_vec, 0);
-    Plots::Plot3(N_run, "Velocity vs Time", "v", v_vec, v_raw_vec, 0);
-    Plots::Plot3(N_run, "Foot Position vs Time", "pe", pe_vec, pe_raw_vec, 0);
-    Plots::Plot3(N_run, "Foot Velocity vs Time", "ve", ve_vec, ve_raw_vec, 0);
-
+    if (skip_kf == false) {
+      Plots::Plot3(N_run, "Position vs Time", "p", p_vec, p_raw_vec, 0);
+      Plots::Plot3(N_run, "Velocity vs Time", "v", v_vec, v_raw_vec, 0);
+      Plots::Plot3(N_run, "Foot Position vs Time", "pe", pe_vec, pe_raw_vec, 0);
+      Plots::Plot3(N_run, "Foot Velocity vs Time", "ve", ve_vec, ve_raw_vec, 0);
+    }
     // Plots::PlotMap2D(N_run, "2D Position vs Time", "p", p_vec, p_vec, 0, 0);
     Plots::PlotMap3D(N_run, "3D Position vs Time", "p", p_vec, 0, 0);
     Plots::PlotSingle(N_run, "Normal Ground Reaction Force", grf_normal);

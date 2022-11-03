@@ -1,0 +1,10 @@
+Thu Nov  3 18:28:34 2022
+ERROR: Load model error: XML parse error 3:
+Error=XML_ERROR_FILE_NOT_FOUND ErrorID=3 (0x3) Line number=0: filename=/home/hopper/Documents/git_workspace/RosDockerWorkspace/src/RExHopper/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml
+
+
+Thu Nov  3 18:29:12 2022
+ERROR: Load model error: XML parse error 3:
+Error=XML_ERROR_FILE_NOT_FOUND ErrorID=3 (0x3) Line number=0: filename=/home/hopper/Documents/git_workspace/RosDockerWorkspace/src/RExHopper/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml
+
+
