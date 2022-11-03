@@ -260,7 +260,8 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     rf_y << d->sensordata[20], d->sensordata[23], d->sensordata[26], d->sensordata[29], d->sensordata[32];
     rf_z << d->sensordata[21], d->sensordata[24], d->sensordata[27], d->sensordata[30], d->sensordata[33];
 
-    ab << d->sensordata[34], d->sensordata[35], d->sensordata[36];  // accelerometer
+    ab << d->sensordata[34], d->sensordata[35], d->sensordata[36];   // base accelerometer
+    aef << d->sensordata[37], d->sensordata[38], d->sensordata[39];  // foot accelerometer
 
     t_refresh += 1;
     // std::this_thread::sleep_for(std::chrono::milliseconds(5));

@@ -3,7 +3,7 @@
 #include "hopper_mpc/leg.h"
 
 // state estimator parameters
-#define CONTROL_SIZE 3
+#define CONTROL_SIZE 6
 #define STATE_SIZE 12
 #define MEAS_SIZE 12  // TODO: Change these
 #define PROCESS_NOISE_PIMU 0.01
@@ -26,12 +26,13 @@ class Kf {
  public:
   Kf(double dt_);
   void InitState(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf);
-  kfVals EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Quaterniond Q, Eigen::Vector3d a,
-                   Eigen::Vector3d ae, bool c);
+  kfVals EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Vector3d a, Eigen::Vector3d ae,
+                   bool c);
 
  private:
   bool filter_initialized = false;
   // state
+
   Eigen::Matrix<double, STATE_SIZE, 1> xhat;           // estimation state
   Eigen::Matrix<double, STATE_SIZE, 1> xbar;           // estimation state after process update
   Eigen::Matrix<double, STATE_SIZE, STATE_SIZE> P;     // estimation state covariance
@@ -39,6 +40,7 @@ class Kf {
   Eigen::Matrix<double, STATE_SIZE, STATE_SIZE> A;     // estimation state transition
   Eigen::Matrix<double, STATE_SIZE, STATE_SIZE> W;     // estimation state transition noise
   Eigen::Matrix<double, STATE_SIZE, CONTROL_SIZE> B;   // control input
+  Eigen::Matrix<double, CONTROL_SIZE, 1> u;            // control vector
 
   // observation
   Eigen::Matrix<double, MEAS_SIZE, 1> y;           //  observation

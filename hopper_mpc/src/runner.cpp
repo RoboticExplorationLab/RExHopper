@@ -98,13 +98,12 @@ void Runner::Run() {  // Method/function defined inside the class
   bridgePtr->Init();
   double t = 0.0;
 
-  std::vector<double> theta_x(N_run), theta_y(N_run), theta_z(N_run), setp_x(N_run), setp_y(N_run), setp_z(N_run), q0(N_run), q2(N_run),
-      q0_ref(N_run), q2_ref(N_run), peb_x(N_run), peb_z(N_run), peb_refx(N_run), peb_refz(N_run), tau_0(N_run), tau_1(N_run), tau_2(N_run),
-      tau_3(N_run), tau_4(N_run), tau_ref0(N_run), tau_ref1(N_run), tau_ref2(N_run), tau_ref3(N_run), tau_ref4(N_run), dq_0(N_run),
-      dq_1(N_run), dq_2(N_run), dq_3(N_run), dq_4(N_run), dq_ref0(N_run), dq_ref1(N_run), dq_ref2(N_run), dq_ref3(N_run), dq_ref4(N_run),
-      p_z(N_run), p_refz(N_run), sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
+  std::vector<std::vector<double>> p_raw_vec(N_run), v_raw_vec(N_run), pe_raw_vec(N_run), ve_raw_vec(N_run);
+  std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run), p_ref_vec(N_run), theta_vec(N_run),
+      setp_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run),
+      dqa_vec(N_run), reactf_vec(N_run);
+  std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
-  std::vector<double> rfx(N_run), rfy(N_run), rfz(N_run);
   int joint_id = 1;  // joint to check reaction forces at
   std::string rf_name = "Reaction Force on Joint " + std::to_string(joint_id) + " vs Timesteps";
 
@@ -155,7 +154,7 @@ void Runner::Run() {  // Method/function defined inside the class
       Eigen::Vector3d ve_hat = (1 - sh) * (v_hat_flight + Q.matrix() * veb);  // velocity of the foot in world frame (0 when in contact)
       Eigen::Vector3d pe_hat = p + Q.matrix() * peb;                          // position of the foot in world frame
 
-      kfvals = kfPtr->EstUpdate(p_hat, v_hat, pe_hat, ve_hat, Q, a, ae, sh);  // use kalman filter
+      kfvals = kfPtr->EstUpdate(p_hat, v_hat, pe_hat, ve_hat, a, ae, sh);  // use kalman filter
       p = kfvals.p;
       v = kfvals.v;
       pe = kfvals.pf;
@@ -195,51 +194,46 @@ void Runner::Run() {  // Method/function defined inside the class
     sh_prev = sh;
 
     if (plot == true) {
-      theta_x.at(k) = rwaPtr->theta(0);
-      theta_y.at(k) = rwaPtr->theta(1);
-      theta_z.at(k) = rwaPtr->theta(2);
-      setp_x.at(k) = rwaPtr->setp(0);
-      setp_y.at(k) = rwaPtr->setp(1);
-      setp_z.at(k) = rwaPtr->setp(2);
-      q0.at(k) = qa(0) * 180 / M_PI;
-      q2.at(k) = qa(1) * 180 / M_PI;
-      q0_ref.at(k) = qla_ref(0) * 180 / M_PI;
-      q2_ref.at(k) = qla_ref(1) * 180 / M_PI;
+      if (skip_kf == false) {
+        Eigen::Vector3d pe_raw = retvals.p + Q.matrix() * peb;
+        Eigen::Vector3d ve_raw = retvals.v + Q.matrix() * veb;
+        p_raw_vec.at(k) = {retvals.p(0), retvals.p(1), retvals.p(2)};
+        v_raw_vec.at(k) = {retvals.v(0), retvals.v(1), retvals.v(2)};
+        pe_raw_vec.at(k) = {pe_raw(0), pe_raw(1), pe_raw(2)};
+        ve_raw_vec.at(k) = {ve_raw(0), ve_raw(1), ve_raw(2)};
+      };
 
-      peb_x.at(k) = peb(0);
-      peb_z.at(k) = peb(2);
-      peb_refx.at(k) = gaitPtr->peb_ref(0);
-      peb_refz.at(k) = gaitPtr->peb_ref(2);
+      p_vec.at(k) = {retvals.p(0), retvals.p(1), retvals.p(2)};
+      v_vec.at(k) = {retvals.v(0), retvals.v(1), retvals.v(2)};
+      pe_vec.at(k) = {pe(0), pe(1), pe(2)};
+      ve_vec.at(k) = {ve(0), ve(1), ve(2)};
 
-      tau_0.at(k) = bridgePtr->tau(0);
-      tau_1.at(k) = bridgePtr->tau(1);
-      tau_2.at(k) = bridgePtr->tau(2);
-      tau_3.at(k) = bridgePtr->tau(3);
-      tau_4.at(k) = bridgePtr->tau(4);
+      p_ref_vec.at(k) = {p_ref(0), p_ref(1), p_ref(2)};
+
+      theta_vec.at(k) = {rwaPtr->theta(0), rwaPtr->theta(1), rwaPtr->theta(2)};
+
+      setp_vec.at(k) = {rwaPtr->setp(0), rwaPtr->setp(1), rwaPtr->setp(2)};
+      qla_vec.at(k) = {qa(0) * 180 / M_PI, qa(1) * 180 / M_PI};
+      qla_ref_vec.at(k) = {qla_ref(0) * 180 / M_PI, qla_ref(1) * 180 / M_PI};
+
+      peb_vec.at(k) = {peb(0), peb(1), peb(2)};
+      peb_ref_vec.at(k) = {gaitPtr->peb_ref(0), gaitPtr->peb_ref(1), gaitPtr->peb_ref(2)};
+
+      tau_vec.at(k) = {bridgePtr->tau(0), bridgePtr->tau(1), bridgePtr->tau(2), bridgePtr->tau(3), bridgePtr->tau(4)};
       // NOTE: magnitude of tau_ref depends on whether gr is being handled by actuator.cpp or simulator/hardware
-      tau_ref0.at(k) = bridgePtr->tau_ref(0);
-      tau_ref1.at(k) = bridgePtr->tau_ref(1);
-      tau_ref2.at(k) = bridgePtr->tau_ref(2);
-      tau_ref3.at(k) = bridgePtr->tau_ref(3);
-      tau_ref4.at(k) = bridgePtr->tau_ref(4);
+      tau_ref_vec.at(k) = {bridgePtr->tau_ref(0), bridgePtr->tau_ref(1), bridgePtr->tau_ref(2), bridgePtr->tau_ref(3),
+                           bridgePtr->tau_ref(4)};
 
-      dq_0.at(k) = dqa(0);
-      dq_1.at(k) = dqa(1);
-      dq_2.at(k) = dqa(2);
-      dq_3.at(k) = dqa(3);
-      dq_4.at(k) = dqa(4);
+      dqa_vec.at(k) = {dqa(0), dqa(1), dqa(2), dqa(3), dqa(4)};
 
-      p_z.at(k) = p(2);
-      p_refz.at(k) = p_ref(2);
       sh_hist.at(k) = sh;
       s_hist.at(k) = s;
 
       gc_state_hist.at(k) = gc_id;
       gc_state_ref.at(k) = GaitCycleRef(t + ts);  // the gait starts from ts, so t_actual = t + ts
       grf_normal.at(k) = bridgePtr->grf_normal;
-      rfx.at(k) = bridgePtr->rf_x(joint_id);
-      rfy.at(k) = bridgePtr->rf_y(joint_id);
-      rfz.at(k) = bridgePtr->rf_z(joint_id);
+
+      reactf_vec.at(k) = {bridgePtr->rf_x(joint_id), bridgePtr->rf_y(joint_id), bridgePtr->rf_z(joint_id)};
     }
 
     t += dt;  // theoretical time
@@ -267,17 +261,22 @@ void Runner::Run() {  // Method/function defined inside the class
   // std::cout << "Max elapsed: " << max_elapsed << " s\n";
 
   if (plot == true) {
-    // Plots::Grf(N_run, grf_normal);
-    Plots::OpSpacePos(N_run, peb_x, peb_z, peb_refx, peb_refz);
-    Plots::Plot2(N_run, "Joint Angular Positions", "q0", q0, q0_ref, "q2", q2, q2_ref, 0);
-    Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", p_z, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
-                 gc_state_ref, 0);
-    // Plots::Plot3(N_run, "Theta vs Timesteps", "Theta_x", theta_x, setp_x, "Theta_y", theta_y, setp_y, "Theta_z", theta_z, setp_z, 0);
-    // Plots::Plot5(N_run, "Tau vs Timesteps", "Tau_0", tau_0, tau_ref0, "Tau_1", tau_1, tau_ref1, "Tau_2", tau_2, tau_ref2, "Tau_3", tau_3,
-    //              tau_ref3, "Tau_4", tau_4, tau_ref4, 60);
-    // Plots::Plot5(N_run, "dq vs Timesteps", "dq_0", dq_0, dq_0, "dq_1", dq_1, dq_1, "dq_2", dq_2, dq_2, "dq_3", dq_3, dq_3, "dq_4", dq_4,
-    //              dq_4, 0);
-    // Plots::Plot3(N_run, rf_name, "F_x", rfx, rfx, "F_y", rfy, rfy, "F_z", rfz, rfz, 0);
+    Plots::Plot3(N_run, "Position vs Time", "p", p_vec, p_raw_vec, 0);
+    Plots::Plot3(N_run, "Velocity vs Time", "v", v_vec, v_raw_vec, 0);
+    Plots::Plot3(N_run, "Foot Position vs Time", "pe", pe_vec, pe_raw_vec, 0);
+    Plots::Plot3(N_run, "Foot Velocity vs Time", "ve", ve_vec, ve_raw_vec, 0);
+
+    // Plots::PlotMap2D(N_run, "2D Position vs Time", "p", p_vec, p_vec, 0, 0);
+    Plots::PlotMap3D(N_run, "3D Position vs Time", "p", p_vec, 0, 0);
+    Plots::PlotSingle(N_run, "Normal Ground Reaction Force", grf_normal);
+    Plots::Plot2(N_run, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
+
+    Plots::Plot3(N_run, "Theta vs Time", "theta", theta_vec, setp_vec, 0);
+    Plots::Plot3(N_run, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, setp_vec, 0);
+    Plots::Plot5(N_run, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
+    Plots::Plot5(N_run, "Dq vs Time", "dq", tau_vec, tau_ref_vec, 0);
+    // Plots::Plot3(N_run, "Contact Timing", "Body Z Pos", pz, p_refz, "Contact", sh_hist, s_hist, "Gait Cycle State", gc_state_hist,
+    //              gc_state_ref, 0);
   }
 }
 

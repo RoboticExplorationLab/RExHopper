@@ -38,6 +38,7 @@ Eigen::Vector3d Utils::QuatToEuler(Eigen::Quaterniond quat) {
 };
 
 Eigen::Quaterniond Utils::EulerToQuat(const double roll, const double pitch, const double yaw) {
+  // taken from https://stackoverflow.com/questions/21412169/creating-a-rotation-matrix-with-pitch-yaw-roll-using-eigen
   Eigen::AngleAxisd rollAngle(roll, Eigen::Vector3d::UnitX());
   Eigen::AngleAxisd pitchAngle(pitch, Eigen::Vector3d::UnitY());
   Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
@@ -53,8 +54,8 @@ Eigen::Matrix3d Utils::Skew(Eigen::Vector3d vec) {
   return rst;
 };
 
-// https://gist.github.com/pshriwise/67c2ae78e5db3831da38390a8b2a209f
 Eigen::Matrix3d Utils::PseudoInverse(const Eigen::Matrix3d& mat) {
+  // https://gist.github.com/pshriwise/67c2ae78e5db3831da38390a8b2a209f
   Eigen::JacobiSVD<Eigen::Matrix3d> svd(mat, Eigen::ComputeFullU | Eigen::ComputeFullV);
   double epsilon = std::numeric_limits<double>::epsilon();
   // For a non-square matrix
