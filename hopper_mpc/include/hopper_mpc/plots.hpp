@@ -5,7 +5,9 @@
 class Plots {
  public:
   Plots();
-  static void PlotSingle(int N, std::string title, std::vector<double> grf_normal);
+  static void PlotSingle(int N, std::string title, std::vector<double> vec);
+  static void PlotMulti3(int N, std::string title, std::string name1, std::vector<double> vec1, std::string name2, std::vector<double> vec2,
+                         std::string name3, std::vector<double> vec3);
   static void PlotMap2D(int N, std::string title, std::string name, std::vector<std::vector<double>> vec,
                         std::vector<std::vector<double>> ref, double xlim, double ylim);
   static void PlotMap3D(int N, std::string title, std::string name, std::vector<std::vector<double>> vec, double xlim, double ylim);

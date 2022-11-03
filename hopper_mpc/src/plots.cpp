@@ -55,10 +55,29 @@ void Plots::SubPlot(std::string name, std::vector<double> timesteps, std::vector
   plt::legend();
 }
 
-void Plots::PlotSingle(int N, std::string title, std::vector<double> grf_normal) {
+void Plots::PlotSingle(int N, std::string title, std::vector<double> vec) {
   auto timesteps = StartPlot(N, title);
 
-  plt::plot(timesteps, grf_normal, "r");
+  plt::plot(timesteps, vec, "r");
+
+  plt::show();
+};
+
+void Plots::PlotMulti3(int N, std::string title, std::string name1, std::vector<double> vec1, std::string name2, std::vector<double> vec2,
+                       std::string name3, std::vector<double> vec3) {
+  auto timesteps = StartSubPlot(N, title);
+
+  plt::subplot(3, 1, 1);
+  plt::named_plot(name1, timesteps, vec1, "g");
+  plt::legend();
+
+  plt::subplot(3, 1, 2);
+  plt::named_plot(name2, timesteps, vec2, "r");
+  plt::legend();
+
+  plt::subplot(3, 1, 3);
+  plt::named_plot(name3, timesteps, vec3, "b");
+  plt::legend();
 
   plt::show();
 };
