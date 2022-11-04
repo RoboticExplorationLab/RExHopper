@@ -9,13 +9,16 @@ Kf::Kf(double dt_) {
   P.setIdentity();
 
   W.setIdentity();
-  W.block<3, 3>(0, 0) = PROCESS_NOISE_PIMU * eye3;   // position transition
-  W.block<3, 3>(3, 3) = PROCESS_NOISE_VIMU * eye3;   // velocity transition
-  W.block<3, 3>(9, 9) = PROCESS_NOISE_PFOOT * eye3;  // foot position transition
+  W.block<3, 3>(0, 0) = PROCESS_NOISE_PIMU * dt * eye3;   // position transition
+  W.block<3, 3>(3, 3) = PROCESS_NOISE_VIMU * dt * eye3;   // velocity transition
+  W.block<3, 3>(6, 6) = PROCESS_NOISE_VFOOT * dt * eye3;  // velocity transition
+  W.block<3, 3>(9, 9) = PROCESS_NOISE_PFOOT * dt * eye3;  // foot position transition
 
   V.setIdentity();
-  V.block<3, 3>(6, 6) = SENSOR_NOISE_PIMU_REL_FOOT * eye3;  // fk estimation
-  V.block<3, 3>(9, 9) = SENSOR_NOISE_VIMU_REL_FOOT * eye3;  // vel estimation
+  V.block<3, 3>(0, 0) = SENSOR_NOISE_PIMU * eye3;   // foot pos estimation
+  V.block<3, 3>(3, 3) = SENSOR_NOISE_VIMU * eye3;   // foot pos estimation
+  V.block<3, 3>(6, 6) = SENSOR_NOISE_PFOOT * eye3;  // foot pos estimation
+  V.block<3, 3>(9, 9) = SENSOR_NOISE_VFOOT * eye3;  // foot vel estimation
 
   eye3.setIdentity();
   eye_state.setIdentity();
@@ -28,39 +31,36 @@ void Kf::InitState(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eig
   xhat.segment<3>(3) = v;
   xhat.segment<3>(6) = pf;
   xhat.segment<3>(9) = vf;
-  filter_initialized = true;
+  // filter_initialized = true;
 }
 
-kfVals Kf::EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Vector3d a, Eigen::Vector3d ae,
-                     bool c) {
+kfVals Kf::EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Vector3d a, Eigen::Vector3d ae) {
   // actual measurement
-  y.block<3, 1>(0, 0) = p;   // fk estimation
-  y.block<3, 1>(3, 0) = v;   // fk estimation
-  y.block<3, 1>(6, 0) = pf;  // fk estimation
-  y.block<3, 1>(9, 0) = vf;  // vel estimation
+  y.segment<3>(0) = p;   // fk estimation
+  y.segment<3>(3) = v;   // fk estimation
+  y.segment<3>(6) = pf;  // fk estimation
+  y.segment<3>(9) = vf;  // vel estimation
 
   // update A B using latest dt
-  A.block<3, 3>(0, 0) = dt * eye3;
-  A.block<3, 3>(6, 6) = dt * eye3;
+  A.block<3, 3>(0, 3) = dt * eye3;  // TODO: Varying dt
+  A.block<3, 3>(6, 9) = dt * eye3;
 
-  B(1, 0) = dt;
-  B(3, 1) = dt;
+  B.block<3, 3>(3, 0) = dt * eye3;
+  B.block<3, 3>(9, 3) = dt * eye3;
 
   // update W
-  W.block<3, 3>(0, 0) = PROCESS_NOISE_PIMU * dt / 20.0 * eye3;
-  W.block<3, 3>(3, 3) = PROCESS_NOISE_VIMU * dt * 9.8 / 20.0 * eye3;
-  // update Q R for legs not in contact
-  W.block<3, 3>(6, 6) = c * 1e4 * dt * PROCESS_NOISE_PFOOT * eye3;    // foot position transition
-  V.block<3, 3>(6, 6) = c * 1e4 * SENSOR_NOISE_PIMU_REL_FOOT * eye3;  // fk estimation
-  V.block<3, 3>(9, 9) = c * 1e4 * SENSOR_NOISE_VIMU_REL_FOOT * eye3;  // vel estimation
+  W.block<3, 3>(0, 0) = PROCESS_NOISE_PIMU * dt * eye3;
+  W.block<3, 3>(3, 3) = PROCESS_NOISE_VIMU * dt * eye3;
+  W.block<3, 3>(6, 6) = PROCESS_NOISE_PFOOT * dt * eye3;  // foot position transition
+  W.block<3, 3>(9, 9) = PROCESS_NOISE_VFOOT * dt * eye3;  // foot position transition
 
   // prediction
   xhat = xbar + L * (y - C * xbar);
   P = (eye_state - L * C) * Pbar;
 
   // process update
-  u.block<3, 1>(0, 0) = a + Eigen::Vector3d(0, 0, -9.81);  // control input u = R*a + a_g
-  u.block<3, 1>(3, 0) = ae;                                // TODO: check whether grav is needed with this imu
+  u.segment<3>(0) = a;   // + Eigen::Vector3d(0, 0, -9.81);  // control input u = R*a + a_g
+  u.segment<3>(3) = ae;  // + Eigen::Vector3d(0, 0, -9.81);  // TODO: check whether grav is needed with this imu
   xbar = A * xhat + B * u;
   Pbar = A * P * A.transpose() + W;
 
@@ -69,7 +69,7 @@ kfVals Kf::EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, E
 
   // measurement construction
   yhat = C * xbar;
-  y_error = y - yhat;
+  // y_error = y - yhat;
 
   return kfVals{yhat.segment<3>(0), yhat.segment<3>(3), yhat.segment<3>(6), yhat.segment<3>(9)};
 }

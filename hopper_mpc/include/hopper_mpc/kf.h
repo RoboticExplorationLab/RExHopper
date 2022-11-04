@@ -1,6 +1,6 @@
 #pragma once
 #include "Eigen/Dense"
-#include "hopper_mpc/leg.h"
+// #include "hopper_mpc/leg.h"
 
 // state estimator parameters
 #define CONTROL_SIZE 6
@@ -8,10 +8,12 @@
 #define MEAS_SIZE 12  // TODO: Change these
 #define PROCESS_NOISE_PIMU 0.01
 #define PROCESS_NOISE_VIMU 0.01
-#define PROCESS_NOISE_PFOOT 0.01
-#define SENSOR_NOISE_PIMU_REL_FOOT 0.001
-#define SENSOR_NOISE_VIMU_REL_FOOT 0.1
-#define SENSOR_NOISE_ZFOOT 0.001
+#define PROCESS_NOISE_PFOOT 0.1
+#define PROCESS_NOISE_VFOOT 0.01
+#define SENSOR_NOISE_PIMU 0.01
+#define SENSOR_NOISE_VIMU 0.01
+#define SENSOR_NOISE_PFOOT 0.1
+#define SENSOR_NOISE_VFOOT 0.1
 
 struct kfVals {
   Eigen::Vector3d p;
@@ -26,11 +28,10 @@ class Kf {
  public:
   Kf(double dt_);
   void InitState(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf);
-  kfVals EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Vector3d a, Eigen::Vector3d ae,
-                   bool c);
+  kfVals EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf, Eigen::Vector3d a, Eigen::Vector3d ae);
 
  private:
-  bool filter_initialized = false;
+  // bool filter_initialized = false;
   // state
 
   Eigen::Matrix<double, STATE_SIZE, 1> xhat;           // estimation state
@@ -53,6 +54,6 @@ class Kf {
   Eigen::Matrix<double, 3, 3> eye3;                         // 3x3 identity
   Eigen::Matrix<double, STATE_SIZE, MEAS_SIZE> L;           // kalman gain
   Eigen::Matrix<double, STATE_SIZE, STATE_SIZE> eye_state;  // statexstate identity
-  std::shared_ptr<Leg> legPtr;
+  // std::shared_ptr<Leg> legPtr;
   double dt;
 };

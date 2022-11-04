@@ -50,8 +50,8 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
     throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
   // initialize state
-  p << 0, 0, 0.5;  // must match starting position in mjcf!!
-  Q.coeffs() << 0, 0, 0, 1;
+  p << 0, 0, 0.5;            // must match starting position in mjcf!!
+  Q.coeffs() << 0, 0, 0, 1;  // a vector expression of the coefficients (x,y,z,w)
   v.setZero();
   w.setZero();
   // initialize reference state
@@ -73,10 +73,10 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   ctrlMode = "Torque";                                               // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
   qla_ref << qla_ref(0), qla_ref(1) + 0.5;
-  peb_ref << 0, 0, -model.h0 * 2;  // desired operational space leg position in body frame
-  veb_ref.setZero();               // desired operational space leg velocity
-  fb_ref.setZero();                // desired operational space leg force
-  u.setZero();                     // ctrl Torques
+  peb_ref << 0, 0, -model.h0;  // desired operational space leg position in body frame
+  veb_ref.setZero();           // desired operational space leg velocity
+  fb_ref.setZero();            // desired operational space leg force
+  u.setZero();                 // ctrl Torques
   legPtr = std::make_shared<Leg>(model, dt);
   rwaPtr = std::make_shared<Rwa>(dt);
 
@@ -96,12 +96,19 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
 void Runner::Run() {  // Method/function defined inside the class
   bridgePtr->Init();
+  // Eigen::Vector3d pe_0 = p + Q.matrix() * peb_ref;
+  // Eigen::Vector3d ve_0 = v + Q.matrix() * veb_ref;
+  // std::cout << "pe_0 = " << pe_0.transpose() << "\n";
+  // std::cout << "ve_0 = " << ve_0.transpose() << "\n";
+  kfPtr->InitState(p, v, p + Q.matrix() * peb_ref, v + Q.matrix() * veb_ref);
   double t = 0.0;
 
   std::vector<std::vector<double>> p_raw_vec(N_run), v_raw_vec(N_run), pe_raw_vec(N_run), ve_raw_vec(N_run);
-  std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run), p_ref_vec(N_run), theta_vec(N_run),
-      setp_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run),
-      dqa_vec(N_run), reactf_vec(N_run);
+  std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
+
+  std::vector<std::vector<double>> p_ref_vec(N_run), theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run),
+      peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), dqa_vec(N_run), reactf_vec(N_run);
+
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
   int joint_id = 1;  // joint to check reaction forces at
@@ -135,6 +142,7 @@ void Runner::Run() {  // Method/function defined inside the class
     qa = retvals.qa;
     dqa = retvals.dqa;
     sh = ContactCheck(retvals.sh, sh_prev, k);
+
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);  // grab first two actuator pos values
     Eigen::Vector3d peb = legPtr->KinFwd();        // pos of end-effector in body frame (P.E.B.)
     Eigen::Vector3d veb = legPtr->GetVel();        // vel of end-effector in body frame (V.E.B.)
@@ -153,12 +161,17 @@ void Runner::Run() {  // Method/function defined inside the class
       Eigen::Vector3d v_hat = (1 - sh) * v_hat_flight + sh * v_hat_contact;   // switch b/t flight and contact version of vel estimation
       Eigen::Vector3d ve_hat = (1 - sh) * (v_hat_flight + Q.matrix() * veb);  // velocity of the foot in world frame (0 when in contact)
       Eigen::Vector3d pe_hat = p + Q.matrix() * peb;                          // position of the foot in world frame
-
-      kfvals = kfPtr->EstUpdate(p_hat, v_hat, pe_hat, ve_hat, a, ae, sh);  // use kalman filter
+      if (k <= 5) {
+        std::cout << "pe_hat = " << pe_hat.transpose() << "\n";
+      }
+      kfvals = kfPtr->EstUpdate(p_hat, v_hat, pe_hat, ve_hat, a, ae);  // use kalman filter
       p = kfvals.p;
       v = kfvals.v;
       pe = kfvals.pf;
       ve = kfvals.vf;
+      if (k <= 5) {
+        std::cout << "pe = " << pe.transpose() << "\n";
+      }
     } else {
       p = retvals.p;
       v = retvals.v;
@@ -213,7 +226,7 @@ void Runner::Run() {  // Method/function defined inside the class
 
       theta_vec.at(k) = {rwaPtr->theta(0), rwaPtr->theta(1), rwaPtr->theta(2)};
 
-      setp_vec.at(k) = {rwaPtr->setp(0), rwaPtr->setp(1), rwaPtr->setp(2)};
+      theta_ref_vec.at(k) = {rwaPtr->setp(0), rwaPtr->setp(1), rwaPtr->setp(2)};
       qla_vec.at(k) = {qa(0) * 180 / M_PI, qa(1) * 180 / M_PI};
       qla_ref_vec.at(k) = {qla_ref(0) * 180 / M_PI, qla_ref(1) * 180 / M_PI};
 
@@ -269,14 +282,14 @@ void Runner::Run() {  // Method/function defined inside the class
       Plots::Plot3(N_run, "Foot Velocity vs Time", "ve", ve_vec, ve_raw_vec, 0);
     }
     // Plots::PlotMap2D(N_run, "2D Position vs Time", "p", p_vec, p_vec, 0, 0);
-    Plots::PlotMap3D(N_run, "3D Position vs Time", "p", p_vec, 0, 0);
-    Plots::PlotSingle(N_run, "Normal Ground Reaction Force", grf_normal);
-    Plots::Plot2(N_run, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
+    // Plots::PlotMap3D(N_run, "3D Position vs Time", "p", p_vec, 0, 0);
+    // Plots::PlotSingle(N_run, "Normal Ground Reaction Force", grf_normal);
+    // Plots::Plot2(N_run, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
 
-    Plots::Plot3(N_run, "Theta vs Time", "theta", theta_vec, setp_vec, 0);
-    Plots::Plot3(N_run, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, setp_vec, 0);
-    Plots::Plot5(N_run, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
-    Plots::Plot5(N_run, "Dq vs Time", "dq", tau_vec, tau_ref_vec, 0);
+    // Plots::Plot3(N_run, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
+    // Plots::Plot3(N_run, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
+    // Plots::Plot5(N_run, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
+    // Plots::Plot5(N_run, "Dq vs Time", "dq", tau_vec, tau_ref_vec, 0);
     Plots::PlotMulti3(N_run, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State", gc_state_hist);
   }
 }
