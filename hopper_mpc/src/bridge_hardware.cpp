@@ -10,7 +10,7 @@ HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool recor
 void HardwareBridge::Init() {
   mocapPtr.reset(new MocapNode());
   wt901Ptr.reset(new Wt901());
-  // cx5Ptr.reset(new Cx5());
+  cx5Ptr.reset(new Cx5());
   // mocapPtr->Init();
 
   ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
@@ -141,11 +141,14 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   }
   v = (p - p_prev) / dt;
 
-  // get Q and w from IMU
+  // get Q and w from cx5 IMU
+  cx5Ptr->Spin();  // update base imu subscriber node
+  Q = cx5Ptr->Q;
+  wb = cx5Ptr->omega;
 
-  // get ae and we from foot IMU
-  double imu_angle = 8.9592122 * M_PI / 180;
-  Eigen::Matrix3d R1 = Utils::EulerToQuat(imu_angle, 0.0, 0.0).matrix();
+  // get ae and we from wt901 IMU
+  double imu_mount_angle = 8.9592122 * M_PI / 180;
+  Eigen::Matrix3d R1 = Utils::EulerToQuat(imu_mount_angle, 0.0, 0.0).matrix();
   Eigen::Matrix3d R2 = Utils::EulerToQuat(0, 0, 0.5 * M_PI).matrix();
 
   wt901Vals wt901vals = wt901Ptr->Collect();

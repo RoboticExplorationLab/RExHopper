@@ -1,6 +1,14 @@
 #include "hopper_mpc/wt901.h"
+// for geteuid permissions
+#include <sys/types.h>
+#include <unistd.h>
+// for sleep_for
+#include <chrono>
+#include <thread>
 
 Wt901::Wt901() {
+  mraa::init();
+  if (geteuid()) std::this_thread::sleep_for(std::chrono::milliseconds(100));
   ucDevAddr = 0x50;  // from the manual
   // how we know which bus to use:
   // https://github.com/up-board/up-community/wiki/Pinout_Xtreme

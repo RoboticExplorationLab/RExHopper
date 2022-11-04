@@ -2,7 +2,7 @@
 
 #include "hopper_can_interface/ODriveCan.h"
 #include "hopper_mpc/bridge.h"
-// #include "hopper_mpc/cx5.h"
+#include "hopper_mpc/cx5.h"
 #include "hopper_mpc/mocap_node.h"
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/wt901.h"
@@ -47,7 +47,7 @@ class HardwareBridge : public Bridge {  // The class
 
   std::unique_ptr<MocapNode> mocapPtr;
   std::unique_ptr<Wt901> wt901Ptr;
-  // std::unique_ptr<Cx5> cx5Ptr;
+  std::unique_ptr<Cx5> cx5Ptr;
 
   Eigen::Vector3d p_prev;
 

@@ -64,6 +64,10 @@ int main(int argc, char* argv[]) {
     std::cout << "Ignoring Kalman filter" << std::endl;
     skip_kf = true;
   }
+  // register listener to ROS master
+  // int argc = 0;
+  // char** argv = NULL;
+  ros::init(argc, argv, "hopper_ctrl");
 
   Model hopper;
   hopper.name = "rw";

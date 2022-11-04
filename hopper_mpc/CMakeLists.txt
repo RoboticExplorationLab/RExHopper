@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   # rospy
   # std_msgs
+  sensor_msgs
   geometry_msgs
 )
 
@@ -74,7 +75,7 @@ add_executable(${PROJECT_NAME}
   src/pid.cpp
   src/utils.cpp
   src/actuator.cpp
-  # src/cx5.cpp 
+  src/cx5.cpp 
   src/wt901.cpp
   ../hopper_can_interface/src/ODriveCan.cpp
   ../hopper_can_interface/src/CanInterface.cpp

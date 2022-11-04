@@ -161,17 +161,13 @@ void Runner::Run() {  // Method/function defined inside the class
       Eigen::Vector3d v_hat = (1 - sh) * v_hat_flight + sh * v_hat_contact;   // switch b/t flight and contact version of vel estimation
       Eigen::Vector3d ve_hat = (1 - sh) * (v_hat_flight + Q.matrix() * veb);  // velocity of the foot in world frame (0 when in contact)
       Eigen::Vector3d pe_hat = p + Q.matrix() * peb;                          // position of the foot in world frame
-      if (k <= 5) {
-        std::cout << "pe_hat = " << pe_hat.transpose() << "\n";
-      }
+
       kfvals = kfPtr->EstUpdate(p_hat, v_hat, pe_hat, ve_hat, a, ae);  // use kalman filter
       p = kfvals.p;
       v = kfvals.v;
       pe = kfvals.pf;
       ve = kfvals.vf;
-      if (k <= 5) {
-        std::cout << "pe = " << pe.transpose() << "\n";
-      }
+
     } else {
       p = retvals.p;
       v = retvals.v;
@@ -179,8 +175,8 @@ void Runner::Run() {  // Method/function defined inside the class
       ve = v + Q.matrix() * veb;
     }
 
-    s = C.at(k);                   // bool s = ContactSchedule(t, 0);
-    GaitCycleUpdate(s, sh, v(2));  // TODO: should use v_global instead?
+    s = C.at(k);  // bool s = ContactSchedule(t, 0);
+    GaitCycleUpdate(s, sh, v(2));
 
     if (ctrl == "raibert") {
       uvals = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
@@ -291,6 +287,7 @@ void Runner::Run() {  // Method/function defined inside the class
     // Plots::Plot5(N_run, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
     // Plots::Plot5(N_run, "Dq vs Time", "dq", tau_vec, tau_ref_vec, 0);
     Plots::PlotMulti3(N_run, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State", gc_state_hist);
+    Plots::PlotSingle(N_run, "Ground Reaction Force Normal", grf_normal);
   }
 }
 

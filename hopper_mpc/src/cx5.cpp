@@ -1,57 +1,47 @@
 #include "hopper_mpc/cx5.h"
+#include <string>
 
 Cx5::Cx5() {
-  // create the connection object with port and baud rate
-  connection("COM3", 115200);
+  // initialize values
+  Q.setIdentity();
+  omega.setZero();
+  alpha.setZero();
 
-  // create the InertialNode, passing in the connection
-  node(connection);
+  // // register listener to ROS master
+  // int argc = 0;
+  // char** argv = NULL;
+  // ros::init(argc, argv, "cx5_subscriber");
 
-  // ping the Node
-  // bool success = node.ping();  // test of whether it works
-  try {
-    if (!node.ping()) {
-      throw 10;
-    }
-  } catch (char* excp) {
-    cout << "Ping didn't work " << excp;
-  }
-  // "it is still useful to set the Node to an idle state between sampling sessions and when changing configurations."
-  // put the Inertial Node into its idle state
-  // node.setToIdle();
+  // get the device name parameter
+  std::string deviceName;
+  ros::NodeHandle params("~");
+  params.param<std::string>("device", deviceName, "cx5");
+  ROS_INFO("Got device param: %s", deviceName.c_str());
 
-  // get all of the active channels for the GPS category on the Node
-  // mscl::MipChannels activeChs = node.getActiveChannelFields(mscl::MipTypes::CLASS_GNSS);
+  // clear param for future use
+  params.deleteParam("device");
 
-  // configure a node
-  mscl::MipChannels estFilterChs;
-  // max hertz = 500
-  estFilterChs.push_back(mscl::MipChannel(mscl::MipTypes::CH_FIELD_ESTFILTER_ESTIMATED_ORIENT_QUATERNION, mscl::SampleRate::Hertz(500)));
+  // create the listener node object
+  ros::NodeHandle n;
 
-  // set the active channels for the different data classes on the Node
-  node.setActiveChannelFields(mscl::MipTypes::CLASS_ESTFILTER, estFilterChs);
+  ros::Subscriber sub = n.subscribe(("/" + deviceName + "/imu/data"), 3, &Cx5::ImuDataCallback, this);
 
-  // sampling
-  // start sampling the active channels on the filter class of the Node
-  node.enableDataStream(mscl::MipTypes::CLASS_ESTFILTER);
+  // ros::spin();  // would multithreading be better?
 }
 
-void Cx5::Collect() {
-  // collecting data
-  // get all the packets that have been collected, with a timeout of 500 milliseconds
-  mscl::MipDataPackets packets = node.getDataPackets(500);  // does this require multi-threading?
+void Cx5::ImuDataCallback(const sensor_msgs::Imu::ConstPtr& imu) {
+  ROS_INFO("Quaternion Orientation:    [%f, %f, %f, %f]", imu->orientation.x, imu->orientation.y, imu->orientation.z, imu->orientation.w);
+  ROS_INFO("Angular Velocity:          [%f, %f, %f]", imu->angular_velocity.x, imu->angular_velocity.y, imu->angular_velocity.z);
+  ROS_INFO("Linear Acceleration:       [%f, %f, %f]", imu->linear_acceleration.x, imu->linear_acceleration.y, imu->linear_acceleration.z);
 
-  for (mscl::MipDataPacket packet : packets) {
-    packet.descriptorSet();  // the descriptor set of the packet
-    packet.timestamp();      // the PC time when this packet was received
-
-    // get all of the points in the packet
-    mscl::MipDataPoints points = packet.data();
-
-    for (mscl::MipDataPoint dataPoint : points) {
-      dataPoint.channelName();  // the name of the channel for this point
-      dataPoint.storedAs();     // the ValueType that the data is stored as
-      dataPoint.as_float();     // get the value as a float
-    }
-  }
+  Q.coeffs() << imu->orientation.x, imu->orientation.y, imu->orientation.z, imu->orientation.w;
+  omega << imu->angular_velocity.x, imu->angular_velocity.y, imu->angular_velocity.z;
+  alpha << imu->linear_acceleration.x, imu->linear_acceleration.y, imu->linear_acceleration.z;
 }
+
+void Cx5::Spin() {
+  ros::spinOnce();
+}
+// void Cx5::Collect() {
+//   // collecting data
+// }

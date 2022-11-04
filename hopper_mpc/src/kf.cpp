@@ -2,27 +2,25 @@
 
 Kf::Kf(double dt_) {
   dt = dt_;
+  eye3.setIdentity();
+  eye_state.setIdentity();
 
   A.setIdentity();
   B.setZero();
   C.setIdentity();
   P.setIdentity();
-
+  Pbar = eye_state * 0.001;  // Initialize Pbar
   W.setIdentity();
-  W.block<3, 3>(0, 0) = PROCESS_NOISE_PIMU * dt * eye3;   // position transition
-  W.block<3, 3>(3, 3) = PROCESS_NOISE_VIMU * dt * eye3;   // velocity transition
-  W.block<3, 3>(6, 6) = PROCESS_NOISE_VFOOT * dt * eye3;  // velocity transition
-  W.block<3, 3>(9, 9) = PROCESS_NOISE_PFOOT * dt * eye3;  // foot position transition
+  W.block<3, 3>(0, 0) = PROCESS_NOISE_PIMU * dt * eye3;   // base pos transition
+  W.block<3, 3>(3, 3) = PROCESS_NOISE_VIMU * dt * eye3;   // base vel transition
+  W.block<3, 3>(6, 6) = PROCESS_NOISE_PFOOT * dt * eye3;  // foot pos transition
+  W.block<3, 3>(9, 9) = PROCESS_NOISE_VFOOT * dt * eye3;  // foot vel transition
 
   V.setIdentity();
-  V.block<3, 3>(0, 0) = SENSOR_NOISE_PIMU * eye3;   // foot pos estimation
-  V.block<3, 3>(3, 3) = SENSOR_NOISE_VIMU * eye3;   // foot pos estimation
+  V.block<3, 3>(0, 0) = SENSOR_NOISE_PIMU * eye3;   // base pos estimation
+  V.block<3, 3>(3, 3) = SENSOR_NOISE_VIMU * eye3;   // base vel estimation
   V.block<3, 3>(6, 6) = SENSOR_NOISE_PFOOT * eye3;  // foot pos estimation
   V.block<3, 3>(9, 9) = SENSOR_NOISE_VFOOT * eye3;  // foot vel estimation
-
-  eye3.setIdentity();
-  eye_state.setIdentity();
-  // P = P * 3;
 }
 
 void Kf::InitState(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, Eigen::Vector3d vf) {
@@ -54,15 +52,15 @@ kfVals Kf::EstUpdate(Eigen::Vector3d p, Eigen::Vector3d v, Eigen::Vector3d pf, E
   W.block<3, 3>(6, 6) = PROCESS_NOISE_PFOOT * dt * eye3;  // foot position transition
   W.block<3, 3>(9, 9) = PROCESS_NOISE_VFOOT * dt * eye3;  // foot position transition
 
-  // prediction
-  xhat = xbar + L * (y - C * xbar);
-  P = (eye_state - L * C) * Pbar;
-
   // process update
   u.segment<3>(0) = a;   // + Eigen::Vector3d(0, 0, -9.81);  // control input u = R*a + a_g
   u.segment<3>(3) = ae;  // + Eigen::Vector3d(0, 0, -9.81);  // TODO: check whether grav is needed with this imu
   xbar = A * xhat + B * u;
   Pbar = A * P * A.transpose() + W;
+
+  // measurement update
+  xhat = xbar + L * (y - C * xbar);
+  P = (eye_state - L * C) * Pbar;
 
   // recompute Kalman gain
   L = Pbar * C.transpose() * (C * Pbar * C.transpose() + V).inverse();
