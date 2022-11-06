@@ -7,11 +7,6 @@ Cx5::Cx5() {
   omega.setZero();
   alpha.setZero();
 
-  // // register listener to ROS master
-  // int argc = 0;
-  // char** argv = NULL;
-  // ros::init(argc, argv, "cx5_subscriber");
-
   // get the device name parameter
   std::string deviceName;
   ros::NodeHandle params("~");

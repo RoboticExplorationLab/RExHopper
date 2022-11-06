@@ -11,7 +11,6 @@ struct retVals {  // Declare a local structure
   Eigen::Vector3d aef;              // linear foot acceleration in FOOT frame
   Eigen::Matrix<double, 5, 1> qa;   // actuated joint positions
   Eigen::Matrix<double, 5, 1> dqa;  // actuated joint velocities
-  bool sh;
 };
 
 class Bridge {                                                  // The class
@@ -26,6 +25,7 @@ class Bridge {                                                  // The class
   Eigen::Matrix<double, 5, 1> rf_x;  // measured force on joints
   Eigen::Matrix<double, 5, 1> rf_y;  // measured force on joints
   Eigen::Matrix<double, 5, 1> rf_z;  // measured force on joints
+  bool sh;
 
  protected:
   Model model;
@@ -46,5 +46,4 @@ class Bridge {                                                  // The class
 
   Eigen::Matrix<double, 5, 1> qa;
   Eigen::Matrix<double, 5, 1> dqa;
-  bool sh;
 };

@@ -159,7 +159,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
 
   ctrlMode_prev = ctrlMode;
   p_prev = p;
-  return retVals{p, Q, v, wb, ab, aef, qa, dqa, sh};
+  return retVals{p, Q, v, wb, ab, aef, qa, dqa};
 }
 
 void HardwareBridge::SetPosCtrlMode(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {

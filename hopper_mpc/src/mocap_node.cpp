@@ -1,10 +1,6 @@
 #include "hopper_mpc/mocap_node.h"
 
 MocapNode::MocapNode() {
-  // int argc = 0;
-  // char** argv = NULL;
-  // ros::init(argc, argv, "mocap_node");
-  // nh;
   sub_mocap = nh.subscribe("/mocap_node/Robot_2/pose", 1, &MocapNode::MocapCallback, this);
 }
 

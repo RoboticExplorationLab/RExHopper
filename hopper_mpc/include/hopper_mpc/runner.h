@@ -11,6 +11,11 @@
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/rwa.h"
 
+struct trajVals {
+  std::vector<Eigen::Vector3d> p_refv;
+  std::vector<Eigen::Vector3d> v_refv;
+};
+
 class Runner {  // The class
 
  public:  // Access specifier

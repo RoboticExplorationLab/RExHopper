@@ -109,6 +109,7 @@ void Runner::Run() {  // Method/function defined inside the class
   std::vector<std::vector<double>> p_ref_vec(N_run), theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run),
       peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), dqa_vec(N_run), reactf_vec(N_run);
 
+  std::vector<std::vector<double>> a_vec(N_run), ae_vec(N_run);
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
   int joint_id = 1;  // joint to check reaction forces at
@@ -141,7 +142,8 @@ void Runner::Run() {  // Method/function defined inside the class
 
     qa = retvals.qa;
     dqa = retvals.dqa;
-    sh = ContactCheck(retvals.sh, sh_prev, k);
+
+    sh = ContactCheck(bridgePtr->sh, sh_prev, k);
 
     legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);  // grab first two actuator pos values
     Eigen::Vector3d peb = legPtr->KinFwd();        // pos of end-effector in body frame (P.E.B.)
@@ -190,7 +192,7 @@ void Runner::Run() {  // Method/function defined inside the class
       ctrlMode = uvals.ctrlMode;
     } else if (ctrl == "idle") {
       u << 0, 0, 0, 0, 0;  // do nothing
-      ctrlMode = "Torque";
+      ctrlMode = "None";
     } else if (ctrl == "circle") {
       CircleTest();  // edits peb_ref in-place
       qla_ref = legPtr->KinInv(peb_ref);
@@ -213,8 +215,8 @@ void Runner::Run() {  // Method/function defined inside the class
         ve_raw_vec.at(k) = {ve_raw(0), ve_raw(1), ve_raw(2)};
       };
 
-      p_vec.at(k) = {retvals.p(0), retvals.p(1), retvals.p(2)};
-      v_vec.at(k) = {retvals.v(0), retvals.v(1), retvals.v(2)};
+      p_vec.at(k) = {p(0), p(1), p(2)};
+      v_vec.at(k) = {v(0), v(1), v(2)};
       pe_vec.at(k) = {pe(0), pe(1), pe(2)};
       ve_vec.at(k) = {ve(0), ve(1), ve(2)};
 
@@ -244,9 +246,14 @@ void Runner::Run() {  // Method/function defined inside the class
       grf_normal.at(k) = bridgePtr->grf_normal;
 
       reactf_vec.at(k) = {bridgePtr->rf_x(joint_id), bridgePtr->rf_y(joint_id), bridgePtr->rf_z(joint_id)};
+
+      a_vec.at(k) = {a(0), a(1), a(2)};
+      ae_vec.at(k) = {ae(0), ae(1), ae(2)};
     }
 
     t += dt;  // theoretical time
+
+    // --- discount RTOS --- //
     // this would screw with simulator animation so only use for hardware
     if (bridge == "hardware") {
       auto t_after = std::chrono::high_resolution_clock::now();       // current time
@@ -264,6 +271,7 @@ void Runner::Run() {  // Method/function defined inside the class
       //   max_elapsed = elapsed.count();
       // }
     }
+    // --- end fake real-time --- //
   }
   std::cout << "End Control. \n";
   bridgePtr->End();
@@ -288,6 +296,8 @@ void Runner::Run() {  // Method/function defined inside the class
     // Plots::Plot5(N_run, "Dq vs Time", "dq", tau_vec, tau_ref_vec, 0);
     Plots::PlotMulti3(N_run, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State", gc_state_hist);
     Plots::PlotSingle(N_run, "Ground Reaction Force Normal", grf_normal);
+    // Plots::Plot3(N_run, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
+    Plots::Plot3(N_run, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
   }
 }
 
@@ -329,6 +339,7 @@ int Runner::GaitCycleRef(double t) {
 }
 
 bool Runner::ContactSchedule(double t) {
+  // used to generate contact map
   double phi = std::fmod(t / t_p, 1);
   // std::cout << phi << "\n";
   return phi < phi_switch ? true : false;
@@ -345,16 +356,16 @@ std::vector<bool> Runner::ContactMap(int N, double dt, double t) {
   return C;
 }
 
-std::vector<bool> Runner::ContactUpdate(std::vector<bool> C, int k) {
-  // shift contact map. Use if contact has been made early or was previously late
-  double t_shifted = 0;
-  for (int i = k; i < N_run; i++) {
-    C.at(i) = ContactSchedule(t_shifted);
-    t_shifted += dt;
-  }
-  // self.k_f_update(C)  // update kf_list
-  return C;
-}
+// std::vector<bool> Runner::ContactUpdate(std::vector<bool> C, int k) {
+//   // shift contact map. Use if contact has been made early or was previously late
+//   double t_shifted = 0;
+//   for (int i = k; i < N_run; i++) {
+//     C.at(i) = ContactSchedule(t_shifted);
+//     t_shifted += dt;
+//   }
+//   // self.k_f_update(C)  // update kf_list
+//   return C;
+// }
 
 bool Runner::ContactCheck(bool sh, bool sh_prev, int k) {
   // if contact has just been made, freeze contact detection to True for x timesteps

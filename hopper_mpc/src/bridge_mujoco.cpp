@@ -295,7 +295,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     End();
   }
 
-  return retVals{p, Q, v, wb, ab, aef, qa, dqa, sh};
+  return retVals{p, Q, v, wb, ab, aef, qa, dqa};
 }
 
 void MujocoBridge::End() {
