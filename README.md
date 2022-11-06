@@ -1,11 +1,17 @@
-# RExHopper
-(Draft)
+# REx Hopper
 
-git clone RosDockerWorkspace
+The REx Hopper is a monopodal hopping robot with reaction wheels. This repository contains C++ code for control of the robot, both on hardware and in simulation.
+
+## Repository Setup Instructions
+[RosDockerWorkspace](https://github.com/RoboticExplorationLab/RosDockerWorkspace) serves as the environment for REx Hopper. However, we do not recommend building it as a docker container on the robot's computer due to a lack of space and driver incompatibilities.
+
+```
+git clone git@github.com:RoboticExplorationLab/RosDockerWorkspace.git
 cd RosDockerWorkspace
 mkdir src
 cd src
-git clone RExHopper
+git clone git@github.com:RoboticExplorationLab/RExHopper.git
+```
 
 In VScode:
 Click on green button in lower left -> reopen in container
@@ -13,15 +19,30 @@ Whenever you change Dockerfile and want to rebuild the env ->  Ctrl+shift+p -> r
 
 Make new terminal in VScode:
 In RosDockerWorkspace git:(main):
+
+```
 catkin build 
 wssetup
 rosrun hopper_mpc hopper_mpc mpc 5000 mujoco
 rosrun hopper_mpc hopper_mpc mpc 5000 raisim
 rosrun hopper_mpc hopper_mpc mpc 5000 hardware
+```
 
 whenever you add/remove header files, or if you see clang errors:
-catkin clean
 
-Additional notes:
-- Raisim needs to additionally be installed externally to the container in order to run raisimUnityOpengl. The docker container then communicates through TCP with Opengl
-- PEAK PCAN is not compatible with docker containers and needs to be installed outside of the container.
+```
+catkin clean
+```
+
+## UP Xtreme Setup Instructions
+1. Update the UEFI BIOS using these [instructions] (https://downloads.up-community.org/download/up-xtreme-uefi-bios-v1-9/).
+   - Use `GO.nsh` rather than `GO_Entire.nsh`.
+
+2. Update the [kernel](https://github.com/up-board/up-community/wiki/Ubuntu_20.04).
+
+3. Setup user GPIO/SPI/I2C [Permissions](https://github.com/up-board/up-community/wiki/Ubuntu_20.04#enable-the-hat-functionality-from-userspace).
+
+4. Install Docker. But do NOT build the RosDockerWorkspace container. It will take up too much filespace and is incompatible with the PCAN drivers.
+
+5. Pull the microstrain-inertial ROS Docker image for the [3DM AHRS](https://hub.docker.com/r/microstrain/ros-microstrain_inertial_driver).
+   `docker pull microstrain/ros-microstrain_inertial_driver:ros`
