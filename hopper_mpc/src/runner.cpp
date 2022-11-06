@@ -67,6 +67,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
    Push 1 25%-50%  | sh = 1
    Rise 2 50%-75%  | sh = 0
    Fall 3 75%-100% | sh = 0 */
+  // TODO: Make gc_state machine start when first contact is made
   ts = 0.875 * t_p;  // pretend you're starting halfway through 'fall'
   gc_state_prev = gc_state;
 
@@ -110,6 +111,7 @@ void Runner::Run() {  // Method/function defined inside the class
       peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), dqa_vec(N_run), reactf_vec(N_run);
 
   std::vector<std::vector<double>> a_vec(N_run), ae_vec(N_run);
+
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
   int joint_id = 1;  // joint to check reaction forces at
