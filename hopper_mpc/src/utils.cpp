@@ -37,6 +37,16 @@ Eigen::Vector3d Utils::QuatToEuler(Eigen::Quaterniond quat) {
   return rst;
 };
 
+Eigen::Quaterniond Utils::EulerToQuat(const double roll, const double pitch, const double yaw) {
+  // taken from https://stackoverflow.com/questions/21412169/creating-a-rotation-matrix-with-pitch-yaw-roll-using-eigen
+  Eigen::AngleAxisd rollAngle(roll, Eigen::Vector3d::UnitX());
+  Eigen::AngleAxisd pitchAngle(pitch, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
+
+  Eigen::Quaterniond q = yawAngle * pitchAngle * rollAngle;
+  return q;
+}
+
 Eigen::Matrix3d Utils::Skew(Eigen::Vector3d vec) {
   Eigen::Matrix3d rst;
   rst.setZero();
@@ -44,8 +54,8 @@ Eigen::Matrix3d Utils::Skew(Eigen::Vector3d vec) {
   return rst;
 };
 
-// https://gist.github.com/pshriwise/67c2ae78e5db3831da38390a8b2a209f
 Eigen::Matrix3d Utils::PseudoInverse(const Eigen::Matrix3d& mat) {
+  // https://gist.github.com/pshriwise/67c2ae78e5db3831da38390a8b2a209f
   Eigen::JacobiSVD<Eigen::Matrix3d> svd(mat, Eigen::ComputeFullU | Eigen::ComputeFullV);
   double epsilon = std::numeric_limits<double>::epsilon();
   // For a non-square matrix
@@ -97,29 +107,35 @@ double Utils::AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2) {
 
   return 2 * atan2(Qd.vec().norm(), Qd.w());
 }
-// Eigen::Matrix4d L(Eigen::Quaterniond Q) {
-//   Eigen::Matrix4d LQ;
-//   LQ(0, 0) = Q.w();
-//   LQ.block<1, 3>(0, 1) = -(Q.coeffs().segment<3>(1)).transpose();
-//   LQ.block<3, 1>(1, 0) = Q.coeffs().segment<3>(1);
-//   LQ.block<3, 3>(1, 1) = Q.w() * Eigen::Matrix3d::Identity() + Utils::skew(Q.coeffs().segment<3>(1));
-//   return LQ;
-// };
 
-// Eigen::Matrix4d R(Eigen::Quaterniond Q) {
-//   Eigen::Matrix4d RQ;
-//   RQ(0, 0) = Q.w();
-//   RQ.block<1, 3>(0, 1) = -(Q.coeffs().segment<3>(1)).transpose();
-//   RQ.block<3, 1>(1, 0) = Q.coeffs().segment<3>(1);
-//   RQ.block<3, 3>(1, 1) = Q.w() * Eigen::Matrix3d::Identity() - Utils::skew(Q.coeffs().segment<3>(1));
-//   return RQ;
-// };
+double Utils::PolyFit(const std::vector<double>& t, const std::vector<double>& v, int k, double t_new) {
+  // taken from https://towardsdatascience.com/least-square-polynomial-fitting-using-c-eigen-package-c0673728bd01
+  // k = order of polynomial, for example k = 3 for cubic polynomial
 
-// Eigen::Quaterniond Q_inv(Eigen::Quaterniond Q) {
-//   return Eigen::Quaterniond(Utils::T * Q.coeffs());
-//   Q.matrix()
-// };
+  assert(t.size() == v.size());  // check to make sure inputs are correct
+  size_t N = t.size();           // number of elements
 
-// Eigen::Vector3d Z(Eigen::Vector3d vec, Eigen::Quaterniond Q){
+  Eigen::MatrixXd T(N, k + 1);
+  Eigen::VectorXd V = Eigen::VectorXd::Map(&v.front(), N);  // initialize eigen vector from std::vector
+  Eigen::VectorXd result;
 
-// };
+  assert(N >= k + 1);
+  // Populate the matrix
+  for (size_t i = 0; i < N; ++i) {
+    for (size_t j = 0; j < k + 1; ++j) {
+      T(i, j) = pow(t.at(i), j);
+    }
+  }
+
+  // Solve for linear least square fit
+  result = T.householderQr().solve(V);
+  std::vector<double> coeff;
+  coeff.resize(k + 1);
+  for (int k = 0; k < k + 1; k++) {
+    coeff[k] = result[k];
+  }
+
+  // interpolate to get value at t_new
+  double v_out = coeff[0] + coeff[1] * t_new + coeff[2] * (pow(t_new, 2)) + coeff[3] * (pow(t_new, 3));
+  return v_out;
+}

@@ -6,15 +6,21 @@
 #include "hopper_mpc/bridge_mujoco.h"
 // #include "hopper_mpc/bridge_raisim.h"
 #include "hopper_mpc/gait.h"
+#include "hopper_mpc/kf.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/rwa.h"
 
+struct trajVals {
+  std::vector<Eigen::Vector3d> p_refv;
+  std::vector<Eigen::Vector3d> v_refv;
+};
+
 class Runner {  // The class
 
  public:  // Access specifier
-  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
-         bool record_);  // constructor
+  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool record_,
+         bool skip_kf_);  // constructor
 
   void Run();
 
@@ -31,15 +37,23 @@ class Runner {  // The class
   int N_c;            // number of timesteps spent in contact
   int N_sit;          // number of timesteps to "sit" at end of traj
 
+  // --- if it is body frame it MUST have a b at the end of the name! --- //
+  // --- otherwise assume world frame! --- //
+
   Eigen::Vector3d p;     // base world frame position
   Eigen::Quaterniond Q;  // base world frame quaternion
-  Eigen::Vector3d v;     // base body frame velocity
-  Eigen::Vector3d w;     // base body frame rotational velocity
+  Eigen::Vector3d v;     // base world frame velocity
+  Eigen::Vector3d wb;    // base body frame rotational velocity
+  Eigen::Vector3d w;     // base world frame rotational velocity
+  Eigen::Vector3d ab;    // base body frame acceleration
+  Eigen::Vector3d a;     // base world frame acceleration
+  Eigen::Vector3d aeb;   // foot body frame acceleration
+  Eigen::Vector3d ae;    // foot world frame acceleration
 
   Eigen::Vector3d p_ref;     // base world frame position
   Eigen::Quaterniond Q_ref;  // base world frame quaternion
-  Eigen::Vector3d v_ref;     // base body frame velocity
-  Eigen::Vector3d w_ref;     // base body frame rotational velocity
+  Eigen::Vector3d v_ref;     // base world frame velocity
+  Eigen::Vector3d w_ref;     // base world frame rotational velocity
 
   Eigen::Matrix<double, 5, 1> qa;
   Eigen::Matrix<double, 5, 1> dqa;
@@ -51,6 +65,8 @@ class Runner {  // The class
   Eigen::Matrix<double, 5, 1> u;        // control torques
   Eigen::Matrix<double, 2, 1> qla_ref;  // leg actuator position setpoints
   std::string ctrlMode;
+  Eigen::Vector3d pe;
+  Eigen::Vector3d ve;
   Eigen::Vector3d peb_ref;  // body frame end effector position reference
   Eigen::Vector3d veb_ref;  // body frame end effector vel reference
   Eigen::Vector3d fb_ref;   // body frame end effector force ref
@@ -81,6 +97,7 @@ class Runner {  // The class
   bool fixed;
   bool spr;
   bool record;
+  bool skip_kf;
   double g;  // gravitational constant
 
   Eigen::VectorXd L;
@@ -90,6 +107,7 @@ class Runner {  // The class
 
   std::unique_ptr<Bridge> bridgePtr;
   std::unique_ptr<Gait> gaitPtr;
+  std::unique_ptr<Kf> kfPtr;
 
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;

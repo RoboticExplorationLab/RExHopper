@@ -5,6 +5,12 @@
 #include "hopper_mpc/pid.h"
 #include "hopper_mpc/rwa.h"
 
+struct uVals {
+  Eigen::Matrix<double, 5, 1> u;
+  Eigen::Matrix<double, 2, 1> qla_ref;
+  std::string ctrlMode;
+};
+
 class Gait {  // The class
 
  public:  // Access specifier

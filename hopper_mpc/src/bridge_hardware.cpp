@@ -3,10 +3,16 @@
 #include <filesystem>
 #include <future>
 #include <iostream>
+#include "hopper_mpc/utils.hpp"
 
 HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_) {}
 
 void HardwareBridge::Init() {
+  mocapPtr.reset(new MocapNode());
+  wt901Ptr.reset(new Wt901());
+  cx5Ptr.reset(new Cx5());
+  // mocapPtr->Init();
+
   ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
   node_id_q0 = 0;
   node_id_rwl = 3;
@@ -54,9 +60,17 @@ void HardwareBridge::Init() {
   // ctrlMode_prev = "Pos";
 
   p.setZero();
-  Q.coeffs() << 0, 0, 0, 1;
+  Q.coeffs() << 0, 0, 0, 1;  // is this correct?
   v.setZero();
-  w.setZero();
+  wb.setZero();
+  p_prev.setZero();
+
+  int N_lookback = 6;
+  px_hist.reserve(N_lookback);
+  py_hist.reserve(N_lookback);
+  pz_hist.reserve(N_lookback);
+  t_hist.reserve(N_lookback);
+  t_mocap = 0;
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir) {
@@ -100,8 +114,52 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   qa = GetJointPos();
   dqa = GetJointVel();
 
+  // --- begin state estimation --- //
+  // get p and v from mocap
+  mocapPtr->MocapSpin();  // update mocap subscriber node
+  p = mocapPtr->p_mocap;  // get position from mocap system
+  double dt_mocap = mocapPtr->dt_mocap;
+  // check if mocap has updated yet
+  if (dt_mocap != 0.0) {
+    t_mocap = mocapPtr->t_mocap;  // get time from mocap system
+    // mocap has updated, so it's time to update vector of saved p and t for polyfitting
+    std::move(begin(px_hist) + 1, end(px_hist), begin(px_hist));  // shift the vector to the right by one (deleting the first value)
+    px_hist.back() = p(0);
+    std::move(begin(py_hist) + 1, end(py_hist), begin(py_hist));  // shift the vector to the right by one (deleting the first value)
+    py_hist.back() = p(1);
+    std::move(begin(pz_hist) + 1, end(pz_hist), begin(pz_hist));  // shift the vector to the right by one (deleting the first value)
+    pz_hist.back() = p(2);
+    // update vector of saved t
+    std::move(begin(t_hist) + 1, end(t_hist), begin(t_hist));  // shift the vector to the right by one (deleting the first value)
+    t_hist.back() = t_mocap;
+  } else {
+    t_mocap += dt;  // estimate time since last mocap update
+    // if p is not being updated by the mocap, interpolate it using polynomial regression
+    p(0) = Utils::PolyFit(t_hist, px_hist, 3, t_mocap);
+    p(1) = Utils::PolyFit(t_hist, py_hist, 3, t_mocap);
+    p(2) = Utils::PolyFit(t_hist, pz_hist, 3, t_mocap);
+  }
+  v = (p - p_prev) / dt;
+
+  // get Q and w from cx5 IMU
+  cx5Ptr->Spin();  // update base imu subscriber node
+  Q = cx5Ptr->Q;
+  wb = cx5Ptr->omega;
+
+  // get ae and we from wt901 IMU
+  double imu_mount_angle = 8.9592122 * M_PI / 180;
+  Eigen::Matrix3d R1 = Utils::EulerToQuat(imu_mount_angle, 0.0, 0.0).matrix();
+  Eigen::Matrix3d R2 = Utils::EulerToQuat(0, 0, 0.5 * M_PI).matrix();
+
+  wt901Vals wt901vals = wt901Ptr->Collect();
+  Eigen::Vector3d ae_raw = wt901vals.acc;
+  Eigen::Vector3d we_raw = wt901vals.omega;
+  aef = R2 * (R1 * ae_raw);
+  // --- end state estimation --- //
+
   ctrlMode_prev = ctrlMode;
-  return retVals{p, Q, v, w, qa, dqa, sh};
+  p_prev = p;
+  return retVals{p, Q, v, wb, ab, aef, qa, dqa};
 }
 
 void HardwareBridge::SetPosCtrlMode(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {
@@ -191,9 +249,4 @@ void HardwareBridge::End() {
   // SetTorCtrl(ODriveCANright, node_id_q2);
   ODriveCANleft->RunState(node_id_q0, ODriveCan::AXIS_STATE_IDLE);
   ODriveCANright->RunState(node_id_q2, ODriveCan::AXIS_STATE_IDLE);
-}
-
-// Utility functions
-double HardwareBridge::TurnsToRadians(double turns) {
-  return 2 * M_PI * turns;
 }

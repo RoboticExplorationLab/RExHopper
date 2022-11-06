@@ -55,11 +55,6 @@ uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d 
       double kr = 0.3;
       pf_ref = p + v * kt + kr * (v - v_ref) + v.normalized() * zeta;  // footstep in world frame for neutral motion + des acc + leg travel
       pf_ref(2) = 0;                                                   // enforce footstep is on ground plane
-      // std::cout << "dist = " << dist << "\n";
-      // std::cout << "pf_ref = " << pf_ref(0) << ", " << pf_ref(1) << ", " << pf_ref(2) << ", and v_ref = " << v_ref(0) << ", " << v_ref(1)
-      //           << ", " << v_ref(2) << "\n";
-      // std::cout << "pf_ref = " << pf_ref(0) << ", " << pf_ref(1) << ", " << pf_ref(2) << "\n";
-      // std::cout << Utils::AngleBetween(Q, Q_up) * 180 / M_PI << "\n";
     }
     peb_ref << x_adj, 0, -h_cmprss;  // pull leg up to prevent stubbing
   } else if (state == "Fall") {
@@ -78,7 +73,7 @@ uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d 
   Eigen::Vector2d qla_ref;
   qla_ref = legPtr->KinInv(peb_ref);
   std::string ctrlMode = "Pos";
-  u.block<3, 1>(2, 0) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
+  u.segment<3>(2) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
   return uVals{u, qla_ref, ctrlMode};
 }
 
@@ -103,7 +98,7 @@ uVals Gait::uKinInvVert(std::string state, std::string state_prev, Eigen::Vector
   qla_ref.setZero();
   // Eigen::Vector2d qla_ref = legPtr->KinInv(peb_ref);
   // std::string ctrlMode = "Pos";
-  u.block<3, 1>(2, 0) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
+  u.segment<3>(2) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
   return uVals{u, qla_ref, ctrlMode};
 }
 
@@ -118,7 +113,7 @@ uVals Gait::uKinInvStand(std::string state, std::string state_prev, Eigen::Vecto
   Eigen::Vector2d qla_ref;
   qla_ref = legPtr->KinInv(peb_ref);
   std::string ctrlMode = "Pos";
-  u.block<3, 1>(2, 0) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
+  u.segment<3>(2) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
   // u = u.cwiseQuotient(model.a_kt);  // u = u ./ model.a_kt
   return uVals{u, qla_ref, ctrlMode};
 }

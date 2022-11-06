@@ -20,13 +20,16 @@ set(CATKIN_PACKAGE_DEPENDENCIES
 
 find_package(catkin REQUIRED COMPONENTS
   ${CATKIN_PACKAGE_DEPENDENCIES}
+  roscpp
+  # rospy
+  # std_msgs
+  sensor_msgs
+  geometry_msgs
 )
 
 find_package(mujoco REQUIRED)
 find_package(glfw3 REQUIRED)
 # find_package(raisim CONFIG REQUIRED)
-
-
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(PythonLibs REQUIRED)
 
@@ -35,8 +38,8 @@ catkin_package(
     include
     ${EIGEN3_INCLUDE_DIRS}
 #  LIBRARIES hopper_mpc
- CATKIN_DEPENDS
-   ${CATKIN_PACKAGE_DEPENDENCIES}
+  CATKIN_DEPENDS
+    ${CATKIN_PACKAGE_DEPENDENCIES}
 #  DEPENDS system_lib
 )
 
@@ -47,7 +50,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
-  ${PYTHON_INCLUDE_DIRS}
+  ${PYTHON_INCLUDE_DIRS}  # // remove?
 )
 
 # # python stuff
@@ -66,24 +69,32 @@ add_executable(${PROJECT_NAME}
   src/plots.cpp
   src/leg.cpp 
   src/gait.cpp
+  src/kf.cpp
+  src/mocap_node.cpp
   src/rwa.cpp
   src/pid.cpp
   src/utils.cpp
   src/actuator.cpp
+  src/cx5.cpp 
+  src/wt901.cpp
   ../hopper_can_interface/src/ODriveCan.cpp
   ../hopper_can_interface/src/CanInterface.cpp
   ../hopper_can_interface/src/BufferedCanMsg.cpp
 )
 target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES}
   mujoco::mujoco
   glfw
-  # raisim::raisim
   pthread
-  ${PYTHON_LIBRARIES}
-  # python3.8
   pcanbasic 
   Threads::Threads
+  mraa
+  # mscl
+  # raisim::raisim
+  ${PYTHON_LIBRARIES}
+  # python3.8
 )
+
 
 #########################
 ###   CLANG TOOLING   ###
@@ -103,15 +114,18 @@ endif (cmake_clang_tools_FOUND)
 ## Install ##
 #############
 
-
 #############
 ## Testing ##
 #############
 
 # Add gtest based cpp test target and link libraries
 catkin_add_gtest(${PROJECT_NAME}-test 
-  test/test_hopper_mpc.cpp
+  test/test_hopper_wt901.cpp
+  src/wt901.cpp
+  # test/test_hopper_cx5.cpp
 )
-target_link_libraries(${PROJECT_NAME}-test gtest_main)
+target_link_libraries(${PROJECT_NAME}-test 
+  gtest_main 
+  mraa)
 
 

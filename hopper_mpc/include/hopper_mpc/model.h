@@ -1,27 +1,6 @@
 #pragma once
 #include "Eigen/Dense"
 
-struct retVals {  // Declare a local structure
-  Eigen::Matrix<double, 3, 1> p;
-  Eigen::Quaterniond Q;
-  Eigen::Matrix<double, 3, 1> v;    // linear vel in global frame
-  Eigen::Matrix<double, 3, 1> w;    // angular vel in global frame (is this relative to CoM or global origin???)
-  Eigen::Matrix<double, 5, 1> qa;   // actuated joint positions
-  Eigen::Matrix<double, 5, 1> dqa;  // actuated joint velocities
-  bool sh;
-};
-
-struct uVals {
-  Eigen::Matrix<double, 5, 1> u;
-  Eigen::Matrix<double, 2, 1> qla_ref;
-  std::string ctrlMode;
-};
-
-struct trajVals {
-  std::vector<Eigen::Vector3d> p_refv;
-  std::vector<Eigen::Vector3d> v_refv;
-};
-
 struct Model {
   std::string name;
   std::string csvpath;
@@ -57,21 +36,4 @@ struct Model {
   // Vectors of length 4 represent just the leg joints (q0, q1, q2, q3). Used in Leg class only.
   // Vectors of length 3 represent just the reaction wheel joints (q4, q5, q6). Used in Rwa class only.
   // Vectors of length 2 represent just the actuatable leg joints (q0, q2). Used for leg jacobian calculations.
-};
-
-struct ActuatorModel {
-  std::string name;
-  double v_max;
-  double kt;
-  double omega_max;
-  double tau_max;
-  double r;
-  double i_max;
-  double gr;
-};
-
-struct OutVals {
-  double tau_out;
-  double i;
-  double v;
 };

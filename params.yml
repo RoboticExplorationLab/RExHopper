@@ -1,0 +1,15 @@
+# parameters file for microstrain_inertial docker image (CX5 IMU) 
+
+# 1. sudo docker pull microstrain/ros-microstrain_inertial_driver:ros
+
+# 2. Find the device id with
+# $ dmesg | grep tty
+
+# 3. In RosDockerWorkspace, run (change the device and port id if necessary): 
+
+# $ sudo docker run -it --rm --net=host --device=/dev/ttyACM1 -v "/home/hopper/Documents/git_workspace/RosDockerWorkspace/src/RExHopper/params.yml:/tmp/params.yml" microstrain/ros-microstrain_inertial_driver:ros params_file:=/tmp/params.yml port:=/dev/ttyACM1
+  
+# 3. You can check what it's publishing with
+# $ rostopic list
+
+filter_declination_source: 1

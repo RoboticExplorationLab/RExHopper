@@ -5,19 +5,23 @@
 class Plots {
  public:
   Plots();
-  static void Grf(int N, std::vector<double> grf_normal);
-  static void OpSpacePos(int N, std::vector<double> peb_x, std::vector<double> peb_z, std::vector<double> peb_refx,
-                         std::vector<double> peb_refz);
-  static void Plot2(int N, std::string title, std::string name_1, std::vector<double> vec1, std::vector<double> ref1, std::string name_2,
-                    std::vector<double> vec2, std::vector<double> ref2, double ylim);
-  static void Plot3(int N, std::string title, std::string name_1, std::vector<double> vec1, std::vector<double> ref1, std::string name_2,
-                    std::vector<double> vec2, std::vector<double> ref2, std::string name_3, std::vector<double> vec3,
-                    std::vector<double> ref3, double ylim);
-  static void Plot5(int N, std::string title, std::string name_1, std::vector<double> vec1, std::vector<double> ref1, std::string name_2,
-                    std::vector<double> vec2, std::vector<double> ref2, std::string name_3, std::vector<double> vec3,
-                    std::vector<double> ref3, std::string name_4, std::vector<double> vec4, std::vector<double> ref4, std::string name_5,
-                    std::vector<double> vec5, std::vector<double> ref5, double ylim);
+  static void PlotSingle(int N, std::string title, std::vector<double> vec);
+  static void PlotMulti3(int N, std::string title, std::string name1, std::vector<double> vec1, std::string name2, std::vector<double> vec2,
+                         std::string name3, std::vector<double> vec3);
+  static void PlotMap2D(int N, std::string title, std::string name, std::vector<std::vector<double>> vec,
+                        std::vector<std::vector<double>> ref, double xlim, double ylim);
+  static void PlotMap3D(int N, std::string title, std::string name, std::vector<std::vector<double>> vec, double xlim, double ylim);
+  static void Plot2(int N, std::string title, std::string name, std::vector<std::vector<double>> vec, std::vector<std::vector<double>> ref,
+                    double ylim);
+  static void Plot3(int N, std::string title, std::string name, std::vector<std::vector<double>> vec, std::vector<std::vector<double>> ref,
+                    double ylim);
+  static void Plot5(int N, std::string title, std::string name, std::vector<std::vector<double>> vec, std::vector<std::vector<double>> ref,
+                    double ylim);
 
  private:
+  static std::vector<double> StartPlot(int N, std::string title);
+  static std::vector<double> StartSubPlot(int N, std::string title);
+  static void SubPlot(std::string name, std::vector<double> timesteps, std::vector<double> vec, std::vector<double> ref, double ylim);
+  static std::vector<double> ExtractVectorCol(int N, std::vector<std::vector<double>> vec, int col);
   static std::vector<double> GenRange(int N);
 };

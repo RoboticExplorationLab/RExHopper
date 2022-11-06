@@ -2,10 +2,12 @@
 #include "mujoco/glfw3.h"
 #include "mujoco/mujoco.h"
 // for sleep timers
+
 #include <chrono>
 #include <iostream>
 #include <thread>
-
+// for getcwd()
+#include <unistd.h>
 mjModel* m;      // MuJoCo model
 mjData* d;       // MuJoCo data
 mjvCamera cam;   // abstract camera
@@ -80,13 +82,22 @@ MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool record_) 
 
 void MujocoBridge::Init() {
   char error[ERROR_SIZE] = "Could not load binary model";
+
+  std::string path_mjcf;
   if (fixed == true) {
-    str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf_fixed.xml";
+    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf_fixed.xml";
   } else {
-    str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+    // str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
   }
-  char* dir = new char[150];  // just needs to be larger than the actual string
-  strcpy(dir, str.c_str());
+  char* cwd;
+  char buff[PATH_MAX + 1];
+  cwd = getcwd(buff, PATH_MAX + 1);  // get current working directory
+  std::string path_cwd = cwd;
+  str = path_cwd + path_mjcf;  // combine current directory with relative path for mjcf
+
+  char* dir = new char[PATH_MAX + 1];  // just needs to be larger than the actual string
+  strcpy(dir, str.c_str());            // converting back to char... probably wasteful but whatevs
   if (std::strlen(dir) > 4 && !std::strcmp(dir + std::strlen(dir) - 4, ".mjb")) {
     m = mj_loadModel(dir, 0);
   } else {
@@ -234,8 +245,11 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       Q.y() = d->sensordata[5];
       Q.z() = d->sensordata[6];
     }
+
     v << d->sensordata[7], d->sensordata[8], d->sensordata[9];
-    w << d->sensordata[10], d->sensordata[11], d->sensordata[12];
+
+    wb << d->sensordata[10], d->sensordata[11], d->sensordata[12];
+
     grf_normal = d->sensordata[13];
     sh = grf_normal >= 60 ? true : false;  // check if contact is legit
 
@@ -245,6 +259,9 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     rf_x << d->sensordata[19], d->sensordata[22], d->sensordata[25], d->sensordata[28], d->sensordata[31];
     rf_y << d->sensordata[20], d->sensordata[23], d->sensordata[26], d->sensordata[29], d->sensordata[32];
     rf_z << d->sensordata[21], d->sensordata[24], d->sensordata[27], d->sensordata[30], d->sensordata[33];
+
+    ab << d->sensordata[34], d->sensordata[35], d->sensordata[36];   // base accelerometer
+    aef << d->sensordata[37], d->sensordata[38], d->sensordata[39];  // foot accelerometer
 
     t_refresh += 1;
     // std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -278,7 +295,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     End();
   }
 
-  return retVals{p, Q, v, w, qa, dqa, sh};
+  return retVals{p, Q, v, wb, ab, aef, qa, dqa};
 }
 
 void MujocoBridge::End() {
