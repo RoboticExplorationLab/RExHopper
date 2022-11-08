@@ -1,7 +1,7 @@
 #include "hopper_mpc/mocap_node.h"
 
 MocapNode::MocapNode() {
-  sub_mocap = nh.subscribe("/mocap_node/Robot_2/pose", 1, &MocapNode::MocapCallback, this);
+  sub_mocap = nh_mocap.subscribe("/mocap_node/Robot_2/pose", 1, &MocapNode::MocapCallback, this);
 }
 
 // void MocapNode::Init() {}

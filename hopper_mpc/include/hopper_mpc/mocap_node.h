@@ -23,6 +23,6 @@ class MocapNode {  // The class
 
  private:
   double t_mocap_prev = 0;
-  ros::NodeHandle nh;
+  ros::NodeHandle nh_mocap;
   ros::Subscriber sub_mocap;
 };

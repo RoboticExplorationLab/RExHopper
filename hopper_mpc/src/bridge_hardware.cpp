@@ -115,7 +115,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   dqa = GetJointVel();
 
   // --- begin state estimation --- //
-  ros::spinOnce();  // spin ROS
+  // ros::spinOnce();  // spin ROS (don't use with AsyncSpinner)
   // get p and v from mocap
   /*
   p = mocapPtr->p_mocap;  // get position from mocap system
