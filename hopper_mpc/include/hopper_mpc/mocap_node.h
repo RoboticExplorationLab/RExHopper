@@ -14,7 +14,6 @@ class MocapNode {  // The class
   MocapNode();  // constructor
   // void Init();
   void MocapCallback(const geometry_msgs::PoseStamped::ConstPtr& opti_msg);
-  void MocapSpin();
   bool first_mocap_received = false;
   Eigen::Vector3d p_mocap;
   Eigen::Vector3d euler_mocap;

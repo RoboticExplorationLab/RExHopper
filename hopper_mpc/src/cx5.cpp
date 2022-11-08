@@ -16,12 +16,7 @@ Cx5::Cx5() {
   // clear param for future use
   params.deleteParam("device");
 
-  // create the listener node object
-  ros::NodeHandle n;
-
-  ros::Subscriber sub = n.subscribe(("/" + deviceName + "/imu/data"), 3, &Cx5::ImuDataCallback, this);
-
-  // ros::spin();  // would multithreading be better?
+  sub_cx5 = n.subscribe(("/" + deviceName + "/imu/data"), 3, &Cx5::ImuDataCallback, this);
 }
 
 void Cx5::ImuDataCallback(const sensor_msgs::Imu::ConstPtr& imu) {
