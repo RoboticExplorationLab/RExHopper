@@ -115,8 +115,9 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   dqa = GetJointVel();
 
   // --- begin state estimation --- //
+  ros::spinOnce();  // spin ROS
   // get p and v from mocap
-  mocapPtr->MocapSpin();  // update mocap subscriber node
+  /*
   p = mocapPtr->p_mocap;  // get position from mocap system
   double dt_mocap = mocapPtr->dt_mocap;
   // check if mocap has updated yet
@@ -139,12 +140,15 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
     p(1) = Utils::PolyFit(t_hist, py_hist, 3, t_mocap);
     p(2) = Utils::PolyFit(t_hist, pz_hist, 3, t_mocap);
   }
+  */
+  p << 0, 0, 0;  //
   v = (p - p_prev) / dt;
 
   // get Q and w from cx5 IMU
-  cx5Ptr->Spin();  // update base imu subscriber node
   Q = cx5Ptr->Q;
   wb = cx5Ptr->omega;
+  std::cout << Q.coeffs().transpose() << "\n";
+  // std::cout << wb.transpose() << "\n";
 
   // get ae and we from wt901 IMU
   double imu_mount_angle = 8.9592122 * M_PI / 180;
@@ -155,6 +159,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   Eigen::Vector3d ae_raw = wt901vals.acc;
   Eigen::Vector3d we_raw = wt901vals.omega;
   aef = R2 * (R1 * ae_raw);
+
   // --- end state estimation --- //
 
   ctrlMode_prev = ctrlMode;

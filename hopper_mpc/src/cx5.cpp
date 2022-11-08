@@ -33,10 +33,3 @@ void Cx5::ImuDataCallback(const sensor_msgs::Imu::ConstPtr& imu) {
   omega << imu->angular_velocity.x, imu->angular_velocity.y, imu->angular_velocity.z;
   alpha << imu->linear_acceleration.x, imu->linear_acceleration.y, imu->linear_acceleration.z;
 }
-
-void Cx5::Spin() {
-  ros::spinOnce();
-}
-// void Cx5::Collect() {
-//   // collecting data
-// }

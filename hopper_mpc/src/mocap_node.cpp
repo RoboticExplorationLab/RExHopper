@@ -21,6 +21,6 @@ void MocapNode::MocapCallback(const geometry_msgs::PoseStamped::ConstPtr& msg_mo
   first_mocap_received = true;
 }
 
-void MocapNode::MocapSpin() {
-  ros::spinOnce();
-}
+// void MocapNode::MocapSpin() {
+//   ros::spinOnce();
+// }

@@ -296,9 +296,9 @@ void Runner::Run() {  // Method/function defined inside the class
     // Plots::Plot3(N_run, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
     // Plots::Plot5(N_run, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
     // Plots::Plot5(N_run, "Dq vs Time", "dq", tau_vec, tau_ref_vec, 0);
-    Plots::PlotMulti3(N_run, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State", gc_state_hist);
-    Plots::PlotSingle(N_run, "Ground Reaction Force Normal", grf_normal);
-    // Plots::Plot3(N_run, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
+    // Plots::PlotMulti3(N_run, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
+    // gc_state_hist); Plots::PlotSingle(N_run, "Ground Reaction Force Normal", grf_normal);
+    Plots::Plot3(N_run, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
     Plots::Plot3(N_run, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
   }
 }
