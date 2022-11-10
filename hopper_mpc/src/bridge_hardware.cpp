@@ -119,6 +119,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   // get p and v from mocap
   p = mocapPtr->p_mocap;  // get position from mocap system
   double dt_mocap = mocapPtr->dt_mocap;
+  std::cout << "p = " << p.transpose() << "\n";
   // check if mocap has updated yet
   // if (dt_mocap != 0.0) {
   //   t_mocap = mocapPtr->t_mocap;  // get time from mocap system

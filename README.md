@@ -63,6 +63,10 @@ You can check what it's publishing with
 rostopic list
 ```
 
+## Mocap Node
+```
+roslaunch hopper_mpc mocap.launch
+```
 
 ## Code Execution
 
