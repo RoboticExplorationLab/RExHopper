@@ -110,19 +110,20 @@ if (cmake_clang_tools_FOUND)
   )
 endif (cmake_clang_tools_FOUND)
 
-#############
-## Install ##
-#############
+# ############
+# # Install ##
+# ############
 
-#############
-## Testing ##
-#############
+# ############
+# # Testing ##
+# ############
 
 # Add gtest based cpp test target and link libraries
-catkin_add_gtest(${PROJECT_NAME}-test 
+catkin_add_gtest(${PROJECT_NAME}-test
   test/test_hopper_wt901.cpp
   src/wt901.cpp
   # test/test_hopper_cx5.cpp
+  # src/cx5.cpp
 )
 target_link_libraries(${PROJECT_NAME}-test 
   gtest_main 

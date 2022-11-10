@@ -90,7 +90,7 @@ struct STime {
   unsigned char ucHour;
   unsigned char ucMinute;
   unsigned char ucSecond;
-  unsigned short usMiliSecond;
+  unsigned short usMilliSecond;
 };
 
 struct SAcc {

@@ -50,13 +50,13 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
     throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
   // initialize state
-  p << 0, 0, 0.5;            // must match starting position in mjcf!!
-  Q.coeffs() << 0, 0, 0, 1;  // a vector expression of the coefficients (x,y,z,w)
+  p << 0, 0, 0.5;   // must match starting position in mjcf!!
+  Q.setIdentity();  // a vector expression of the coefficients (x,y,z,w)
   v.setZero();
   w.setZero();
   // initialize reference state
   p_ref << 2, 0, 0.5;
-  Q_ref.coeffs() << 0, 0, 0, 1;
+  Q_ref.setIdentity();
   v_ref.setZero();
   w_ref.setZero();
 

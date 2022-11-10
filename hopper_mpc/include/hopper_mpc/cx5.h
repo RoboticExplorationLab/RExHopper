@@ -12,6 +12,7 @@ class Cx5 {               // The class
 
  private:
   void ImuDataCallback(const sensor_msgs::Imu::ConstPtr& imu);
+  // void ImuDataCallback(const sensor_msgs::Imu imu);
   ros::NodeHandle nh_cx5;
   ros::Subscriber sub_cx5;
 };

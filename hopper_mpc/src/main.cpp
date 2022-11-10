@@ -65,13 +65,6 @@ int main(int argc, char* argv[]) {
     skip_kf = true;
   }
 
-  // ROS
-  ros::init(argc, argv, "hopper_ctrl");
-  ros::AsyncSpinner spinner(0);  // run threads async
-  spinner.start();
-  ros::waitForShutdown();
-  //
-
   Model hopper;
   hopper.name = "rw";
   hopper.csvpath = "res/hopper_rev08/urdf/hopper_rev08.csv";
@@ -113,7 +106,14 @@ int main(int argc, char* argv[]) {
   hopper.k_kin << 45, 45 * 0.02;
 
   double dt = 0.001;  // 1 kHz
+
+  ros::init(argc, argv, "hopper_ctrl");  // ROS
+  ros::AsyncSpinner spinner(0);          // run threads async
+  spinner.start();                       // async spinner runs in bg
+
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record, skip_kf);
   runner.Run();  // Call the method
+
+  ros::waitForShutdown();  // should be the last call in main (causes program to hang!!)
   return 0;
 }

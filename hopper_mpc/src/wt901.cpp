@@ -1,7 +1,4 @@
 #include "hopper_mpc/wt901.h"
-// for geteuid permissions
-#include <sys/types.h>
-#include <unistd.h>
 // for sleep_for
 #include <chrono>
 #include <thread>
@@ -56,7 +53,7 @@ wt901Vals Wt901::Collect() {
   GetAcc();
   GetGyro();
   int time_ms =
-      static_cast<int>(stcTime.ucMinute) * 60 * 1000 + static_cast<int>(stcTime.ucSecond) * 1000 + static_cast<int>(stcTime.usMiliSecond);
+      static_cast<int>(stcTime.ucMinute) * 60 * 1000 + static_cast<int>(stcTime.ucSecond) * 1000 + static_cast<int>(stcTime.usMilliSecond);
   float time_s = time_ms / 1000;
 
   float acc_x = (float)stcAcc.a[0] / 32768 * 16 * 9.8;

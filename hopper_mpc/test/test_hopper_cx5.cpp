@@ -2,9 +2,17 @@
 #include <iostream>
 #include "hopper_mpc/cx5.h"
 
-TEST(AAA, test) {
+TEST(BBB, test) {
+  // reminder: run the docker image first
+  int argc = 0;
+  char** argv = NULL;
+  ros::init(argc, argv, "hopper_ctrl");
+  ros::AsyncSpinner spinner(0);  // run threads async
+  spinner.start();
+  ros::waitForShutdown();
   Cx5 cx5;
-  cx5Vals cx5vals = cx5.Collect();
 
-  std::cerr << cx5vals.Q << std::endl;
+  for (int i = 0; i < 1000; i++) {
+    std::cout << cx5.Q.coeffs().transpose() << "\n";
+  }
 }

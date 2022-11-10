@@ -7,16 +7,7 @@ Cx5::Cx5() {
   omega.setZero();
   alpha.setZero();
 
-  // get the device name parameter
-  std::string deviceName;
-  ros::NodeHandle params("~");
-  params.param<std::string>("device", deviceName, "cx5");
-  ROS_INFO("Got device param: %s", deviceName.c_str());
-
-  // clear param for future use
-  params.deleteParam("device");
-
-  sub_cx5 = nh_cx5.subscribe(("/" + deviceName + "/imu/data"), 3, &Cx5::ImuDataCallback, this);
+  sub_cx5 = nh_cx5.subscribe<sensor_msgs::Imu>(("/nav/filtered_imu/data"), 3, &Cx5::ImuDataCallback, this);
 }
 
 void Cx5::ImuDataCallback(const sensor_msgs::Imu::ConstPtr& imu) {
@@ -28,3 +19,8 @@ void Cx5::ImuDataCallback(const sensor_msgs::Imu::ConstPtr& imu) {
   omega << imu->angular_velocity.x, imu->angular_velocity.y, imu->angular_velocity.z;
   alpha << imu->linear_acceleration.x, imu->linear_acceleration.y, imu->linear_acceleration.z;
 }
+
+// void Cx5::ImuDataCallback(const sensor_msgs::Imu imu) {
+//   Q.coeffs() << imu.orientation.x, imu.orientation.y, imu.orientation.z, imu.orientation.w;
+//   std::cout << Q.coeffs().transpose() << "\n";
+// }
