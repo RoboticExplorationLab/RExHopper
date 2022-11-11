@@ -14,13 +14,16 @@
 # 3. You can check what it's publishing with
 # $ rostopic list
 
+baudrate    : 921600  # max
+
 device_setup : True
+
 filter_declination_source: 1  # Note: When using a CV7, this MUST be changed to either 1, or 3 or the node will not start
 # raw_file_enable : True
 # raw_file_directory : ""
 
 # imu_data_rate : 500
-filter_data_rate : 200
+filter_data_rate : 500
 
 # If this is set to true, the acceleration will not factor out gravity, if set to false gravity will be filtered out of the linear acceleration.
 filter_use_compensated_accel : True

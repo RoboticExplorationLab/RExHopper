@@ -1,4 +1,5 @@
 #include "hopper_mpc/rwa.h"
+#include <iostream>
 #include "Eigen/Core"
 #include "hopper_mpc/utils.hpp"
 

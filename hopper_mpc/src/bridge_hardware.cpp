@@ -72,6 +72,16 @@ void HardwareBridge::Init() {
   pz_hist.reserve(N_lookback);
   t_hist.reserve(N_lookback);
   t_mocap = 0;
+
+  // initialize reaction wheels in torque control mode
+  // DANGER!! disable while fiddling with IMU settings!!!
+  SetTorCtrlMode(ODriveCANright, node_id_rwr);
+  SetTorCtrlMode(ODriveCANleft, node_id_rwl);
+  SetTorCtrlMode(ODriveCANyaw, node_id_rwz);
+  // increase these when you're ready
+  ODriveCANright->SetLimits(node_id_rwr, 2, 5);
+  ODriveCANleft->SetLimits(node_id_rwl, 2, 5);
+  ODriveCANyaw->SetLimits(node_id_rwz, 2, 5);
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir) {
@@ -97,6 +107,7 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
 
 retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
   // Torque vs Position Control for Legs
+  // these would be set in constructor except that we may want to change mode in midst of control
   if (ctrlMode == "Pos") {
     if (ctrlMode_prev != "Pos") {
       SetPosCtrlMode(ODriveCANleft, node_id_q0, qla_ref(0));
@@ -109,8 +120,8 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
       SetTorCtrlMode(ODriveCANleft, node_id_q0);
       SetTorCtrlMode(ODriveCANright, node_id_q2);
     }
-    SetJointTorque(u);
   }
+  SetJointTorque(u);  // should not affect purely position controlled joints
 
   qa = GetJointPos();
   dqa = GetJointVel();
@@ -121,25 +132,25 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   double dt_mocap = mocapPtr->dt_mocap;
 
   // check if mocap has updated yet
-  if (dt_mocap != 0.0) {
-    t_mocap = mocapPtr->t_mocap;  // get time from mocap system
-    // mocap has updated, so it's time to update vector of saved p and t for polyfitting
-    std::move(begin(px_hist) + 1, end(px_hist), begin(px_hist));  // shift the vector to the right by one (deleting the first value)
-    px_hist.back() = p(0);
-    std::move(begin(py_hist) + 1, end(py_hist), begin(py_hist));  // shift the vector to the right by one (deleting the first value)
-    py_hist.back() = p(1);
-    std::move(begin(pz_hist) + 1, end(pz_hist), begin(pz_hist));  // shift the vector to the right by one (deleting the first value)
-    pz_hist.back() = p(2);
-    // update vector of saved t
-    std::move(begin(t_hist) + 1, end(t_hist), begin(t_hist));  // shift the vector to the right by one (deleting the first value)
-    t_hist.back() = t_mocap;
-  } else {
-    t_mocap += dt;  // estimate time since last mocap update
-    // if p is not being updated by the mocap, interpolate it using polynomial regression
-    p(0) = Utils::PolyFit(t_hist, px_hist, 3, t_mocap);
-    p(1) = Utils::PolyFit(t_hist, py_hist, 3, t_mocap);
-    p(2) = Utils::PolyFit(t_hist, pz_hist, 3, t_mocap);
-  }
+  // if (dt_mocap != 0.0) {
+  //   t_mocap = mocapPtr->t_mocap;  // get time from mocap system
+  //   // mocap has updated, so it's time to update vector of saved p and t for polyfitting
+  //   std::move(begin(px_hist) + 1, end(px_hist), begin(px_hist));  // shift the vector to the right by one (deleting the first value)
+  //   px_hist.back() = p(0);
+  //   std::move(begin(py_hist) + 1, end(py_hist), begin(py_hist));  // shift the vector to the right by one (deleting the first value)
+  //   py_hist.back() = p(1);
+  //   std::move(begin(pz_hist) + 1, end(pz_hist), begin(pz_hist));  // shift the vector to the right by one (deleting the first value)
+  //   pz_hist.back() = p(2);
+  //   // update vector of saved t
+  //   std::move(begin(t_hist) + 1, end(t_hist), begin(t_hist));  // shift the vector to the right by one (deleting the first value)
+  //   t_hist.back() = t_mocap;
+  // } else {
+  //   t_mocap += dt;  // estimate time since last mocap update
+  //   // if p is not being updated by the mocap, interpolate it using polynomial regression
+  //   p(0) = Utils::PolyFit(t_hist, px_hist, 3, t_mocap);
+  //   p(1) = Utils::PolyFit(t_hist, py_hist, 3, t_mocap);
+  //   p(2) = Utils::PolyFit(t_hist, pz_hist, 3, t_mocap);
+  // }
 
   v = (p - p_prev) / dt;
 
@@ -149,16 +160,37 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   ab = cx5Ptr->alpha;
 
   // get aef from wt901 IMU
-  aef = wt901Ptr->CollectAcc();
+  // aef = wt901Ptr->CollectAcc();  // TODO: make this asynchronous otherwise it wastes too much time
 
   // get motor torques
   // tau = GetJointTorqueMeasured();  // TODO: Make this work
+  tau_ref = u;
   // --- end collecting sensor data --- //
+  FallCheck(Q);
 
   ctrlMode_prev = ctrlMode;
   p_prev = p;
   return retVals{p, Q, v, wb, ab, aef, qa, dqa};
 }
+
+void HardwareBridge::FallCheck(Eigen::Quaterniond Q) {
+  Eigen::Quaterniond Q0;
+  Q0.setIdentity();
+
+  double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion
+  Eigen::Quaterniond Q_z, Q_no_yaw;
+  Q_z.w() = cos(z_angle / 2);
+  Q_z.x() = 0;
+  Q_z.y() = 0;
+  Q_z.z() = sin(z_angle / 2);
+  Q_no_yaw = (Q * (Q_z.inverse())).normalized();  // the base quaternion ignoring heading
+
+  // std::cout << "angle = " << Utils::AngleBetween(Q0, Q_no_yaw) << "\n";
+  if (Utils::AngleBetween(Q0, Q_no_yaw) > (45 * M_PI / 180)) {
+    std::cout << "Fall likely; engaging emergency actuator deactivation \n";
+    End();
+  }
+};
 
 void HardwareBridge::SetPosCtrlMode(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {
   // set Odrives to position control

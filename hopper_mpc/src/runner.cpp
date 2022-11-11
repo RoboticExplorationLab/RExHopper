@@ -107,8 +107,8 @@ void Runner::Run() {  // Method/function defined inside the class
   std::vector<std::vector<double>> p_raw_vec(N_run), v_raw_vec(N_run), pe_raw_vec(N_run), ve_raw_vec(N_run);
   std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
 
-  std::vector<std::vector<double>> p_ref_vec(N_run), theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run),
-      peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), dqa_vec(N_run), reactf_vec(N_run);
+  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), peb_vec(N_run),
+      peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), dqa_vec(N_run), reactf_vec(N_run);
 
   std::vector<std::vector<double>> a_vec(N_run), ae_vec(N_run);
 
@@ -132,11 +132,18 @@ void Runner::Run() {  // Method/function defined inside the class
   uVals uvals;
   kfVals kfvals;
 
+  Eigen::Quaterniond Q_offset;
+
   for (int k = 0; k < N_run; k++) {
     auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
 
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
-    Q = retvals.Q;
+    if (k == 0) {                                       // TODO: Move this outside of the loop?
+      // TODO: rotate mocap position as well based on mocap yaw
+      Q_offset = retvals.Q;  // initial offset for yaw adjustment
+    }
+    Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
+
     wb = retvals.wb;
     w = Q.matrix() * wb;  // angular vel in the world frame
     ab = retvals.ab;
@@ -202,7 +209,7 @@ void Runner::Run() {  // Method/function defined inside the class
     } else {
       throw "Invalid ctrl name! Use 'raibert', 'stand', 'idle', or 'circle'";
     }
-
+    // std::cout << "u = " << u.transpose() << "\n";
     gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
     sh_prev = sh;
 
@@ -222,11 +229,9 @@ void Runner::Run() {  // Method/function defined inside the class
       pe_vec.at(k) = {pe(0), pe(1), pe(2)};
       ve_vec.at(k) = {ve(0), ve(1), ve(2)};
 
-      p_ref_vec.at(k) = {p_ref(0), p_ref(1), p_ref(2)};
+      theta_vec.at(k) = {rwaPtr->theta(0) * 180 / M_PI, rwaPtr->theta(1) * 180 / M_PI, rwaPtr->theta(2) * 180 / M_PI};
+      theta_ref_vec.at(k) = {rwaPtr->setp(0) * 180 / M_PI, rwaPtr->setp(1) * 180 / M_PI, rwaPtr->setp(2) * 180 / M_PI};
 
-      theta_vec.at(k) = {rwaPtr->theta(0), rwaPtr->theta(1), rwaPtr->theta(2)};
-
-      theta_ref_vec.at(k) = {rwaPtr->setp(0), rwaPtr->setp(1), rwaPtr->setp(2)};
       qla_vec.at(k) = {qa(0) * 180 / M_PI, qa(1) * 180 / M_PI};
       qla_ref_vec.at(k) = {qla_ref(0) * 180 / M_PI, qla_ref(1) * 180 / M_PI};
 
@@ -261,7 +266,7 @@ void Runner::Run() {  // Method/function defined inside the class
       auto t_after = std::chrono::high_resolution_clock::now();       // current time
       std::chrono::duration<double> tk_chrono = t_after - t0_chrono;  // measured time w.r.t. the initialization of loop
       if (tk_chrono.count() >= t) {
-        std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
+        // std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
         // throw(std::runtime_error("Missed 'real time' deadline"));
       } else {
         int remainder = (t - tk_chrono.count()) * 1000;
@@ -282,17 +287,17 @@ void Runner::Run() {  // Method/function defined inside the class
 
   if (plot == true) {
     if (skip_kf == false) {
-      Plots::Plot3(N_run, "Position vs Time", "p", p_vec, p_raw_vec, 0);
-      Plots::Plot3(N_run, "Velocity vs Time", "v", v_vec, v_raw_vec, 0);
-      Plots::Plot3(N_run, "Foot Position vs Time", "pe", pe_vec, pe_raw_vec, 0);
-      Plots::Plot3(N_run, "Foot Velocity vs Time", "ve", ve_vec, ve_raw_vec, 0);
+      Plots::Plot3(N_run, "Position, Filtered vs Raw", "p", p_vec, p_raw_vec, 0);
+      Plots::Plot3(N_run, "Velocity, Filtered vs Raw", "v", v_vec, v_raw_vec, 0);
+      Plots::Plot3(N_run, "Foot Position, Filtered vs Raw", "pe", pe_vec, pe_raw_vec, 0);
+      Plots::Plot3(N_run, "Foot Velocity, Filtered vs Raw", "ve", ve_vec, ve_raw_vec, 0);
     }
-    // Plots::PlotMap2D(N_run, "2D Position vs Time", "p", p_vec, p_vec, 0, 0);
+    // Plots::PlotMap2D(N_run, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
     // Plots::PlotMap3D(N_run, "3D Position vs Time", "p", p_vec, 0, 0);
     // Plots::PlotSingle(N_run, "Normal Ground Reaction Force", grf_normal);
     // Plots::Plot2(N_run, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
 
-    // Plots::Plot3(N_run, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
+    Plots::Plot3(N_run, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
     // Plots::Plot3(N_run, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
     Plots::Plot5(N_run, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
     // Plots::Plot5(N_run, "Dq vs Time", "dq", tau_vec, tau_ref_vec, 0);
