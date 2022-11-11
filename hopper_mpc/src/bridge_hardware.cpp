@@ -115,51 +115,45 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   qa = GetJointPos();
   dqa = GetJointVel();
 
-  // --- begin state estimation --- //
+  // --- begin collecting sensor data --- //
   // get p and v from mocap
   p = mocapPtr->p_mocap;  // get position from mocap system
   double dt_mocap = mocapPtr->dt_mocap;
-  std::cout << "p = " << p.transpose() << "\n";
+
   // check if mocap has updated yet
-  // if (dt_mocap != 0.0) {
-  //   t_mocap = mocapPtr->t_mocap;  // get time from mocap system
-  //   // mocap has updated, so it's time to update vector of saved p and t for polyfitting
-  //   std::move(begin(px_hist) + 1, end(px_hist), begin(px_hist));  // shift the vector to the right by one (deleting the first value)
-  //   px_hist.back() = p(0);
-  //   std::move(begin(py_hist) + 1, end(py_hist), begin(py_hist));  // shift the vector to the right by one (deleting the first value)
-  //   py_hist.back() = p(1);
-  //   std::move(begin(pz_hist) + 1, end(pz_hist), begin(pz_hist));  // shift the vector to the right by one (deleting the first value)
-  //   pz_hist.back() = p(2);
-  //   // update vector of saved t
-  //   std::move(begin(t_hist) + 1, end(t_hist), begin(t_hist));  // shift the vector to the right by one (deleting the first value)
-  //   t_hist.back() = t_mocap;
-  // } else {
-  //   t_mocap += dt;  // estimate time since last mocap update
-  //   // if p is not being updated by the mocap, interpolate it using polynomial regression
-  //   p(0) = Utils::PolyFit(t_hist, px_hist, 3, t_mocap);
-  //   p(1) = Utils::PolyFit(t_hist, py_hist, 3, t_mocap);
-  //   p(2) = Utils::PolyFit(t_hist, pz_hist, 3, t_mocap);
-  // }
+  if (dt_mocap != 0.0) {
+    t_mocap = mocapPtr->t_mocap;  // get time from mocap system
+    // mocap has updated, so it's time to update vector of saved p and t for polyfitting
+    std::move(begin(px_hist) + 1, end(px_hist), begin(px_hist));  // shift the vector to the right by one (deleting the first value)
+    px_hist.back() = p(0);
+    std::move(begin(py_hist) + 1, end(py_hist), begin(py_hist));  // shift the vector to the right by one (deleting the first value)
+    py_hist.back() = p(1);
+    std::move(begin(pz_hist) + 1, end(pz_hist), begin(pz_hist));  // shift the vector to the right by one (deleting the first value)
+    pz_hist.back() = p(2);
+    // update vector of saved t
+    std::move(begin(t_hist) + 1, end(t_hist), begin(t_hist));  // shift the vector to the right by one (deleting the first value)
+    t_hist.back() = t_mocap;
+  } else {
+    t_mocap += dt;  // estimate time since last mocap update
+    // if p is not being updated by the mocap, interpolate it using polynomial regression
+    p(0) = Utils::PolyFit(t_hist, px_hist, 3, t_mocap);
+    p(1) = Utils::PolyFit(t_hist, py_hist, 3, t_mocap);
+    p(2) = Utils::PolyFit(t_hist, pz_hist, 3, t_mocap);
+  }
 
   v = (p - p_prev) / dt;
 
-  // get Q and w from cx5 IMU
+  // get Q, wb, and ab from cx5 IMU
   Q = cx5Ptr->Q;
   wb = cx5Ptr->omega;
-  // std::cout << Q.coeffs().transpose() << "\n";
-  // std::cout << wb.transpose() << "\n";
+  ab = cx5Ptr->alpha;
 
-  // get ae and we from wt901 IMU
-  // double imu_mount_angle = 8.9592122 * M_PI / 180;
-  // Eigen::Matrix3d R1 = Utils::EulerToQuat(imu_mount_angle, 0.0, 0.0).matrix();
-  // Eigen::Matrix3d R2 = Utils::EulerToQuat(0, 0, 0.5 * M_PI).matrix();
+  // get aef from wt901 IMU
+  aef = wt901Ptr->CollectAcc();
 
-  // wt901Vals wt901vals = wt901Ptr->Collect();
-  // Eigen::Vector3d ae_raw = wt901vals.acc;
-  // Eigen::Vector3d we_raw = wt901vals.omega;
-  // aef = R2 * (R1 * ae_raw);
-
-  // --- end state estimation --- //
+  // get motor torques
+  // tau = GetJointTorqueMeasured();  // TODO: Make this work
+  // --- end collecting sensor data --- //
 
   ctrlMode_prev = ctrlMode;
   p_prev = p;
@@ -245,6 +239,18 @@ void HardwareBridge::SetJointTorque(Eigen::Matrix<double, 5, 1> u) {
   ODriveCANright->SetTorque(node_id_rwr, u(2));
   ODriveCANleft->SetTorque(node_id_rwl, u(3));
   ODriveCANyaw->SetTorque(node_id_rwz, u(4));
+}
+
+Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointTorqueMeasured() {
+  Eigen::Matrix<double, 5, 1> tau;
+  // TODO: Check if ODrive includes polarity in current measurement?
+  tau(0) = -ODriveCANleft->GetIqMeasured(node_id_q0);  // ODrive velocity in RPS?
+  tau(1) = ODriveCANright->GetIqMeasured(node_id_q2);
+  tau(2) = ODriveCANright->GetIqMeasured(node_id_rwr);
+  tau(3) = ODriveCANleft->GetIqMeasured(node_id_rwl);
+  tau(4) = ODriveCANyaw->GetIqMeasured(node_id_rwz);
+  tau = tau.cwiseProduct(model.a_kt);  // multiply by actuator kt to convert current to torque
+  return tau;
 }
 
 void HardwareBridge::End() {

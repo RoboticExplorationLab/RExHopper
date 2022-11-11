@@ -39,10 +39,12 @@ class HardwareBridge : public Bridge {  // The class
   Eigen::Matrix<double, 5, 1> q_offset;
   Eigen::Matrix<double, 5, 1> GetJointPos();
   Eigen::Matrix<double, 5, 1> GetJointVel();
+  Eigen::Matrix<double, 5, 1> GetJointTorqueMeasured();
   Eigen::Vector2d ConvertToODrivePos(Eigen::Vector2d qa);
   Eigen::Vector2d ConvertToODriveVel(Eigen::Vector2d dqa);
   void SetJointPos(Eigen::Vector2d qla_ref);  // only need pos control for leg actuators afaik
   void SetJointTorque(Eigen::Matrix<double, 5, 1> u);
+  
   double TurnsToRadians(double turns);
 
   std::unique_ptr<MocapNode> mocapPtr;

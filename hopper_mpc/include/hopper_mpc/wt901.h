@@ -130,21 +130,15 @@ struct SGPSV {
   long lGPSVelocity;
 };
 
-struct wt901Vals {
-  float time;
-  Eigen::Vector3d acc;
-  Eigen::Vector3d omega;
-};
-
 class Wt901 {  // The class
 
  public:    // Access specifier
   Wt901();  // constructor
-  wt901Vals Collect();
+  Eigen::Vector3d CollectAcc();
 
  private:
   // unsigned char ucDevAddr;
-  uint8_t ucDevAddr;
+  // uint8_t ucDevAddr;
   std::unique_ptr<mraa::I2c> i2cPtr;
   // mraa::I2c i2c;
   void ReadRegisters(unsigned char addressToRead, unsigned char bytesToRead, uint8_t* dest);
@@ -166,4 +160,8 @@ class Wt901 {  // The class
   struct SPress stcPress;
   struct SLonLat stcLonLat;
   struct SGPSV stcGPSV;
+
+  // Rotation matrices for foot frame transformation
+  Eigen::Matrix3d R1;
+  Eigen::Matrix3d R2;
 };

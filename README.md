@@ -65,7 +65,7 @@ rostopic list
 
 ## Mocap Node
 ```
-roslaunch hopper_mpc mocap.launch
+roslaunch mocap_optitrack mocap.launch
 ```
 
 ## Code Execution

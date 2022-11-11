@@ -1,4 +1,5 @@
 #include "hopper_mpc/wt901.h"
+#include "hopper_mpc/utils.hpp"
 // for sleep_for
 #include <chrono>
 #include <thread>
@@ -6,13 +7,17 @@
 Wt901::Wt901() {
   mraa::init();
   if (geteuid()) std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  ucDevAddr = 0x50;  // from the manual
+  uint8_t ucDevAddr = 0x50;  // from the manual
   // how we know which bus to use:
   // https://github.com/up-board/up-community/wiki/Pinout_Xtreme
   // i2c_designware.3 -> I2C channel on hat (pin 3,5 on HAT)
   // ls /sys/bus/pci/devices/0000\:00\:19.0/i2c_designware*/ | grep i2c
   i2cPtr.reset(new mraa::I2c(0));
   i2cPtr->address(ucDevAddr);
+
+  double imu_mount_angle = 8.9592122 * M_PI / 180;
+  R1 = Utils::EulerToQuat(imu_mount_angle, 0.0, 0.0).matrix();
+  R2 = Utils::EulerToQuat(0, 0, 0.5 * M_PI).matrix();
 }
 
 void Wt901::ReadRegisters(unsigned char addressToRead, unsigned char bytesToRead, uint8_t* dest) {
@@ -47,26 +52,30 @@ void Wt901::GetGPSV() {
   ReadRegisters(GPSHeight, 8, (uint8_t*)&stcGPSV);
 }
 
-wt901Vals Wt901::Collect() {
+Eigen::Vector3d Wt901::CollectAcc() {
   // collecting data
-  GetTime();
   GetAcc();
-  GetGyro();
-  int time_ms =
-      static_cast<int>(stcTime.ucMinute) * 60 * 1000 + static_cast<int>(stcTime.ucSecond) * 1000 + static_cast<int>(stcTime.usMilliSecond);
-  float time_s = time_ms / 1000;
+  // GetTime();
+  // GetGyro();
+  // int time_ms =
+  //     static_cast<int>(stcTime.ucMinute) * 60 * 1000 + static_cast<int>(stcTime.ucSecond) * 1000 +
+  //     static_cast<int>(stcTime.usMilliSecond);
+  // float time_s = time_ms / 1000;
 
   float acc_x = (float)stcAcc.a[0] / 32768 * 16 * 9.8;
   float acc_y = (float)stcAcc.a[1] / 32768 * 16 * 9.8;
   float acc_z = (float)stcAcc.a[2] / 32768 * 16 * 9.8;
   Eigen::Vector3d acc;
-  acc << acc_x, acc_y, acc_z;
+  acc << acc_x, acc_y, acc_z;  // acc in imu frame
 
-  float omega_x = (float)stcGyro.w[0] / 32768 * 2000;
-  float omega_y = (float)stcGyro.w[1] / 32768 * 2000;
-  float omega_z = (float)stcGyro.w[2] / 32768 * 2000;
-  Eigen::Vector3d omega;
-  omega << omega_x, omega_y, omega_z;
+  // float omega_x = (float)stcGyro.w[0] / 32768 * 2000;
+  // float omega_y = (float)stcGyro.w[1] / 32768 * 2000;
+  // float omega_z = (float)stcGyro.w[2] / 32768 * 2000;
+  // Eigen::Vector3d omega;
+  // omega << omega_x, omega_y, omega_z;  // angular vel in imu frame
 
-  return wt901Vals{time_s, acc, omega};
+  Eigen::Vector3d acc_f = R2 * (R1 * acc);  // acc in foot frame
+  // Eigen::Vector3d omega_f = R2 * (R1 * omega);  // omega in foot frame
+
+  return acc_f;
 }
