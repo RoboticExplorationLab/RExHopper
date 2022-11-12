@@ -259,7 +259,7 @@ float ODriveCan::GetVelocity(int node_id) {
     }
   }
   if (itr == encoderEstimate_.end()) {
-    throw std::runtime_error("[OdriveCan::GetPosition] Error: Cannot find encoder node_id");
+    throw std::runtime_error("[OdriveCan::GetVelocity] Error: Cannot find encoder node_id");
   } else {
     return itr->vel;
   }

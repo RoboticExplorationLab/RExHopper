@@ -83,9 +83,11 @@ void HardwareBridge::Init() {
   SetTorCtrlMode(ODriveCANleft, node_id_rwl);
   SetTorCtrlMode(ODriveCANyaw, node_id_rwz);
   // increase these when you're ready
-  ODriveCANright->SetLimits(node_id_rwr, 2, 5);
-  ODriveCANleft->SetLimits(node_id_rwl, 2, 5);
-  ODriveCANyaw->SetLimits(node_id_rwz, 2, 5);
+  float vel_lim = 10;
+  float tor_lim = 5;
+  ODriveCANright->SetLimits(node_id_rwr, vel_lim, tor_lim);
+  ODriveCANleft->SetLimits(node_id_rwl, vel_lim, tor_lim);
+  ODriveCANyaw->SetLimits(node_id_rwz, vel_lim, tor_lim);
 
   ODriveCANright->RunState(node_id_rwr, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
   ODriveCANleft->RunState(node_id_rwl, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
@@ -176,31 +178,10 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   tau_ref = u;
   // --- end collecting sensor data --- //
 
-  FallCheck(Q);
-
   ctrlMode_prev = ctrlMode;
   p_prev = p;
   return retVals{p, Q, v, wb, ab, aef, qa, dqa};
 }
-
-void HardwareBridge::FallCheck(Eigen::Quaterniond Q) {
-  Eigen::Quaterniond Q0;
-  Q0.setIdentity();
-
-  double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion
-  Eigen::Quaterniond Q_z, Q_no_yaw;
-  Q_z.w() = cos(z_angle / 2);
-  Q_z.x() = 0;
-  Q_z.y() = 0;
-  Q_z.z() = sin(z_angle / 2);
-  Q_no_yaw = (Q * (Q_z.inverse())).normalized();  // the base quaternion ignoring heading
-
-  // std::cout << "angle = " << Utils::AngleBetween(Q0, Q_no_yaw) << "\n";
-  if (Utils::AngleBetween(Q0, Q_no_yaw) > (45 * M_PI / 180)) {
-    std::cout << "Fall likely; engaging emergency actuator deactivation \n";
-    End();
-  }
-};
 
 void HardwareBridge::SetPosCtrlMode(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {
   // set Odrives to position control
@@ -296,9 +277,10 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointTorqueMeasured() {
 }
 
 void HardwareBridge::End() {
-  // go limp
-  // SetTorCtrl(ODriveCANleft, node_id_q0);
-  // SetTorCtrl(ODriveCANright, node_id_q2);
+  // disable the actuators, obviously
   ODriveCANleft->RunState(node_id_q0, ODriveCan::AXIS_STATE_IDLE);
   ODriveCANright->RunState(node_id_q2, ODriveCan::AXIS_STATE_IDLE);
+  ODriveCANright->RunState(node_id_rwr, ODriveCan::AXIS_STATE_IDLE);
+  ODriveCANleft->RunState(node_id_rwl, ODriveCan::AXIS_STATE_IDLE);
+  ODriveCANyaw->RunState(node_id_rwz, ODriveCan::AXIS_STATE_IDLE);
 }

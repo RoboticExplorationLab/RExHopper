@@ -144,6 +144,8 @@ void Runner::Run() {  // Method/function defined inside the class
     }
     Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
 
+    FallCheck(Q);
+
     wb = retvals.wb;
     w = Q.matrix() * wb;  // angular vel in the world frame
     ab = retvals.ab;
@@ -300,7 +302,7 @@ void Runner::Run() {  // Method/function defined inside the class
     Plots::Plot3(N_run, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
     // Plots::Plot3(N_run, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
     Plots::Plot5(N_run, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
-    // Plots::Plot5(N_run, "Dq vs Time", "dq", tau_vec, tau_ref_vec, 0);
+    Plots::Plot5(N_run, "Dq vs Time", "dq", tau_vec, tau_ref_vec, 0);
     // Plots::PlotMulti3(N_run, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
     // gc_state_hist); Plots::PlotSingle(N_run, "Ground Reaction Force Normal", grf_normal);
     Plots::Plot3(N_run, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
@@ -363,17 +365,6 @@ std::vector<bool> Runner::ContactMap(int N, double dt, double t) {
   return C;
 }
 
-// std::vector<bool> Runner::ContactUpdate(std::vector<bool> C, int k) {
-//   // shift contact map. Use if contact has been made early or was previously late
-//   double t_shifted = 0;
-//   for (int i = k; i < N_run; i++) {
-//     C.at(i) = ContactSchedule(t_shifted);
-//     t_shifted += dt;
-//   }
-//   // self.k_f_update(C)  // update kf_list
-//   return C;
-// }
-
 bool Runner::ContactCheck(bool sh, bool sh_prev, int k) {
   // if contact has just been made, freeze contact detection to True for x timesteps
   // or if contact has just been lost, freeze contact detection to False for x timesteps
@@ -429,6 +420,25 @@ trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vec
 
   return trajVals{p_refv, v_refv};  // TODO: sine wave for mpc
 }
+
+void Runner::FallCheck(Eigen::Quaterniond Q) {
+  Eigen::Quaterniond Q0;
+  Q0.setIdentity();
+
+  double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion
+  Eigen::Quaterniond Q_z, Q_no_yaw;
+  Q_z.w() = cos(z_angle / 2);
+  Q_z.x() = 0;
+  Q_z.y() = 0;
+  Q_z.z() = sin(z_angle / 2);
+  Q_no_yaw = (Q * (Q_z.inverse())).normalized();  // the base quaternion ignoring heading
+
+  // std::cout << "angle = " << Utils::AngleBetween(Q0, Q_no_yaw) << "\n";
+  if (Utils::AngleBetween(Q0, Q_no_yaw) > (45 * M_PI / 180)) {
+    std::cout << "Fall likely; engaging emergency actuator deactivation \n";
+    bridgePtr->End();
+  }
+};
 
 void Runner::CircleTest() {
   // edits peb_ref in-place

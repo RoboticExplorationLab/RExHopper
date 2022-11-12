@@ -119,5 +119,6 @@ class Runner {  // The class
   void GaitCycleUpdate(bool s, bool sh, double dz);
   int GaitCycleRef(double t);
   bool ContactCheck(bool sh, bool sh_prev, int k);
+  void FallCheck(Eigen::Quaterniond Q);
   void CircleTest();
 };

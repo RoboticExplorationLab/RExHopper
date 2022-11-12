@@ -44,7 +44,6 @@ class HardwareBridge : public Bridge {  // The class
   Eigen::Vector2d ConvertToODriveVel(Eigen::Vector2d dqa);
   void SetJointPos(Eigen::Vector2d qla_ref);  // only need pos control for leg actuators afaik
   void SetJointTorque(Eigen::Matrix<double, 5, 1> u);
-  void FallCheck(Eigen::Quaterniond Q);
   double TurnsToRadians(double turns);
 
   std::unique_ptr<MocapNode> mocapPtr;
