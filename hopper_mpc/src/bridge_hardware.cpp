@@ -9,6 +9,10 @@ HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool recor
 
 void HardwareBridge::Init() {
   // ROS subscribers
+  int argcr = 0;
+  char** argvr = NULL;
+  ros::init(argcr, argvr, "hopper_ctrl");  // ROS
+
   mocapPtr.reset(new MocapNode());
   cx5Ptr.reset(new Cx5());
   // i2c
@@ -54,12 +58,6 @@ void HardwareBridge::Init() {
   std::cout << "Liftoff!!! \n";
   // std::this_thread::sleep_for(std::chrono::seconds(10));
 
-  // after calibration, prepare for pos control
-  // very dangerous!!
-  // SetPosCtrl(ODriveCANleft, node_id_q0, model.q_init(0));
-  // SetPosCtrl(ODriveCANright, node_id_q2, model.q_init(2));
-  // ctrlMode_prev = "Pos";
-
   p.setZero();
   Q.setIdentity();  // is this correct?
   v.setZero();
@@ -73,6 +71,12 @@ void HardwareBridge::Init() {
   t_hist.reserve(N_lookback);
   t_mocap = 0;
 
+  // after calibration, prepare for pos control
+  // very dangerous!!
+  // SetPosCtrl(ODriveCANleft, node_id_q0, model.q_init(0));
+  // SetPosCtrl(ODriveCANright, node_id_q2, model.q_init(2));
+  // ctrlMode_prev = "Pos";
+
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
   SetTorCtrlMode(ODriveCANright, node_id_rwr);
@@ -82,6 +86,10 @@ void HardwareBridge::Init() {
   ODriveCANright->SetLimits(node_id_rwr, 2, 5);
   ODriveCANleft->SetLimits(node_id_rwl, 2, 5);
   ODriveCANyaw->SetLimits(node_id_rwz, 2, 5);
+
+  ODriveCANright->RunState(node_id_rwr, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
+  ODriveCANleft->RunState(node_id_rwl, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
+  ODriveCANyaw->RunState(node_id_rwz, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir) {
@@ -127,6 +135,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   dqa = GetJointVel();
 
   // --- begin collecting sensor data --- //
+  ros::spinOnce();
   // get p and v from mocap
   p = mocapPtr->p_mocap;  // get position from mocap system
   double dt_mocap = mocapPtr->dt_mocap;
@@ -158,7 +167,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   Q = cx5Ptr->Q;
   wb = cx5Ptr->omega;
   ab = cx5Ptr->alpha;
-
+  // std::cout << "Q = " << Q.coeffs().transpose() << "\n";
   // get aef from wt901 IMU
   // aef = wt901Ptr->CollectAcc();  // TODO: make this asynchronous otherwise it wastes too much time
 
@@ -166,6 +175,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   // tau = GetJointTorqueMeasured();  // TODO: Make this work
   tau_ref = u;
   // --- end collecting sensor data --- //
+
   FallCheck(Q);
 
   ctrlMode_prev = ctrlMode;

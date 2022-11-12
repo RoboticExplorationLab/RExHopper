@@ -14,7 +14,6 @@ void MocapNode::MocapCallback(const geometry_msgs::PoseStamped::ConstPtr& msg_mo
   Q_mocap.w() = msg_mocap->pose.orientation.w;
   euler_mocap = Utils::QuatToEuler(Q_mocap);
   p_mocap << msg_mocap->pose.position.x, msg_mocap->pose.position.y, msg_mocap->pose.position.z;
-  std::cout << "p_mocap = " << p_mocap << "/n";
 
   dt_mocap = t_mocap - t_mocap_prev;
   t_mocap_prev = t_mocap;

@@ -107,13 +107,17 @@ int main(int argc, char* argv[]) {
 
   double dt = 0.001;  // 1 kHz
 
-  ros::init(argc, argv, "hopper_ctrl");  // ROS
-  ros::AsyncSpinner spinner(0);          // run threads async
-  spinner.start();                       // async spinner runs in bg
+  // causes weird numerical bugs, TODO: Fix
+  // has to be in main to maintain existence
+  // int argcr = 0;
+  // char** argvr = NULL;
+  // ros::init(argcr, argvr, "hopper_ctrl");  // ROS
+  // ros::AsyncSpinner spinner(0);            // run threads async
+  // spinner.start();                         // async spinner runs in bg
 
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record, skip_kf);
   runner.Run();  // Call the method
 
-  ros::waitForShutdown();  // should be the last call in main (causes program to hang!!)
+  // ros::waitForShutdown();  // should be the last call in main (causes program to hang!!)
   return 0;
 }
