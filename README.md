@@ -6,7 +6,7 @@ The REx Hopper is a monopodal hopping robot with reaction wheels. This repositor
 
 The following are instructions for setting up the REx Hopper computer such that it is compatible with the RosDockerWorkspace environment.
 
-1. Update the UEFI BIOS using these [instructions] (https://downloads.up-community.org/download/up-xtreme-uefi-bios-v1-9/).
+1. Update the UEFI BIOS using [these instructions](https://downloads.up-community.org/download/up-xtreme-uefi-bios-v1-9/).
    - Use `GO.nsh` rather than `GO_Entire.nsh`.
 
 2. Update the [kernel](https://github.com/up-board/up-community/wiki/Ubuntu_20.04).
@@ -34,8 +34,17 @@ In VScode:
 Click on green button in lower left -> reopen in container
 Whenever you change Dockerfile and want to rebuild the env ->  Ctrl+shift+p -> rebuild container
 
-## Starting the IMU publisher
 
+## Setting Up the 3DMCX5
+1. Install [SensorConnect](https://www.microstrain.com/software/sensorconnect) on a Windows computer. Connect the 3DMCX5 by USB.
+2. In SensorConnect, set the sensor ranges:
+   - Accelerometer: 20g
+   - Gyroscope: 500 deg/s
+3. Set UART Baud Rate to 921600.
+4. Save and disconnect. Connect to the Hopper computer via USB.
+<!-- 4. In Configuration > Mounting, set the following transformation in Euler Angles -->
+
+## Starting the IMU Publisher
 Before the code can be executed, the IMU docker image must be started. If you haven't already, pull the microstrain-inertial ROS Docker image for the [3DM AHRS](https://hub.docker.com/r/microstrain/ros-microstrain_inertial_driver).
 
 ```

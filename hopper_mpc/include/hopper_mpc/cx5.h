@@ -15,4 +15,7 @@ class Cx5 {               // The class
   // void ImuDataCallback(const sensor_msgs::Imu imu);
   ros::NodeHandle nh_cx5;
   ros::Subscriber sub_cx5;
+  Eigen::Quaterniond Q_raw;
+  Eigen::Matrix3d R1;
+  Eigen::Matrix3d R2;
 };
