@@ -77,6 +77,7 @@ add_executable(${PROJECT_NAME}
   src/actuator.cpp
   src/cx5.cpp 
   src/wt901.cpp
+  src/observer.cpp
   ../hopper_can_interface/src/ODriveCan.cpp
   ../hopper_can_interface/src/CanInterface.cpp
   ../hopper_can_interface/src/BufferedCanMsg.cpp
