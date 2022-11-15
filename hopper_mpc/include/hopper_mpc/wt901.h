@@ -161,7 +161,10 @@ class Wt901 {  // The class
   struct SLonLat stcLonLat;
   struct SGPSV stcGPSV;
 
-  // Rotation matrices for foot frame transformation
-  Eigen::Matrix3d R1;
-  Eigen::Matrix3d R2;
+  Eigen::Matrix3d R;  // Rotation matrix for foot frame transformation
+  Eigen::Vector3d alpha;
+  Eigen::Vector3d omega;
+  Eigen::Vector3d alpha_f;
+  Eigen::Vector3d omega_f;
+  Eigen::Vector3d T;
 };

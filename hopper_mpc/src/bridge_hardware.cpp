@@ -174,7 +174,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   // aef = wt901Ptr->CollectAcc();  // TODO: make this asynchronous otherwise it wastes too much time
 
   // get motor torques
-  // tau = GetJointTorqueMeasured();  // TODO: Make this work
+  tau = GetJointTorqueMeasured();  // TODO: Make this work
   tau_ref = u;
   // --- end collecting sensor data --- //
 

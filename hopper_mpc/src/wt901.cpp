@@ -16,8 +16,10 @@ Wt901::Wt901() {
   i2cPtr->address(ucDevAddr);
 
   double imu_mount_angle = 8.9592122 * M_PI / 180;
-  R1 = Utils::EulerToQuat(imu_mount_angle, 0.0, 0.0).matrix();
-  R2 = Utils::EulerToQuat(0, 0, 0.5 * M_PI).matrix();
+  Eigen::Matrix3d R1 = Utils::EulerToQuat(imu_mount_angle, 0.0, 0.0).matrix();
+  Eigen::Matrix3d R2 = Utils::EulerToQuat(0, 0, 0.5 * M_PI).matrix();
+  R = R1 * R2;
+  T << -35.3, 0.0, 14.8;
 }
 
 void Wt901::ReadRegisters(unsigned char addressToRead, unsigned char bytesToRead, uint8_t* dest) {
@@ -55,8 +57,9 @@ void Wt901::GetGPSV() {
 Eigen::Vector3d Wt901::CollectAcc() {
   // collecting data
   GetAcc();
+  GetGyro();
   // GetTime();
-  // GetGyro();
+
   // int time_ms =
   //     static_cast<int>(stcTime.ucMinute) * 60 * 1000 + static_cast<int>(stcTime.ucSecond) * 1000 +
   //     static_cast<int>(stcTime.usMilliSecond);
@@ -65,17 +68,15 @@ Eigen::Vector3d Wt901::CollectAcc() {
   float acc_x = (float)stcAcc.a[0] / 32768 * 16 * 9.8;
   float acc_y = (float)stcAcc.a[1] / 32768 * 16 * 9.8;
   float acc_z = (float)stcAcc.a[2] / 32768 * 16 * 9.8;
-  Eigen::Vector3d acc;
-  acc << acc_x, acc_y, acc_z;  // acc in imu frame
+  alpha << acc_x, acc_y, acc_z;  // acc in imu frame
 
-  // float omega_x = (float)stcGyro.w[0] / 32768 * 2000;
-  // float omega_y = (float)stcGyro.w[1] / 32768 * 2000;
-  // float omega_z = (float)stcGyro.w[2] / 32768 * 2000;
-  // Eigen::Vector3d omega;
-  // omega << omega_x, omega_y, omega_z;  // angular vel in imu frame
+  float omega_x = (float)stcGyro.w[0] / 32768 * 2000;
+  float omega_y = (float)stcGyro.w[1] / 32768 * 2000;
+  float omega_z = (float)stcGyro.w[2] / 32768 * 2000;
+  omega << omega_x, omega_y, omega_z;  // angular vel in imu frame
 
-  Eigen::Vector3d acc_f = R2 * (R1 * acc);  // acc in foot frame
-  // Eigen::Vector3d omega_f = R2 * (R1 * omega);  // omega in foot frame
+  omega_f = R * omega;                                                // omega at foot in link 3 frame
+  alpha_f = R * alpha - Utils::Skew(omega) * Utils::Skew(omega) * T;  // acc at foot in link 3 frame
 
-  return acc_f;
+  return alpha_f;
 }
