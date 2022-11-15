@@ -85,9 +85,10 @@ void MujocoBridge::Init() {
 
   std::string path_mjcf;
   if (fixed == true) {
-    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf_fixed.xml";
+    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf_fixed.xml";
   } else {
-    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf.xml";
+    // path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
     // str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
   }
   char* cwd;
