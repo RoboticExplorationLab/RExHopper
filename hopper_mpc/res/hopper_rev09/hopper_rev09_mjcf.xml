@@ -38,8 +38,8 @@
         <joint name="Joint 0" pos="0 0 0" axis="0 -1 0" limited="true" range="-3.14 3.14"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="Link 0"/>
         <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link 0"/>
-        <body name="Link 1" pos="0.1 0 0" quat="-0.250225 0 -0.968188 0">
-          <inertial pos="0.116031 0.0069372 0.0697692" quat="0.61549 0.348098 0.348098 0.61549" mass="0.0809766" diaginertia="0.00018541 0.00068989 0.00050591"/>
+        <body name="Link 1" pos="0.1 0 0" quat="0.5 0 0.866025 0">
+          <inertial pos="0.135392 0.0069372 5.37952e-09" quat="0.5 0.5 0.5 0.5" mass="0.0809766" diaginertia="0.00000391 0.00068989 0.00068741"/>
           <joint name="Joint 1" pos="0 0 0" axis="0 -1 0" range="-0.7597 1.8295"/>
           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="Link 1"/>
           <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link 1"/>
@@ -51,10 +51,10 @@
         <joint name="Joint 2" pos="0 0 0" axis="0 -1 0" limited="true" range="-3.14 3.14"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="Link 2"/>
         <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link 2"/>
-        <body name="Link 3" pos="0.27 0 0" quat="0.219092 0 0.975704 0">
+        <body name="Link 3" pos="0.27 0 0" quat="0.5 0 -0.866025 0">
           <site name='foot imu' size='0.01' pos='0.25 0 0'/>
           <site name='contact_sensor' size='0.02' pos='.27 0 -.0205'/>
-          <inertial pos="-0.000960132 1.19207e-05 -0.142163" quat="0.714312 -0.0142376 -0.011484 0.699588" mass="0.108053" diaginertia="0.00091428 0.00092333 0.00001635"/>
+          <inertial pos="0.14221503 0.00001185 -0.0125335" quat="0.484498 0.517559 0.504851 0.492463" mass="0.108053" diaginertia="0.00001881 0.00092333 0.00091183"/>
           <joint name="Joint 3" pos="0 0 0" axis="0 -1 0" limited="true" range="-1.8295 0.7597"/>
           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="Link 3"/>
           <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link 3"/>
