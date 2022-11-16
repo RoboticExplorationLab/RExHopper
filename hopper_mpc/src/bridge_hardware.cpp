@@ -49,7 +49,9 @@ void HardwareBridge::Init() {
   std::cout << "Starting homing procedure. \n";
   Home(ODriveCANleft, node_id_q0, -1);
   Home(ODriveCANright, node_id_q2, -1);
-  std::cout << "Finished homing procedure. \nController starting in: \n3... \n";
+  std::cout << "Finished homing procedure. \nPress any key to continue.";
+  std::cin.ignore();
+  std::cout << "\nController starting in : \n3... \n ";
   std::this_thread::sleep_for(std::chrono::seconds(1));
   std::cout << "2... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
