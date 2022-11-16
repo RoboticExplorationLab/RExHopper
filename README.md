@@ -35,7 +35,7 @@ Click on green button in lower left -> reopen in container
 Whenever you change Dockerfile and want to rebuild the env ->  Ctrl+shift+p -> rebuild container
 
 
-## Setting Up the 3DMCX5
+## First Time Setup of the 3DMCX5
 1. Install [SensorConnect](https://www.microstrain.com/software/sensorconnect) on a Windows computer. Connect the 3DMCX5 by USB.
 2. In SensorConnect, set the sensor ranges:
    - Accelerometer: 20g

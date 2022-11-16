@@ -73,11 +73,10 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   ctrlMode = "Torque";                                               // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
-  qla_ref << qla_ref(0), qla_ref(1) + 0.5;
-  peb_ref << 0, 0, -model.h0;  // desired operational space leg position in body frame
-  veb_ref.setZero();           // desired operational space leg velocity
-  fb_ref.setZero();            // desired operational space leg force
-  u.setZero();                 // ctrl Torques
+  peb_ref << 0, 0, -model.h0;                                        // desired operational space leg position in body frame
+  veb_ref.setZero();                                                 // desired operational space leg velocity
+  fb_ref.setZero();                                                  // desired operational space leg force
+  u.setZero();                                                       // ctrl Torques
   legPtr = std::make_shared<Leg>(model, dt);
   rwaPtr = std::make_shared<Rwa>(dt);
 
@@ -211,7 +210,7 @@ void Runner::Run() {  // Method/function defined inside the class
     } else {
       throw "Invalid ctrl name! Use 'raibert', 'stand', 'idle', or 'circle'";
     }
-    // std::cout << "u = " << u.transpose() << "\n";
+
     gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
     sh_prev = sh;
 

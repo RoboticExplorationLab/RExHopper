@@ -49,16 +49,17 @@ void HardwareBridge::Init() {
   std::cout << "Starting homing procedure. \n";
   Home(ODriveCANleft, node_id_q0, -1);
   Home(ODriveCANright, node_id_q2, -1);
-  std::cout << "Finished homing procedure. \nPress any key to continue.";
+  std::cout << "Finished homing procedure. \n";
+
+  std::cout << "Press any key to continue. \n";
   std::cin.ignore();
-  std::cout << "\nController starting in : \n3... \n ";
+  std::cout << "Controller starting in : \n3... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
   std::cout << "2... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
   std::cout << "1... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
   std::cout << "Liftoff!!! \n";
-  // std::this_thread::sleep_for(std::chrono::seconds(10));
 
   p.setZero();
   Q.setIdentity();  // is this correct?
@@ -85,7 +86,7 @@ void HardwareBridge::Init() {
   SetTorCtrlMode(ODriveCANleft, node_id_rwl);
   SetTorCtrlMode(ODriveCANyaw, node_id_rwz);
   // increase these when you're ready
-  float vel_lim = 10;
+  float vel_lim = 20;
   float tor_lim = 5;
   ODriveCANright->SetLimits(node_id_rwr, vel_lim, tor_lim);
   ODriveCANleft->SetLimits(node_id_rwl, vel_lim, tor_lim);
@@ -133,6 +134,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
       SetTorCtrlMode(ODriveCANright, node_id_q2);
     }
   }
+
   SetJointTorque(u);  // should not affect purely position controlled joints
 
   qa = GetJointPos();

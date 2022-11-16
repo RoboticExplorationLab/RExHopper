@@ -23,7 +23,7 @@ Rwa::Rwa(double dt_) {
 
   // PID3 pid_tau(dt, kp_tau, ki_tau, kd_tau);
   pid_tauPtr.reset(new PID3(dt, kp_tau, ki_tau, kd_tau));
-  double ks = 2;
+  double ks = 0;  // 0.001;  // 2;
   kp_vel << ks, ks, ks;
   ki_vel << ks * 0.1, ks * 0.1, ks * 0.1;
   kd_vel << 0, 0, 0;
