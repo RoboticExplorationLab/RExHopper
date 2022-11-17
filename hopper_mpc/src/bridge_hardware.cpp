@@ -68,6 +68,7 @@ void HardwareBridge::Init() {
   float vel_lim_rw = 32;  // 64 max
   float tor_lim_rw = 20;
 
+  home = true;  // for safety, don't remove this unless you know wtf you're doing
   if (home == true) {
     std::cout << "Robot WILL HOME! Make sure it is either in the jig or being held, then press any key to continue. \n";
     std::cin.ignore();
@@ -76,11 +77,13 @@ void HardwareBridge::Init() {
     Home(ODriveCANright, node_id_q2, -1);
     std::cout << "Finished homing procedure. \n";
 
-    std::ofstream ofs("offsets.txt");                     // create and open a character archive for output
-    const saved_offsets saved(q_offset(0), q_offset(1));  // create class instance
-    boost::archive::text_oarchive oa(ofs);                // save data to archive
-    oa << g;                                              // write class instance to archive
-
+    std::ofstream ofs("offsets.txt");  // create and open a character archive for output
+    saved.reset(new saved_offsets(q_offset(0), q_offset(1)));
+    // const saved_offsets saved(q_offset(0), q_offset(1));  // create class instance
+    {
+      boost::archive::text_oarchive oa(ofs);  // save data to archive
+      oa << *saved;                           // write class instance to archive
+    }
   } else {
     std::cout << "Robot will NOT home! Make sure it is in startup configuration, then press any key to continue. \n";
     std::cin.ignore();
@@ -88,13 +91,16 @@ void HardwareBridge::Init() {
     Startup(ODriveCANleft, node_id_q0, vel_lim_leg, tor_lim_leg);
     Startup(ODriveCANright, node_id_q2, vel_lim_leg, tor_lim_leg);
 
-    saved_offsets saved_get;
-    std::ifstream ifs("offsets.txt");  // create and open an archive for input
-    boost::archive::text_iarchive ia(ifs);
-    ia >> saved_get;                    // read class state from archive
-    q_offset(0) = saved_get.q0_offset;  // copy in
-    q_offset(1) = saved_get.q2_offset;
-
+    saved_get.reset(new saved_offsets);
+    // saved_offsets saved_get;
+    {
+      std::ifstream ifs("offsets.txt");  // create and open an archive for input
+      boost::archive::text_iarchive ia(ifs);
+      ia >> *saved_get;  // read class state from archive
+    }
+    q_offset(0) = saved_get->q0_offset;  // copy in
+    q_offset(1) = saved_get->q2_offset;
+    std::cout << "Saved homing offsets loaded: q_offset = " << q_offset.transpose() << " \n";
     // add # of rotations of rotor to get to starting configuration from homing position
     // q_offset(0) += 1  // reduce torque/vel limits if you're going to mess with this stuff
   }

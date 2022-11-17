@@ -16,6 +16,22 @@
 
 using namespace hopper::can;
 
+class saved_offsets {
+ private:
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int version) {
+    ar& q0_offset;
+    ar& q2_offset;
+  }
+
+ public:
+  float q0_offset;
+  float q2_offset;
+  saved_offsets(){};
+  saved_offsets(float q0, float q2) : q0_offset(q0), q2_offset(q2) {}
+};
+
 class HardwareBridge : public Bridge {  // The class
  public:
   using Base = Bridge;                                                // Access specifier
@@ -64,20 +80,7 @@ class HardwareBridge : public Bridge {  // The class
   // int count;
   double t_mocap;
   Eigen::Vector2d qa_home;
-};
 
-class saved_offsets {
- private:
-  friend class boost::serialization::access;
-  template <class Archive>
-  void serialize(Archive& ar, const unsigned int version) {
-    ar& q0_offset;
-    ar& q2_offset;
-  }
-
- public:
-  float q0_offset;
-  float q2_offset;
-  saved_offsets(){};
-  saved_offsets(float q0, float q2) : q0_offset(q0), q2_offset(q2) {}
+  std::shared_ptr<saved_offsets> saved;
+  std::shared_ptr<saved_offsets> saved_get;
 };

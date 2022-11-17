@@ -297,7 +297,7 @@ void Runner::Run() {  // Method/function defined inside the class
     // Plots::PlotMap2D(N_run, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
     // Plots::PlotMap3D(N_run, "3D Position vs Time", "p", p_vec, 0, 0);
     // Plots::PlotSingle(N_run, "Normal Ground Reaction Force", grf_normal);
-    // Plots::Plot2(N_run, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
+    Plots::Plot2(N_run, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
 
     Plots::Plot3(N_run, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
     // Plots::Plot3(N_run, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);

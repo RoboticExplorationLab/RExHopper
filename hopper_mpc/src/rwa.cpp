@@ -24,8 +24,8 @@ Rwa::Rwa(double dt_) {
   kd_tau << kd, kd, kd * 0.5;  // 0.04, 0.04, 0.005;
   pid_tauPtr.reset(new PID3(dt, kp_tau * ku, ki_tau * ku, kd_tau * ku));
 
-  double ks = 0.00001;  // 0.001;  // 2;
-  double ksi = 3;       // 0.1
+  double ks = 0.00001;
+  double ksi = 3;
   double ksp = 0.5;
   kp_vel << ks, ks, ks * 0.01;
   ki_vel << ks * ksi, ks * ksi, ks * ksi * 0.01;

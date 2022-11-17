@@ -18,7 +18,7 @@ Gait::Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<L
   peb_ref = peb_ref_;
   pf_ref.setZero();
   // x_adj = -0.002938125;  //-0.002938125 falls forward;  //-0.0029346875 falls backward;  works for rev08;
-  x_adj = 0.00996875 - 0.02;  // this can be improved
+  x_adj = 0.00996875;  // this can be improved
   peb_ref << x_adj, 0, -model.h0 * 1.5;
 }
 
