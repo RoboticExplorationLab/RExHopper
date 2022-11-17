@@ -32,6 +32,11 @@ find_package(glfw3 REQUIRED)
 # find_package(raisim CONFIG REQUIRED)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(PythonLibs REQUIRED)
+find_package(Boost REQUIRED COMPONENTS serialization)
+add_library(boost::serialization INTERFACE IMPORTED)
+set_target_properties(boost::serialization PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${Boost_INCLUDE_DIRS}"
+  INTERFACE_LINK_LIBRARIES "${Boost_SERIALIZATION_LIBRARIES}")
 
 catkin_package(
   INCLUDE_DIRS 
@@ -90,6 +95,7 @@ target_link_libraries(${PROJECT_NAME}
   pcanbasic 
   Threads::Threads
   mraa
+  boost::serialization
   # mscl
   # raisim::raisim
   ${PYTHON_LIBRARIES}

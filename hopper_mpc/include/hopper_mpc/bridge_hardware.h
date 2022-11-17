@@ -10,13 +10,16 @@
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "string"
+// boost serialization
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
 
 using namespace hopper::can;
 
 class HardwareBridge : public Bridge {  // The class
  public:
-  using Base = Bridge;                                                  // Access specifier
-  HardwareBridge(Model model_, double dt_, bool fixed_, bool record_);  // constructor
+  using Base = Bridge;                                                // Access specifier
+  HardwareBridge(Model model_, double dt_, bool fixed_, bool home_);  // constructor
   // --- virtual function overrides --- //
   void Init() override;
   retVals SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) override;
@@ -60,4 +63,20 @@ class HardwareBridge : public Bridge {  // The class
   // double posEst_prev;
   // int count;
   double t_mocap;
+};
+
+class saved_offsets {
+ private:
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int version) {
+    ar& q0_offset;
+    ar& q2_offset;
+  }
+
+ public:
+  float q0_offset;
+  float q2_offset;
+  saved_offsets(){};
+  saved_offsets(float q0, float q2) : q0_offset(q0), q2_offset(q2) {}
 };

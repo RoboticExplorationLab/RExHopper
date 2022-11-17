@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
 
   program.add_argument("--spr").help("add parallel spring").default_value(false).implicit_value(true);
 
-  program.add_argument("--record").help("record video").default_value(false).implicit_value(true);
+  program.add_argument("--home").help("home leg positions").default_value(false).implicit_value(true);
 
   program.add_argument("--skip_kf").help("ignore kalman filter").default_value(false).implicit_value(true);
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
   bool plot = false;
   bool spr = false;
   bool fixed = false;
-  bool record = false;
+  bool home = false;
   bool skip_kf = false;
 
   if (program["--plot"] == true) {
@@ -56,9 +56,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Fixed base enabled" << std::endl;
     fixed = true;
   }
-  if (program["--record"] == true) {
-    std::cout << "Recording enabled" << std::endl;
-    record = true;
+  if (program["--home"] == true) {
+    std::cout << "Homing enabled" << std::endl;
+    home = true;
   }
   if (program["--skip_kf"] == true) {
     std::cout << "Ignoring Kalman filter" << std::endl;
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
   // ros::AsyncSpinner spinner(0);            // run threads async
   // spinner.start();                         // async spinner runs in bg
 
-  Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, record, skip_kf);
+  Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, home, skip_kf);
   runner.Run();  // Call the method
 
   // ros::waitForShutdown();  // should be the last call in main (causes program to hang!!)

@@ -5,8 +5,8 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/plots.hpp"
 
-Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
-               bool record_, bool skip_kf_) {
+Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool home_,
+               bool skip_kf_) {
   model = model_;
   N_run = N_run_;
   dt = dt_;
@@ -15,7 +15,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   plot = plot_;
   fixed = fixed_;
   spr = spr_;
-  record = record_;
+  home = home_;
   skip_kf = skip_kf_;
 
   g = model.g;  // should g be defined here?
@@ -41,11 +41,11 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   // class definitions
   if (bridge_ == "hardware") {
-    bridgePtr.reset(new HardwareBridge(model, dt, fixed, record));
+    bridgePtr.reset(new HardwareBridge(model, dt, fixed, home));
   } else if (bridge_ == "mujoco") {
-    bridgePtr.reset(new MujocoBridge(model, dt, fixed, record));
+    bridgePtr.reset(new MujocoBridge(model, dt, fixed, home));
     // } else if (bridge_ == "raisim") {
-    // bridgePtr.reset(new RaisimBridge(model, dt, fixed, record));
+    // bridgePtr.reset(new RaisimBridge(model, dt, fixed, home));
   } else {
     throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
@@ -215,7 +215,7 @@ void Runner::Run() {  // Method/function defined inside the class
     sh_prev = sh;
 
     if (plot == true) {
-      // record values
+      // home values
       if (skip_kf == false) {
         Eigen::Vector3d pe_raw = retvals.p + Q.matrix() * peb;
         Eigen::Vector3d ve_raw = retvals.v + Q.matrix() * veb;

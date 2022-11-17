@@ -5,7 +5,10 @@
 #include <iostream>
 #include "hopper_mpc/utils.hpp"
 
-HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_) {}
+// for boost::serialization
+#include <fstream>
+
+HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool home_) : Base(model_, dt_, fixed_, home_) {}
 
 void HardwareBridge::Init() {
   // ROS subscribers
@@ -59,13 +62,49 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
-  std::cout << "Starting homing procedure. \n";
-  Home(ODriveCANleft, node_id_q0, -1);
-  Home(ODriveCANright, node_id_q2, -1);
-  std::cout << "Finished homing procedure. \n";
+  float vel_lim_leg = 20;  // 50 max
+  float tor_lim_leg = 20;
+  float vel_lim_rw = 32;  // 64 max
+  float tor_lim_rw = 20;
 
-  std::cout << "Press any key to continue. \n";
-  std::cin.ignore();
+  if (home == true) {
+    std::cout << "Robot WILL HOME! Make sure it is either in the jig or being held. Press any key to continue. \n";
+    std::cin.ignore();
+    std::cout << "Starting homing procedure. \n";
+    Home(ODriveCANleft, node_id_q0, -1);
+    Home(ODriveCANright, node_id_q2, -1);
+    std::cout << "Finished homing procedure. \n";
+
+    std::ofstream ofs("offsets.txt");                     // create and open a character archive for output
+    const saved_offsets saved(q_offset(0), q_offset(1));  // create class instance
+    boost::archive::text_oarchive oa(ofs);                // save data to archive
+    oa << g;                                              // write class instance to archive
+
+  } else {
+    std::cout << "Robot will NOT home! Are you sure? Press any key to continue. \n";
+    std::cin.ignore();
+
+    Startup(ODriveCANleft, node_id_q0, vel_lim_leg, tor_lim_leg);
+    Startup(ODriveCANright, node_id_q2, vel_lim_leg, tor_lim_leg);
+
+    saved_offsets saved_get;
+    std::ifstream ifs("offsets.txt");  // create and open an archive for input
+    boost::archive::text_iarchive ia(ifs);
+    ia >> saved_get;                    // read class state from archive
+    q_offset(0) = saved_get.q0_offset;  // copy in
+    q_offset(1) = saved_get.q2_offset;
+
+    // add # of rotations of rotor to get to starting configuration from homing position
+    // q_offset(0) += 2 * M_PI  // reduce torque/vel limits if you're going to mess with this stuff
+  }
+  // initialize reaction wheels in torque control mode
+  // DANGER!! disable while fiddling with IMU settings!!!
+  Startup(ODriveCANright, node_id_rwr, tor_lim_rw, vel_lim_rw);
+  Startup(ODriveCANleft, node_id_rwl, tor_lim_rw, vel_lim_rw);
+  Startup(ODriveCANyaw, node_id_rwz, tor_lim_rw, vel_lim_rw);
+
+  // std::cout << "Controller ready to begin. Press any key to continue. \n";
+  // std::cin.ignore();
   std::cout << "Controller starting in : \n3... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
   std::cout << "2... \n";
@@ -73,14 +112,6 @@ void HardwareBridge::Init() {
   std::cout << "1... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
   std::cout << "Liftoff!!! \n";
-
-  // initialize reaction wheels in torque control mode
-  // DANGER!! disable while fiddling with IMU settings!!!
-  float vel_lim = 32;  // 64 max
-  float tor_lim = 20;
-  Startup(ODriveCANright, node_id_rwr, tor_lim, vel_lim);
-  Startup(ODriveCANleft, node_id_rwl, tor_lim, vel_lim);
-  Startup(ODriveCANyaw, node_id_rwz, tor_lim, vel_lim);
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir) {
@@ -100,7 +131,8 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
   ODrive->SetVelocity(node_id, 0);                   // stop the motor so you can read position
   q_offset(node_id) = ODrive->GetPosition(node_id);  // read the RAW encoder position at home
   SetTorCtrlMode(ODrive, node_id);                   // switch to torque control so it is pliable!
-  ODrive->SetLimits(node_id, 10, 25);                // set limits back to normal
+  // ^ DON'T REMOVE THIS OR LEG WILL BLOCK ITSELF FROM FINISHING HOMING
+  ODrive->SetLimits(node_id, 20, 25);  // set limits back to normal
   //                             ^ TODO: Increase current limit when you're ready
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
