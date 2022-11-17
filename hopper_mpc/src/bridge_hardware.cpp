@@ -18,6 +18,23 @@ void HardwareBridge::Init() {
   // i2c
   wt901Ptr.reset(new Wt901());
 
+  // init variables
+  qa.setZero();
+  dqa.setZero();
+  p.setZero();
+  Q.setIdentity();  // is this correct?
+  v.setZero();
+  wb.setZero();
+  p_prev.setZero();
+
+  int N_lookback = 6;
+  px_hist.reserve(N_lookback);
+  py_hist.reserve(N_lookback);
+  pz_hist.reserve(N_lookback);
+  t_hist.reserve(N_lookback);
+  t_mocap = 0;
+
+  // ODrives
   ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
   node_id_q0 = 0;
   node_id_rwl = 3;
@@ -28,10 +45,6 @@ void HardwareBridge::Init() {
 
   ODriveCANyaw.reset(new ODriveCan(Channel::CAN1, BandRate::BAUD_1M));
   node_id_rwz = 4;
-
-  // init variables
-  qa.setZero();
-  dqa.setZero();
 
   std::map<std::string, int> mapCANleft;
   mapCANleft.insert(std::make_pair("q0", node_id_q0));
@@ -61,40 +74,13 @@ void HardwareBridge::Init() {
   std::this_thread::sleep_for(std::chrono::seconds(1));
   std::cout << "Liftoff!!! \n";
 
-  p.setZero();
-  Q.setIdentity();  // is this correct?
-  v.setZero();
-  wb.setZero();
-  p_prev.setZero();
-
-  int N_lookback = 6;
-  px_hist.reserve(N_lookback);
-  py_hist.reserve(N_lookback);
-  pz_hist.reserve(N_lookback);
-  t_hist.reserve(N_lookback);
-  t_mocap = 0;
-
-  // after calibration, prepare for pos control
-  // very dangerous!!
-  // SetPosCtrl(ODriveCANleft, node_id_q0, model.q_init(0));
-  // SetPosCtrl(ODriveCANright, node_id_q2, model.q_init(2));
-  // ctrlMode_prev = "Pos";
-
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  SetTorCtrlMode(ODriveCANright, node_id_rwr);
-  SetTorCtrlMode(ODriveCANleft, node_id_rwl);
-  SetTorCtrlMode(ODriveCANyaw, node_id_rwz);
-  // increase these when you're ready
-  float vel_lim = 20;
-  float tor_lim = 5;
-  ODriveCANright->SetLimits(node_id_rwr, vel_lim, tor_lim);
-  ODriveCANleft->SetLimits(node_id_rwl, vel_lim, tor_lim);
-  ODriveCANyaw->SetLimits(node_id_rwz, vel_lim, tor_lim);
-
-  ODriveCANright->RunState(node_id_rwr, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
-  ODriveCANleft->RunState(node_id_rwl, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
-  ODriveCANyaw->RunState(node_id_rwz, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
+  float vel_lim = 32;  // 64 max
+  float tor_lim = 20;
+  Startup(ODriveCANright, node_id_rwr, tor_lim, vel_lim);
+  Startup(ODriveCANleft, node_id_rwl, tor_lim, vel_lim);
+  Startup(ODriveCANyaw, node_id_rwz, tor_lim, vel_lim);
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir) {
@@ -114,8 +100,16 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
   ODrive->SetVelocity(node_id, 0);                   // stop the motor so you can read position
   q_offset(node_id) = ODrive->GetPosition(node_id);  // read the RAW encoder position at home
   SetTorCtrlMode(ODrive, node_id);                   // switch to torque control so it is pliable!
-  ODrive->SetLimits(node_id, 10, 5);                 // set limits back to normal
+  ODrive->SetLimits(node_id, 10, 25);                // set limits back to normal
   //                             ^ TODO: Increase current limit when you're ready
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+}
+
+void HardwareBridge::Startup(std::unique_ptr<ODriveCan>& ODrive, int node_id, double tor_lim, double vel_lim) {
+  SetTorCtrlMode(ODrive, node_id);
+  ODrive->SetLimits(node_id, vel_lim, tor_lim);
+  ODrive->RunState(node_id, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
