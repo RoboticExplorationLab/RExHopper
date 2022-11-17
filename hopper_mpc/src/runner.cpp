@@ -143,7 +143,7 @@ void Runner::Run() {  // Method/function defined inside the class
     }
     Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
 
-    FallCheck(Q);
+    FallCheck(Q, t);
 
     wb = retvals.wb;
     w = Q.matrix() * wb;  // angular vel in the world frame
@@ -151,13 +151,14 @@ void Runner::Run() {  // Method/function defined inside the class
     a = Q.matrix() * ab;  // acceleration in the world frame
 
     qa = retvals.qa;
-    dqa = retvals.dqa;
+    dqa = retvals.dqa;  // note that this isn't being used in legPtr right now...
 
     sh = ContactCheck(bridgePtr->sh, sh_prev, k);
 
-    legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);  // grab first two actuator pos values
-    Eigen::Vector3d peb = legPtr->KinFwd();        // pos of end-effector in body frame (P.E.B.)
-    Eigen::Vector3d veb = legPtr->GetVel();        // vel of end-effector in body frame (V.E.B.)
+    legPtr->UpdateState(qa.segment<2>(0), Q);  // grab first two actuator pos values
+    rwaPtr->UpdateState(dqa.segment<3>(2));    // grab last three actuator vel values
+    Eigen::Vector3d peb = legPtr->KinFwd();    // pos of end-effector in body frame (P.E.B.)
+    Eigen::Vector3d veb = legPtr->GetVel();    // vel of end-effector in body frame (V.E.B.)
 
     Eigen::Matrix3d R2 = Utils::EulerToQuat(0.0, legPtr->q(2), 0.0).matrix();  // check to make sure this stuff works
     Eigen::Matrix3d R3 = Utils::EulerToQuat(0.0, legPtr->q(3), 0.0).matrix();
@@ -420,7 +421,7 @@ trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vec
   return trajVals{p_refv, v_refv};  // TODO: sine wave for mpc
 }
 
-void Runner::FallCheck(Eigen::Quaterniond Q) {
+void Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   Eigen::Quaterniond Q0;
   Q0.setIdentity();
 
@@ -434,7 +435,7 @@ void Runner::FallCheck(Eigen::Quaterniond Q) {
 
   // std::cout << "angle = " << Utils::AngleBetween(Q0, Q_no_yaw) << "\n";
   if (Utils::AngleBetween(Q0, Q_no_yaw) > (45 * M_PI / 180)) {
-    std::cout << "Fall likely; engaging emergency actuator deactivation \n";
+    std::cout << "Fall likely; engaging emergency actuator deactivation at t = " << t << " s\n";
     bridgePtr->End();
   }
 };

@@ -4,7 +4,6 @@
 #include <future>
 #include <iostream>
 #include "hopper_mpc/utils.hpp"
-
 // for boost::serialization
 #include <fstream>
 
@@ -37,6 +36,8 @@ void HardwareBridge::Init() {
   t_hist.reserve(N_lookback);
   t_mocap = 0;
 
+  qa_home = model.qa_home;
+
   // ODrives
   ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
   node_id_q0 = 0;
@@ -62,13 +63,13 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
-  float vel_lim_leg = 20;  // 50 max
-  float tor_lim_leg = 20;
+  float vel_lim_leg = 20;
+  float tor_lim_leg = 5;  // 50 max
   float vel_lim_rw = 32;  // 64 max
   float tor_lim_rw = 20;
 
   if (home == true) {
-    std::cout << "Robot WILL HOME! Make sure it is either in the jig or being held. Press any key to continue. \n";
+    std::cout << "Robot WILL HOME! Make sure it is either in the jig or being held, then press any key to continue. \n";
     std::cin.ignore();
     std::cout << "Starting homing procedure. \n";
     Home(ODriveCANleft, node_id_q0, -1);
@@ -81,7 +82,7 @@ void HardwareBridge::Init() {
     oa << g;                                              // write class instance to archive
 
   } else {
-    std::cout << "Robot will NOT home! Are you sure? Press any key to continue. \n";
+    std::cout << "Robot will NOT home! Make sure it is in startup configuration, then press any key to continue. \n";
     std::cin.ignore();
 
     Startup(ODriveCANleft, node_id_q0, vel_lim_leg, tor_lim_leg);
@@ -95,7 +96,7 @@ void HardwareBridge::Init() {
     q_offset(1) = saved_get.q2_offset;
 
     // add # of rotations of rotor to get to starting configuration from homing position
-    // q_offset(0) += 2 * M_PI  // reduce torque/vel limits if you're going to mess with this stuff
+    // q_offset(0) += 1  // reduce torque/vel limits if you're going to mess with this stuff
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
@@ -215,7 +216,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
 
 void HardwareBridge::SetPosCtrlMode(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {
   // set Odrives to position control
-  float qo_init = (-model.qa_home(node_id) - q_init) * 7 / (2 * M_PI) + q_offset(node_id);
+  float qo_init = (-qa_home(node_id) - q_init) * 7 / (2 * M_PI) + q_offset(node_id);
   ODrive->SetPosition(node_id, qo_init);
   ODrive->SetControllerModes(node_id, ODriveCan::POSITION_CONTROL);
 }
@@ -242,8 +243,8 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPos() {
   qa(4) = ODriveCANyaw->GetPosition(node_id_rwz) * 2 * M_PI;
 
   // correct homing position
-  qa(0) += model.qa_home(0);
-  qa(1) += model.qa_home(1);
+  qa(0) += qa_home(0);
+  qa(1) += qa_home(1);
   return qa;
 }
 
@@ -260,8 +261,8 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointVel() {
 Eigen::Vector2d HardwareBridge::ConvertToODrivePos(Eigen::Vector2d qa) {
   // convert joint pos back to ODrive pos (turns instead of radians, no homed/offset, no gear ratio, motor polarity)
   Eigen::Vector2d qo;
-  qo(0) = (-model.qa_home(0) + qa(0)) * -7 / (2 * M_PI) + q_offset(0);
-  qo(1) = (-model.qa_home(1) + qa(1)) * 7 / (2 * M_PI) + q_offset(1);
+  qo(0) = (-qa_home(0) + qa(0)) * -7 / (2 * M_PI) + q_offset(0);
+  qo(1) = (-qa_home(1) + qa(1)) * 7 / (2 * M_PI) + q_offset(1);
   // qo(2) = qa(2) / (2 * M_PI);
   // qo(3) = qa(3) / (2 * M_PI);  // polarity?
   // qo(4) = qa(4) / (2 * M_PI);

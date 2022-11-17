@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
               0, 0, 1, 0, 0,
               0, 0, 0, 1, 0, 
               0, 0, 0, 0, 1;  // clang-format on
-  hopper.qa_home << 29 * M_PI / 180, -187 * M_PI / 180;
+  hopper.qa_home << 29 * M_PI / 180, -187 * M_PI / 180;                                          // homing hardstop locations
   hopper.k_kin << 45, 45 * 0.02;
 
   double dt = 0.001;  // 1 kHz

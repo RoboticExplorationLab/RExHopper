@@ -63,6 +63,7 @@ class HardwareBridge : public Bridge {  // The class
   // double posEst_prev;
   // int count;
   double t_mocap;
+  Eigen::Vector2d qa_home;
 };
 
 class saved_offsets {

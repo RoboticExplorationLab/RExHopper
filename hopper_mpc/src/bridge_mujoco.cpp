@@ -238,7 +238,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     p << d->sensordata[0], d->sensordata[1], d->sensordata[2];
 
     if (d->time == 0.001) {
-      Q.coeffs() << 0, 0, 0, 1;  // Q initializes as all zeros which is invalid
+      Q.setIdentity();  // sensordata quaternion initializes as all zeros which is invalid
     } else {
       Q.w() = d->sensordata[3];
       Q.x() = d->sensordata[4];
@@ -264,15 +264,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     aef << d->sensordata[37], d->sensordata[38], d->sensordata[39];  // foot accelerometer
 
     t_refresh += 1;
-    // std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (t_refresh > refresh_rate) {
-      // std::cout << "grf_normal = " << grf_normal << "\n ";
-      // std::cout << "bridge sh = " << sh << "\n ";
-      // std::cout << "raw pos = " << qa_raw_.transpose() << "\n";
-      // std::cout << "corrected pos = " << qa.transpose() << "\n";
-      // std::cout << "ctrl: " << d->ctrl[0] << ", " << d->ctrl[1] << ", " << d->ctrl[2] << ", " << d->ctrl[3] << ", " << d->ctrl[4] <<
-      // "\n";
-
       // visualization
       t_refresh = 0;  // reset refresh counter
       // 15 ms is a little smaller than 60 Hz.
