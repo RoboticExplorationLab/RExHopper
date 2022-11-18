@@ -30,12 +30,7 @@ uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d 
   Q_up.x() = 0;
   Q_up.y() = sin(1 / 2);
   Q_up.z() = 0;
-
-  double z = 2 * asin(Q.z());  // z-axis of body quaternion
-  Q_z.w() = cos(z / 2);
-  Q_z.x() = 0;
-  Q_z.y() = 0;
-  Q_z.z() = sin(z / 2);
+  Q_z = Utils::GetZQuat(Q);
   R_z = (Q_z.inverse()).matrix();                                        // rotation matrix for body->world z turn
   v_ref = Q_z.matrix() * (-pid_vPtr->PIDControl(R_z * p, R_z * p_ref));  // adjust for yaw, rotate back world->body
   double dist = (p_ref.block<2, 1>(0, 0) - p.block<2, 1>(0, 0)).norm();

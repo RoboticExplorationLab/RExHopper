@@ -63,18 +63,20 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
-  float vel_lim_leg = 20;
-  float tor_lim_leg = 5;  // 50 max
-  float vel_lim_rw = 32;  // 64 max
-  float tor_lim_rw = 20;
+  float vel_lim_leg = 60;
+  float cur_lim_leg = 60;  // 50 max
+  float vel_lim_rw = 32;   // 64 max
+  float cur_lim_rw = 60;
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // so I have time to run over to the testing jig
 
   home = true;  // for safety, don't remove this unless you know wtf you're doing
   if (home == true) {
     std::cout << "Robot WILL HOME! Make sure it is either in the jig or being held, then press any key to continue. \n";
-    std::cin.ignore();
+    // std::cin.ignore();
     std::cout << "Starting homing procedure. \n";
-    Home(ODriveCANleft, node_id_q0, -1);
-    Home(ODriveCANright, node_id_q2, -1);
+    Home(ODriveCANleft, node_id_q0, -1, cur_lim_leg, vel_lim_leg);
+    Home(ODriveCANright, node_id_q2, -1, cur_lim_leg, vel_lim_leg);
     std::cout << "Finished homing procedure. \n";
 
     std::ofstream ofs("offsets.txt");  // create and open a character archive for output
@@ -88,8 +90,8 @@ void HardwareBridge::Init() {
     std::cout << "Robot will NOT home! Make sure it is in startup configuration, then press any key to continue. \n";
     std::cin.ignore();
 
-    Startup(ODriveCANleft, node_id_q0, vel_lim_leg, tor_lim_leg);
-    Startup(ODriveCANright, node_id_q2, vel_lim_leg, tor_lim_leg);
+    Startup(ODriveCANleft, node_id_q0, vel_lim_leg, cur_lim_leg);
+    Startup(ODriveCANright, node_id_q2, vel_lim_leg, cur_lim_leg);
 
     saved_get.reset(new saved_offsets);
     // saved_offsets saved_get;
@@ -106,9 +108,9 @@ void HardwareBridge::Init() {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  Startup(ODriveCANright, node_id_rwr, tor_lim_rw, vel_lim_rw);
-  Startup(ODriveCANleft, node_id_rwl, tor_lim_rw, vel_lim_rw);
-  Startup(ODriveCANyaw, node_id_rwz, tor_lim_rw, vel_lim_rw);
+  Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
+  Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
+  Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";
   // std::cin.ignore();
@@ -121,7 +123,7 @@ void HardwareBridge::Init() {
   std::cout << "Liftoff!!! \n";
 }
 
-void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir) {
+void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir, float cur_lim, float vel_lim) {
   ODrive->SetLimits(node_id, 2, 5);  // prevent motors from burning out when reaching end stops by reducing max current
   // Tell ODrive to find the leg position
   const double vel = 0.5;
@@ -139,16 +141,15 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
   q_offset(node_id) = ODrive->GetPosition(node_id);  // read the RAW encoder position at home
   SetTorCtrlMode(ODrive, node_id);                   // switch to torque control so it is pliable!
   // ^ DON'T REMOVE THIS OR LEG WILL BLOCK ITSELF FROM FINISHING HOMING
-  ODrive->SetLimits(node_id, 20, 25);  // set limits back to normal
-  //                             ^ TODO: Increase current limit when you're ready
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  ODrive->SetLimits(node_id, cur_lim, vel_lim);  // set limits back to normal
+  // ODrive->SetPositionGain(node_id, position_gain);
+  // ODrive->SetVelocityGains(node_id, velocity_gain, velocity_integrator_gain);
 }
 
-void HardwareBridge::Startup(std::unique_ptr<ODriveCan>& ODrive, int node_id, double tor_lim, double vel_lim) {
+void HardwareBridge::Startup(std::unique_ptr<ODriveCan>& ODrive, int node_id, float cur_lim, float vel_lim) {
   SetTorCtrlMode(ODrive, node_id);
-  ODrive->SetLimits(node_id, vel_lim, tor_lim);
+  ODrive->SetLimits(node_id, vel_lim, cur_lim);
   ODrive->RunState(node_id, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {

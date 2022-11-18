@@ -108,6 +108,17 @@ double Utils::AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2) {
   return 2 * atan2(Qd.vec().norm(), Qd.w());
 }
 
+Eigen::Quaterniond Utils::GetZQuat(Eigen::Quaterniond Q) {
+  // extract quaternion of just the yaw axis rotation
+  double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion
+  Eigen::Quaterniond Q_z;
+  Q_z.w() = cos(z_angle / 2);
+  Q_z.x() = 0;
+  Q_z.y() = 0;
+  Q_z.z() = sin(z_angle / 2);
+  return Q_z;
+}
+
 double Utils::PolyFit(const std::vector<double>& t, const std::vector<double>& v, int k, double t_new) {
   // taken from https://towardsdatascience.com/least-square-polynomial-fitting-using-c-eigen-package-c0673728bd01
   // k = order of polynomial, for example k = 3 for cubic polynomial

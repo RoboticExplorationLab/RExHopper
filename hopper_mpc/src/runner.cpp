@@ -96,10 +96,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
 void Runner::Run() {  // Method/function defined inside the class
   bridgePtr->Init();
-  // Eigen::Vector3d pe_0 = p + Q.matrix() * peb_ref;
-  // Eigen::Vector3d ve_0 = v + Q.matrix() * veb_ref;
-  // std::cout << "pe_0 = " << pe_0.transpose() << "\n";
-  // std::cout << "ve_0 = " << ve_0.transpose() << "\n";
+
   kfPtr->InitState(p, v, p + Q.matrix() * peb_ref, v + Q.matrix() * veb_ref);
   double t = 0.0;
 
@@ -139,7 +136,8 @@ void Runner::Run() {  // Method/function defined inside the class
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
     if (k == 0) {                                       // TODO: Move this outside of the loop?
       // TODO: rotate mocap position as well based on mocap yaw
-      Q_offset = retvals.Q;  // initial offset for yaw adjustment
+      Q_offset = Utils::GetZQuat(retvals.Q);  // initial offset for yaw adjustment
+      // Q_offset = retvals.Q;  //
     }
     Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
 
@@ -424,13 +422,8 @@ trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vec
 void Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   Eigen::Quaterniond Q0;
   Q0.setIdentity();
-
-  double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion
   Eigen::Quaterniond Q_z, Q_no_yaw;
-  Q_z.w() = cos(z_angle / 2);
-  Q_z.x() = 0;
-  Q_z.y() = 0;
-  Q_z.z() = sin(z_angle / 2);
+  Q_z = Utils::GetZQuat(Q);
   Q_no_yaw = (Q * (Q_z.inverse())).normalized();  // the base quaternion ignoring heading
 
   // std::cout << "angle = " << Utils::AngleBetween(Q0, Q_no_yaw) << "\n";
