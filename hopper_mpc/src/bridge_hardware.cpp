@@ -1,11 +1,9 @@
 #include "hopper_mpc/bridge_hardware.h"
 #include <cstring>
 #include <filesystem>
-#include <future>
+#include <fstream>  // for boost::serialization
 #include <iostream>
 #include "hopper_mpc/utils.hpp"
-// for boost::serialization
-#include <fstream>
 
 HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool home_) : Base(model_, dt_, fixed_, home_) {}
 
@@ -63,12 +61,12 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
-  float vel_lim_leg = 60;
-  float cur_lim_leg = 60;  // 50 max
-  float vel_lim_rw = 32;   // 64 max
+  float vel_lim_leg = 5;
+  float cur_lim_leg = 60;
+  float vel_lim_rw = 32;  // 64 max
   float cur_lim_rw = 60;
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // so I have time to run over to the testing jig
+  // std::this_thread::sleep_for(std::chrono::milliseconds(8000));  // so I have time to run over to the testing jig
 
   home = true;  // for safety, don't remove this unless you know wtf you're doing
   if (home == true) {
@@ -81,7 +79,6 @@ void HardwareBridge::Init() {
 
     std::ofstream ofs("offsets.txt");  // create and open a character archive for output
     saved.reset(new saved_offsets(q_offset(0), q_offset(1)));
-    // const saved_offsets saved(q_offset(0), q_offset(1));  // create class instance
     {
       boost::archive::text_oarchive oa(ofs);  // save data to archive
       oa << *saved;                           // write class instance to archive
@@ -108,12 +105,15 @@ void HardwareBridge::Init() {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
-  Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
-  Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
+  // Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
+  // Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
+  // Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";
   // std::cin.ignore();
+  SetPosCtrlMode(ODriveCANleft, node_id_q0, model.q_init(0));
+  SetPosCtrlMode(ODriveCANright, node_id_q2, model.q_init(2));
+
   std::cout << "Controller starting in : \n3... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
   std::cout << "2... \n";
@@ -136,7 +136,6 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     dq = ODrive->GetVelocity(node_id);
   }
-  // std::cout << "dq_measured = " << dq << "\n";
   ODrive->SetVelocity(node_id, 0);                   // stop the motor so you can read position
   q_offset(node_id) = ODrive->GetPosition(node_id);  // read the RAW encoder position at home
   SetTorCtrlMode(ODrive, node_id);                   // switch to torque control so it is pliable!
@@ -173,6 +172,9 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
 
   qa = GetJointPos();
   dqa = GetJointVel();
+
+  CheckEndStops(qa);
+  // std::cout << qa(0) * 180 / M_PI << ", " << qa(1) * 180 / M_PI << ", ref = " << qla_ref(0) << ", " << qla_ref(1) << "\n";
 
   // --- begin collecting sensor data --- //
   ros::spinOnce();
@@ -223,8 +225,11 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
 
 void HardwareBridge::SetPosCtrlMode(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {
   // set Odrives to position control
-  float qo_init = (-qa_home(node_id) - q_init) * 7 / (2 * M_PI) + q_offset(node_id);
-  ODrive->SetPosition(node_id, qo_init);
+  Eigen::Vector2d qla_ref_init;
+  qla_ref_init.setZero();
+  qla_ref_init(node_id) = q_init;
+  Eigen::Vector2d qo_ref = ConvertToODrivePos(qla_ref_init);
+  ODrive->SetPosition(node_id, qo_ref(node_id));
   ODrive->SetControllerModes(node_id, ODriveCan::POSITION_CONTROL);
 }
 
@@ -241,9 +246,9 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPos() {
   qa(1) = ODriveCANright->GetPosition(node_id_q2);
   qa += -q_offset;  // q0 and q2 should read 0 here if just homed
 
-  // // Conversion
+  // Conversion
   qa(0) *= -2 * M_PI / 7;
-  // //     ^ Negative sign is important!
+  //       ^ Negative sign is important!
   qa(1) *= 2 * M_PI / 7;
   qa(2) = ODriveCANright->GetPosition(node_id_rwr) * 2 * M_PI;
   qa(3) = ODriveCANleft->GetPosition(node_id_rwl) * 2 * M_PI;
@@ -312,6 +317,15 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointTorqueMeasured() {
   tau(4) = ODriveCANyaw->GetIqMeasured(node_id_rwz);
   tau = tau.cwiseProduct(model.a_kt);  // multiply by actuator kt to convert current to torque
   return tau;
+}
+
+void HardwareBridge::CheckEndStops(Eigen::Matrix<double, 5, 1> qa) {
+  // safety check to see if end stops are being hit, stop motors to prevent burnout
+  if (qa(0) >= 28 * M_PI / 180 || qa(1) <= -185 * M_PI / 180) {
+    End();
+    stop == true;
+    std::cout << "CheckEndStops: Joints hitting endstops, engaging e-stop \n";
+  }
 }
 
 void HardwareBridge::End() {

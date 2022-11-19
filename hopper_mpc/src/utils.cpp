@@ -10,14 +10,13 @@
 Utils::Utils(){};
 
 Eigen::Vector3d Utils::QuatToEuler(Eigen::Quaterniond quat) {
+  // Euler ZYX?
   Eigen::Vector3d rst;
 
-  // order https://github.com/libigl/eigen/blob/master/Eigen/src/Geometry/Quaternion.h
-  Eigen::Matrix<double, 4, 1> coeff = quat.coeffs();
-  double x = coeff(0);
-  double y = coeff(1);
-  double z = coeff(2);
-  double w = coeff(3);
+  double x = quat.x();
+  double y = quat.y();
+  double z = quat.z();
+  double w = quat.w();
 
   double y_sqr = y * y;
 
@@ -110,7 +109,8 @@ double Utils::AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2) {
 
 Eigen::Quaterniond Utils::GetZQuat(Eigen::Quaterniond Q) {
   // extract quaternion of just the yaw axis rotation
-  double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion
+  // double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion (only works assuming no pitch/roll)
+  double z_angle = QuatToEuler(Q)(2);
   Eigen::Quaterniond Q_z;
   Q_z.w() = cos(z_angle / 2);
   Q_z.x() = 0;

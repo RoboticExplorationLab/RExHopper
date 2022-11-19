@@ -16,9 +16,8 @@ Wt901::Wt901() {
   i2cPtr->address(ucDevAddr);
 
   double imu_mount_angle = 8.9592122 * M_PI / 180;
-  Eigen::Matrix3d R1 = Utils::EulerToQuat(imu_mount_angle, 0.0, 0.0).matrix();
-  Eigen::Matrix3d R2 = Utils::EulerToQuat(0, 0, 0.5 * M_PI).matrix();
-  R = R1 * R2;
+  R1 = Utils::EulerToQuat(imu_mount_angle, 0.0, 0.0).matrix();
+  R2 = Utils::EulerToQuat(0, 0, 0.5 * M_PI).matrix();
   T << -35.3, 0.0, 14.8;
 }
 
@@ -75,8 +74,8 @@ Eigen::Vector3d Wt901::CollectAcc() {
   float omega_z = (float)stcGyro.w[2] / 32768 * 2000;
   omega << omega_x, omega_y, omega_z;  // angular vel in imu frame
 
-  omega_f = R * omega;                                                // omega at foot in link 3 frame
-  alpha_f = R * alpha - Utils::Skew(omega) * Utils::Skew(omega) * T;  // acc at foot in link 3 frame
+  omega_f = R2 * (R1 * omega);                                                // omega at foot in link 3 frame
+  alpha_f = R2 * (R1 * alpha) - Utils::Skew(omega) * Utils::Skew(omega) * T;  // acc at foot in link 3 frame
 
   return alpha_f;
 }

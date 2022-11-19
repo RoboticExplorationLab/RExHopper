@@ -26,6 +26,7 @@ class Bridge {                                                // The class
   Eigen::Matrix<double, 5, 1> rf_y;  // measured force on joints
   Eigen::Matrix<double, 5, 1> rf_z;  // measured force on joints
   bool sh;
+  bool stop = false;
 
  protected:
   Model model;

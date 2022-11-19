@@ -42,7 +42,8 @@ Whenever you change Dockerfile and want to rebuild the env ->  Ctrl+shift+p -> r
    - Gyroscope: 500 deg/s
 3. Set UART Baud Rate to 921600.
 4. Save and disconnect. Connect to the Hopper computer via USB.
-<!-- 4. In Configuration > Mounting, set the following transformation in Euler Angles -->
+4. In Configuration > Mounting, set the following transformation in Euler Angles:
+   [2.618, 0, 1.571]
 
 
 
