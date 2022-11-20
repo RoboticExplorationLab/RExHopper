@@ -105,8 +105,8 @@ void HardwareBridge::Init() {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  // Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
-  // Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
+  Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
+  Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
   // Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";

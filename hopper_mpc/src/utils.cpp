@@ -82,7 +82,6 @@ double Utils::AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2) {
 }
 
 Eigen::Quaterniond Utils::GenYawQuat(const double z_angle) {
-  // the laziest and most entitled quaternion
   // create quaternion with only a yaw axis rotation (no pitch/roll, constrained to z-axis)
   // double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion (only works assuming no pitch/roll)
   Eigen::Quaterniond Q_z;
@@ -96,14 +95,31 @@ Eigen::Quaterniond Utils::GenYawQuat(const double z_angle) {
 Eigen::Quaterniond Utils::ExtractYawQuat(Eigen::Quaterniond Q) {
   // extract the yaw angle rotation of a quaternion
   Eigen::Vector3d v1;
-  v1 << 1, 0, 0;  // vector pointing straight forward
-
+  v1 << 1, 0, 0;                         // vector pointing straight forward
   Eigen::Vector3d v2 = Q.matrix() * v1;  // get directional vector
-
-  v2(2) = 0;  // remove z-axis of the vector
-
+  v2(2) = 0;                             // remove z-axis of the vector
   Eigen::Quaterniond Qd = VecToQuat(v1, v2);
   return Qd;
+}
+
+double Utils::ExtractX(Eigen::Quaterniond Q) {
+  // extract the x (roll) angle rotation from a quaternion
+  Eigen::Vector3d v1;
+  v1 << 0, 0, 1;                         // vector pointing straight up
+  Eigen::Vector3d v2 = Q.matrix() * v1;  // get directional vector
+  // double angle = acos((u1.dot(u2)) / (u1.norm() * u2.norm()));  // unsigned angle
+  double angle = atan2(v2(2), v2(1)) - atan2(v1(2), v1(1));  // signed angle in yz plane, cc positive
+  return angle;
+}
+
+double Utils::ExtractZ(Eigen::Quaterniond Q) {
+  // extract the z (yaw) angle rotation from a quaternion
+  Eigen::Vector3d v1;
+  v1 << 1, 0, 0;                         // vector pointing straight forward
+  Eigen::Vector3d v2 = Q.matrix() * v1;  // get directional vector
+  // double angle = acos((u1.dot(u2)) / (u1.norm() * u2.norm()));  // unsigned angle
+  double angle = atan2(v2(1), v2(0)) - atan2(v1(1), v1(0));  // signed angle in xy plane, cc positive
+  return angle;
 }
 
 double Utils::PolyFit(const std::vector<double>& t, const std::vector<double>& v, int k, double t_new) {

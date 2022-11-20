@@ -35,15 +35,15 @@ Click on green button in lower left -> reopen in container
 Whenever you change Dockerfile and want to rebuild the env ->  Ctrl+shift+p -> rebuild container
 
 
-## First Time Setup of the 3DMCX5
+<!-- ## First Time Setup of the 3DMCX5  (This is wrong)
 1. Install [SensorConnect](https://www.microstrain.com/software/sensorconnect) on a Windows computer. Connect the 3DMCX5 by USB.
 2. In SensorConnect, set the sensor ranges:
    - Accelerometer: 20g
    - Gyroscope: 500 deg/s
 3. Set UART Baud Rate to 921600.
 4. In Configuration > Mounting, set the following transformation in Euler Angles:
-   [-0.5236, 0, 1.571]  (-30, 0, 90 deg)
-5. Save to startup configuration and disconnect. Connect to the Hopper computer via USB.
+   [-0.5236, 0, 1.571]  (-30, 0, 90 deg)  <- actually this needs to  be set in the params.yml...
+5. Save to startup configuration and disconnect. Connect to the Hopper computer via USB. -->
 
 
 ## Code Execution Setup

@@ -12,6 +12,8 @@ class Utils {
   static Eigen::Quaterniond VecToQuat(Eigen::Vector3d v1, Eigen::Vector3d v2);
   static Eigen::Quaterniond GenYawQuat(const double z_angle);
   static Eigen::Quaterniond ExtractYawQuat(Eigen::Quaterniond Q);
+  static double ExtractX(Eigen::Quaterniond Q);
+  static double ExtractZ(Eigen::Quaterniond Q);
   static Eigen::Matrix3d Skew(Eigen::Vector3d vec);
   static Eigen::Matrix3d PseudoInverse(const Eigen::Matrix3d& mat);
 
