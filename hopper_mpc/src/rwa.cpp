@@ -1,19 +1,27 @@
 #include "hopper_mpc/rwa.h"
 #include <iostream>
 #include "Eigen/Core"
+
 #include "hopper_mpc/utils.hpp"
 
-Rwa::Rwa(double dt_) {
+Rwa::Rwa(std::string bridge, double dt_) {
+  dt = dt_;
   // q.setZero();  // we don't care about rw actuator pos
   dq.setZero();
-
-  dt = dt_;
 
   a = 45 * M_PI / 180;
   b = -45 * M_PI / 180;
   sin45 = sin(45 * M_PI / 180);
 
-  double ku = 300;  // 200 TODO: Might want to increase this.
+  double ku;
+  double ks;
+  if (bridge == "mujoco") {
+    ku = 300;
+    ks = 0.00001;
+  } else {
+    ku = 2;
+    ks = 0.0000001;
+  }
   // use gain of 13 for CoM bisection search.
   // can go as high as 1300 (not sure if necessary)
   double kp = 0.6;
@@ -24,13 +32,15 @@ Rwa::Rwa(double dt_) {
   kd_tau << kd, kd, kd * 0.5;  // 0.04, 0.04, 0.005;
   pid_tauPtr.reset(new PID3(dt, kp_tau * ku, ki_tau * ku, kd_tau * ku));
 
-  double ks = 0.00001;
   double ksi = 3;
   double ksp = 0.5;
   kp_vel << ks, ks, ks * 0.01;
   ki_vel << ks * ksi, ks * ksi, ks * ksi * 0.01;
   kd_vel << ks * ksp, ks * ksp, ks * ksp * 0.01;
   pid_velPtr.reset(new PID3(dt, kp_vel, ki_vel, kd_vel));
+
+  lowpassPtr1.reset(new LowPass3D(dt, 160));
+  lowpassPtr2.reset(new LowPass3D(dt, 160));
 }
 
 void Rwa::UpdateState(Eigen::Vector3d dq_in) {
@@ -56,7 +66,7 @@ Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_b
   // get body angle in rw axes
   theta(0) = GetXRotatedAboutZ(Q_base, a);
   theta(1) = GetXRotatedAboutZ(Q_base, b);
-  theta(2) = 2 * asin(Q_base.z());  // z-axis of body quaternion
+  theta(2) = 2 * asin(Q_base.z());  // z-axis of body quaternion (Is it though?)
   return theta;
 }
 
@@ -72,11 +82,14 @@ Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
 
 Eigen::Vector3d Rwa::AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref) {
   // simple reaction wheel attitude control w/ derivative on measurement pid
-  theta = AttitudeIn(Q_ref, Q_base);
+  theta = lowpassPtr1->Filter(AttitudeIn(Q_ref, Q_base));
   setp = AttitudeSetp(Q_ref, z_ref);
   // setp -= pid_velPtr->PIDControlWrapped(theta, setp);
-  Eigen::Vector3d setp_dq(0, 0, 0);
-  setp += pid_velPtr->PIDControl(dq, setp_dq);        // velocity compensation
+  Eigen::Vector3d setp_dq(0, 0, 0);                                // Make this nonzero to reduce static friction?
+  Eigen::Vector3d vel_comp = pid_velPtr->PIDControl(dq, setp_dq);  // velocity compensation
+  // setp += lowpassPtr->Filter(vel_comp);  // filter the vel setpoint
+  setp += vel_comp;
+  setp = lowpassPtr2->Filter(setp);                   // filter the setpoint
   return pid_tauPtr->PIDControlWrapped(theta, setp);  // Cascaded PID Loop
 }
 

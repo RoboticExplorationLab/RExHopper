@@ -160,7 +160,6 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
       SetPosCtrlMode(ODriveCANright, node_id_q2, qla_ref(1));
     }
     SetJointPos(qla_ref);
-
   } else if (ctrlMode == "Torque") {
     if (ctrlMode_prev != "Torque") {
       SetTorCtrlMode(ODriveCANleft, node_id_q0);

@@ -78,7 +78,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   fb_ref.setZero();                                                  // desired operational space leg force
   u.setZero();                                                       // ctrl Torques
   legPtr = std::make_shared<Leg>(model, dt);
-  rwaPtr = std::make_shared<Rwa>(dt);
+  rwaPtr = std::make_shared<Rwa>(bridge, dt);
 
   gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
   kfPtr.reset(new Kf(dt));
@@ -129,6 +129,7 @@ void Runner::Run() {  // Method/function defined inside the class
   kfVals kfvals;
 
   Eigen::Quaterniond Q_offset;
+  int k_final = 0;
 
   for (int k = 0; k < N_run; k++) {
     auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
@@ -137,15 +138,17 @@ void Runner::Run() {  // Method/function defined inside the class
     if (k == 0) {                                       // TODO: Move this outside of the loop?
       // TODO: rotate mocap position as well based on mocap yaw
       // Q_offset = Utils::GetZQuat(retvals.Q);  // initial offset for yaw adjustment
-      Q_offset = retvals.Q;  //
+      Q_offset = Utils::ExtractYawQuat(retvals.Q);  //
     }
-    Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
-    // Q = retvals.Q;
+    // TODO: Make the offset adjustment have no effect on pitch and roll
+    // Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
+    Q = retvals.Q;
 
-    // bool stop = FallCheck(Q, t) + bridgePtr->stop;
-    bool stop = bridgePtr->stop;
+    bool stop = FallCheck(Q, t) + bridgePtr->stop;
+    // bool stop = bridgePtr->stop;
     if (stop == true) {
       std::cout << "Stopping control loop \n";
+      k_final = k;
       break;
     }
 
@@ -216,6 +219,11 @@ void Runner::Run() {  // Method/function defined inside the class
     } else {
       throw "Invalid ctrl name! Use 'raibert', 'stand', 'idle', or 'circle'";
       break;
+    }
+
+    // clip torques to max possible
+    for (int i = 0; i < model.n_a; i++) {
+      u(i) = Utils::Clip(u(i), -model.a_tau_stall(i), model.a_tau_stall(i));
     }
 
     gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
@@ -298,25 +306,25 @@ void Runner::Run() {  // Method/function defined inside the class
 
   if (plot == true) {
     // if (skip_kf == false) {
-    //   Plots::Plot3(N_run, "Position, Filtered vs Raw", "p", p_vec, p_raw_vec, 0);
-    //   Plots::Plot3(N_run, "Velocity, Filtered vs Raw", "v", v_vec, v_raw_vec, 0);
-    //   Plots::Plot3(N_run, "Foot Position, Filtered vs Raw", "pe", pe_vec, pe_raw_vec, 0);
-    //   Plots::Plot3(N_run, "Foot Velocity, Filtered vs Raw", "ve", ve_vec, ve_raw_vec, 0);
+    //   Plots::Plot3(k_final, "Position, Filtered vs Raw", "p", p_vec, p_raw_vec, 0);
+    //   Plots::Plot3(k_final, "Velocity, Filtered vs Raw", "v", v_vec, v_raw_vec, 0);
+    //   Plots::Plot3(k_final, "Foot Position, Filtered vs Raw", "pe", pe_vec, pe_raw_vec, 0);
+    //   Plots::Plot3(k_final, "Foot Velocity, Filtered vs Raw", "ve", ve_vec, ve_raw_vec, 0);
     // }
-    // Plots::PlotMap2D(N_run, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
-    // Plots::PlotMap3D(N_run, "3D Position vs Time", "p", p_vec, 0, 0);
-    // Plots::PlotSingle(N_run, "Normal Ground Reaction Force", grf_normal);
-    Plots::Plot2(N_run, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
+    // Plots::PlotMap2D(k_final, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
+    // Plots::PlotMap3D(k_final, "3D Position vs Time", "p", p_vec, 0, 0);
+    // Plots::PlotSingle(k_final, "Normal Ground Reaction Force", grf_normal);
+    Plots::Plot2(k_final, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
 
-    Plots::Plot3(N_run, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
-    Plots::Plot3(N_run, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
-    // Plots::Plot3(N_run, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
-    Plots::Plot5(N_run, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
-    Plots::Plot5(N_run, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
-    // Plots::PlotMulti3(N_run, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
-    // gc_state_hist); Plots::PlotSingle(N_run, "Ground Reaction Force Normal", grf_normal);
-    // Plots::Plot3(N_run, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
-    // Plots::Plot3(N_run, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
+    Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
+    Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
+    // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
+    Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
+    Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
+    // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
+    // gc_state_hist); Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
+    // Plots::Plot3(k_final, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
+    // Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
   }
 }
 
@@ -435,7 +443,7 @@ bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   Eigen::Quaterniond Q0;
   Q0.setIdentity();
   Eigen::Quaterniond Q_z, Q_no_yaw;
-  Q_z = Utils::GetZQuat(Q);
+  Q_z = Utils::ExtractYawQuat(Q);
   Q_no_yaw = (Q * (Q_z.inverse())).normalized();  // the base quaternion ignoring heading
   bool stop = false;
   // std::cout << "angle = " << Utils::AngleBetween(Q0, Q_no_yaw) << "\n";

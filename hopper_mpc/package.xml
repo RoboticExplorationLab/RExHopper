@@ -20,6 +20,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>cmake_clang_tools</build_depend>
   <depend>hopper_can_interface</depend>
+  <depend>rotconv</depend>
 
   <!-- <build_depend>geometry_msgs</build_depend>
   <build_depend>roscpp</build_depend>

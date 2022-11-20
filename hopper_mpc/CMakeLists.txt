@@ -83,6 +83,9 @@ add_executable(${PROJECT_NAME}
   src/cx5.cpp 
   src/wt901.cpp
   src/observer.cpp
+  src/lowpass.cpp
+  src/rot_conv.cpp
+  src/rot_conv_extras.cpp
   ../hopper_can_interface/src/ODriveCan.cpp
   ../hopper_can_interface/src/CanInterface.cpp
   ../hopper_can_interface/src/BufferedCanMsg.cpp

@@ -30,7 +30,7 @@ uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d 
   Q_up.x() = 0;
   Q_up.y() = sin(1 / 2);
   Q_up.z() = 0;
-  Q_z = Utils::GetZQuat(Q);
+  Q_z = Utils::ExtractYawQuat(Q);
   R_z = (Q_z.inverse()).matrix();                                        // rotation matrix for body->world z turn
   v_ref = Q_z.matrix() * (-pid_vPtr->PIDControl(R_z * p, R_z * p_ref));  // adjust for yaw, rotate back world->body
   double dist = (p_ref.block<2, 1>(0, 0) - p.block<2, 1>(0, 0)).norm();
@@ -65,7 +65,7 @@ uVals Gait::uRaibert(std::string state, std::string state_prev, Eigen::Vector3d 
   Eigen::Vector3d v1;
   v1 << 0, 0, -1;  // datum vector, chosen as aligned with z-axis (representing leg direction)
   // Q_ref.setFromTwoVectors(v1, pf_ref - p);
-  Q_ref = Utils::VecToQuat(pf_ref - p);
+  Q_ref = Utils::VecToQuat(v1, pf_ref - p);
   Eigen::Vector2d qla_ref;
   qla_ref = legPtr->KinInv(peb_ref);
   std::string ctrlMode = "Pos";
