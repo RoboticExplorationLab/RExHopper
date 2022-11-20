@@ -111,8 +111,9 @@ void HardwareBridge::Init() {
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";
   // std::cin.ignore();
-  SetPosCtrlMode(ODriveCANleft, node_id_q0, model.q_init(0));
-  SetPosCtrlMode(ODriveCANright, node_id_q2, model.q_init(2));
+
+  SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qa_stand(0));
+  SetPosCtrlMode(ODriveCANright, node_id_q2, model.qa_stand(1));
 
   std::cout << "Controller starting in : \n3... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));

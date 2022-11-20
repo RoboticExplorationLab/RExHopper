@@ -129,7 +129,8 @@ void Runner::Run() {  // Method/function defined inside the class
   kfVals kfvals;
 
   Eigen::Quaterniond Q_offset;
-  int k_final = 0;
+
+  int k_final = N_run - 1;  // the final number of steps used, defaults to N_run -1
 
   for (int k = 0; k < N_run; k++) {
     auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
@@ -141,8 +142,8 @@ void Runner::Run() {  // Method/function defined inside the class
       Q_offset = Utils::ExtractYawQuat(retvals.Q);  //
     }
     // TODO: Make the offset adjustment have no effect on pitch and roll
-    // Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
-    Q = retvals.Q;
+    Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
+    // Q = retvals.Q;
 
     bool stop = FallCheck(Q, t) + bridgePtr->stop;
     // bool stop = bridgePtr->stop;
