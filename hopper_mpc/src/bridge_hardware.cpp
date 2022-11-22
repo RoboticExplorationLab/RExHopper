@@ -66,7 +66,7 @@ void HardwareBridge::Init() {
   float vel_lim_rw = 32;  // 64 max
   float cur_lim_rw = 60;
 
-  // std::this_thread::sleep_for(std::chrono::milliseconds(8000));  // so I have time to run over to the testing jig
+  std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // so I have time to run over to the testing jig
 
   home = true;  // for safety, don't remove this unless you know wtf you're doing
   if (home == true) {
@@ -111,7 +111,6 @@ void HardwareBridge::Init() {
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";
   // std::cin.ignore();
-
   SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qa_stand(0));
   SetPosCtrlMode(ODriveCANright, node_id_q2, model.qa_stand(1));
 

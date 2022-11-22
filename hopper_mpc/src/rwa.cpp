@@ -16,9 +16,9 @@ Rwa::Rwa(std::string bridge, double dt_) {
   double ku;  // use gain of 13 for CoM bisection search.
   double ks;
   if (bridge == "mujoco") {
-    ku = 90;
+    ku = 100;
     // ks = 0;
-    ks = 0.00001;
+    ks = 0.00005;
   } else {
     ku = 4;
     ks = 0.0000001;

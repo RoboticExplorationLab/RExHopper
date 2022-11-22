@@ -81,13 +81,6 @@ class Runner {  // The class
   bool sh_saved;
   bool sh_prev;
 
-  // circletest vars
-  double x1;
-  double z1;
-  double z;
-  double r;
-  int flip;
-
   Model model;
   int N_run;           // number of timesteps in sim
   double dt;           // timestep size
@@ -120,5 +113,4 @@ class Runner {  // The class
   int GaitCycleRef(double t);
   bool ContactCheck(bool sh, bool sh_prev, int k);
   bool FallCheck(Eigen::Quaterniond Q, double t);
-  void CircleTest();
 };

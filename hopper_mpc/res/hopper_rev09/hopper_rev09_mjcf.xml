@@ -8,7 +8,7 @@
     <mesh name="Link 0" file="Link 0.stl"/>
     <mesh name="Link 1" file="Link 1.stl"/>
     <mesh name="Link 2" file="Link 2.stl"/>
-    <mesh name="Link 3" file="Link 3.stl"/>
+    <mesh name="Link 3" file="Link 3_alt.stl"/>
     <mesh name="rw0" file="rw0.stl"/>
     <mesh name="rw1" file="rw1.stl"/>
     <mesh name="rwz" file="rwz.stl"/>
@@ -106,11 +106,15 @@
 
   <contact>
     <exclude name="exclude_base_0" body1="base_link" body2="Link 0"/>
+    <exclude name="exclude_base_1" body1="base_link" body2="Link 1"/>
     <exclude name="exclude_base_2" body1="base_link" body2="Link 2"/>
+    <exclude name="exclude_base_3" body1="base_link" body2="Link 3"/>
+    <exclude name="exclude_0_1" body1="Link 0" body2="Link 1"/>
     <exclude name="exclude_0_2" body1="Link 0" body2="Link 2"/>
     <exclude name="exclude_0_3" body1="Link 0" body2="Link 3"/>
     <exclude name="exclude_1_2" body1="Link 1" body2="Link 2"/>
     <exclude name="exclude_1_3" body1="Link 1" body2="Link 3"/>
+    <exclude name="exclude_2_3" body1="Link 2" body2="Link 3"/>
 
     <exclude name="exclude_base_rw0" body1="base_link" body2="rw0"/>
     <exclude name="exclude_base_rw1" body1="base_link" body2="rw1"/>

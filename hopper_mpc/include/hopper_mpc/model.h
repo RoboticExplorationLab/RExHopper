@@ -9,6 +9,8 @@ struct Model {
   int n_a;
   int s_pol;
   double h0;
+  Eigen::Vector3d p0;      // default starting position
+  Eigen::Vector3d p0_sit;  // sitting initial position
   double K_s;
   double K;
   double mu;                            // coeff of foot-floor friction
@@ -28,6 +30,7 @@ struct Model {
   Eigen::Matrix3d inertia;        // total inertia matrix
   Eigen::Matrix<double, 7, 5> S;  // actuator selection matrix
   Eigen::Vector2d qa_home;        // home positions for leg homing
+  Eigen::Vector2d qa_sit;         // position for default standing
   Eigen::Vector2d qa_stand;       // position for default standing
   Eigen::Vector2d k_kin;          // inv kin control gains kp and kd
 

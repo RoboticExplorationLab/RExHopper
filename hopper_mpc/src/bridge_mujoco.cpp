@@ -194,6 +194,18 @@ void MujocoBridge::Init() {
   // then only render visuals once every 16.66 timesteps
   refresh_rate = simhertz / fps;
   t_refresh += 0;
+
+  if (home == false) {  // the robot is not homing, so it must start from a sitting position
+    d->qpos[0] = model.p0_sit(0);
+    d->qpos[1] = model.p0_sit(1);
+    d->qpos[2] = model.p0_sit(2);
+    d->qpos[7] = model.qa_sit(0) - qa_cal(0);  // joint 0
+    d->qpos[9] = model.qa_sit(1) - qa_cal(1);  // joint 2
+  } else {
+    d->qpos[0] = model.p0(0);
+    d->qpos[1] = model.p0(1);
+    d->qpos[2] = model.p0(2);
+  }
 }
 
 retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
@@ -231,6 +243,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       qa_raw << d->qpos[7], d->qpos[9], d->qpos[11], d->qpos[12], d->qpos[13];
       dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
       // first seven indices are for base pos and quat in floating body mode
+      // for velocities, it's the first six indices
     }
 
     qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step

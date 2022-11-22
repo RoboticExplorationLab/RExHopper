@@ -76,7 +76,9 @@ int main(int argc, char* argv[]) {
   hopper.aname[4] = "rw3";
   hopper.n_a = 5;
   hopper.s_pol = 1;
-  hopper.h0 = 0.27;
+  hopper.h0 = 0.27;             // leg height in default configuration
+  hopper.p0 << 0, 0, 0.5;       // default starting position
+  hopper.p0_sit << 0, 0, 0.27;  // default starting position
   hopper.K_s = 996;
   hopper.K = 5000;
   hopper.mu = 0.5;
@@ -104,6 +106,7 @@ int main(int argc, char* argv[]) {
               0, 0, 0, 1, 0, 
               0, 0, 0, 0, 1;  // clang-format on
   hopper.qa_home << 29 * M_PI / 180, -187 * M_PI / 180;                                          // homing hardstop locations
+  hopper.qa_sit << 0 * M_PI / 180, -150 * M_PI / 180;                                            // sitting position
   hopper.qa_stand << -0.886343, -2.13709;                                                        // standing position
   hopper.k_kin << 45, 45 * 0.02;
 

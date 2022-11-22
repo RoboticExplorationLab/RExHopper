@@ -50,7 +50,12 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
     throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
   // initialize state
-  p << 0, 0, 0.5;   // must match starting position in mjcf!!
+  if (home == true) {
+    p = model.p0;
+  } else {
+    p = model.p0_sit;
+  }
+
   Q.setIdentity();  // a vector expression of the coefficients (x,y,z,w)
   v.setZero();
   w.setZero();
@@ -85,29 +90,20 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   k_changed = 0;
   sh_saved = 0;
-
-  // variables for CircleTest
-  x1 = 0;
-  z1 = -0.4;
-  z = -0.3;  // peb_ref(2);
-  r = 0.1;
-  flip = -1;
 }
 
-void Runner::Run() {  // Method/function defined inside the class
+void Runner::Run() {
   bridgePtr->Init();
 
   kfPtr->InitState(p, v, p + Q.matrix() * peb_ref, v + Q.matrix() * veb_ref);
   double t = 0.0;
 
+  // initialize vectors of state history for plotting
   std::vector<std::vector<double>> p_raw_vec(N_run), v_raw_vec(N_run), pe_raw_vec(N_run), ve_raw_vec(N_run);
   std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
-  std::vector<std::vector<double>> euler_vec(N_run);
-  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), peb_vec(N_run),
-      peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), dqa_vec(N_run), reactf_vec(N_run);
-
-  std::vector<std::vector<double>> a_vec(N_run), ae_vec(N_run);
-
+  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), dqa_vec(N_run);
+  std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), reactf_vec(N_run);
+  std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ae_vec(N_run);
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
   int joint_id = 1;  // joint to check reaction forces at
@@ -139,7 +135,7 @@ void Runner::Run() {  // Method/function defined inside the class
     if (k == 0) {                                       // TODO: Move this outside of the loop?
       // TODO: rotate mocap position as well based on mocap yaw
       // Q_offset = Utils::GetZQuat(retvals.Q);  // initial offset for yaw adjustment
-      Q_offset = Utils::ExtractYawQuat(retvals.Q);  //
+      Q_offset = Utils::ExtractYawQuat(retvals.Q);
     }
     // TODO: Make the offset adjustment have no effect on pitch and roll
     Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
@@ -200,27 +196,23 @@ void Runner::Run() {  // Method/function defined inside the class
     GaitCycleUpdate(s, sh, v(2));
 
     if (ctrl == "raibert") {
-      uvals = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
-      u = uvals.u;
-      qla_ref = uvals.qla_ref;
-      ctrlMode = uvals.ctrlMode;
+      uvals = gaitPtr->Raibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
     } else if (ctrl == "stand") {
-      uvals = gaitPtr->uKinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
-      u = uvals.u;
-      qla_ref = uvals.qla_ref;
-      ctrlMode = uvals.ctrlMode;
+      uvals = gaitPtr->KinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
+    } else if (ctrl == "sit") {
+      uvals = gaitPtr->Sit();
     } else if (ctrl == "idle") {
-      // warning: theta, etc. will not be plotted correctly with this
-      u << 0, 0, 0, 0, 0;  // do nothing
-      ctrlMode = "None";
+      uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
     } else if (ctrl == "circle") {
-      CircleTest();  // edits peb_ref in-place
-      qla_ref = legPtr->KinInv(peb_ref);
-      ctrlMode = "Pos";
+      uvals = gaitPtr->CircleTest();
     } else {
-      throw "Invalid ctrl name! Use 'raibert', 'stand', 'idle', or 'circle'";
+      throw "Invalid ctrl name! Use 'raibert', 'stand', 'sit', 'idle', or 'circle'";
       break;
     }
+
+    u = uvals.u;
+    qla_ref = uvals.qla_ref;
+    ctrlMode = uvals.ctrlMode;
 
     // clip torques to max possible
     for (int i = 0; i < model.n_a; i++) {
@@ -316,7 +308,6 @@ void Runner::Run() {  // Method/function defined inside the class
     // Plots::PlotMap3D(k_final, "3D Position vs Time", "p", p_vec, 0, 0);
     // Plots::PlotSingle(k_final, "Normal Ground Reaction Force", grf_normal);
     Plots::Plot2(k_final, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
-
     Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
     Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
     // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
@@ -454,19 +445,3 @@ bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   }
   return stop;
 };
-
-void Runner::CircleTest() {
-  // edits peb_ref in-place
-  z += 0.0005 * flip;  // std::cout << z << "\n";
-  if (z <= -0.5 || z >= -0.3) {
-    flip *= -1;
-  }
-  double x = (sqrt(pow(r, 2) - pow(z - z1, 2)) + x1) * -flip;
-  if (isnan(x)) {
-    x = 0;
-  }
-  peb_ref(0) = x;
-  peb_ref(2) = z;
-
-  // std::cout << "peb_ref = " << peb_ref(0) << ", " << peb_ref(1) << ", " << peb_ref(2) << "\n";
-}
