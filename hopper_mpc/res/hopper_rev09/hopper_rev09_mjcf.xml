@@ -8,7 +8,7 @@
     <mesh name="Link 0" file="Link 0.stl"/>
     <mesh name="Link 1" file="Link 1.stl"/>
     <mesh name="Link 2" file="Link 2.stl"/>
-    <mesh name="Link 3" file="Link 3_alt.stl"/>
+    <mesh name="Link 3" file="Link 3_3.stl"/>
     <mesh name="rw0" file="rw0.stl"/>
     <mesh name="rw1" file="rw1.stl"/>
     <mesh name="rwz" file="rwz.stl"/>

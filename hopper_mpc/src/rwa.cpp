@@ -17,11 +17,10 @@ Rwa::Rwa(std::string bridge, double dt_) {
   double ks;
   if (bridge == "mujoco") {
     ku = 100;
-    // ks = 0;
-    ks = 0.00005;
+    ks = 0.00032;
   } else {
     ku = 4;
-    ks = 0.0000001;
+    ks = 0.0000032;
   }
 
   double kp = 0.6;
@@ -32,8 +31,8 @@ Rwa::Rwa(std::string bridge, double dt_) {
   kd_tau << kd, kd, kd * 0.5;  // 0.04, 0.04, 0.005;
   pid_tauPtr.reset(new PID3(dt, kp_tau * ku, ki_tau * ku, kd_tau * ku));
 
-  double ksi = 3;
-  double ksp = 0.5;
+  double ksi = 0.03;
+  double ksp = 0.06;
   kp_vel << ks, ks, ks * 0.01;
   ki_vel << ks * ksi, ks * ksi, ks * ksi * 0.01;
   kd_vel << ks * ksp, ks * ksp, ks * ksp * 0.01;

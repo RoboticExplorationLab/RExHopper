@@ -21,6 +21,13 @@ Gait::Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<L
   // x_adj = -0.002938125;  //-0.002938125 falls forward;  //-0.0029346875 falls backward;  works for rev08;
   x_adj = 0.00996875;  // this can be improved
   peb_ref << x_adj, 0, -model.h0 * 1.5;
+  u.setZero();
+
+  // standup
+  peb_ref_init = legPtr->KinFwd(model.qla_sit(0), model.qla_sit(1));
+  peb_ref_final << 0, 0, -model.h0 * 5 / 3;
+  peb_ref_trajx = Eigen::VectorXd::LinSpaced(N_getup, peb_ref_init(0), peb_ref_final(0));
+  peb_ref_trajz = Eigen::VectorXd::LinSpaced(N_getup, peb_ref_init(2), peb_ref_final(2));
 }
 
 uVals Gait::Raibert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v,
@@ -99,8 +106,8 @@ uVals Gait::KinInvVert(std::string state, std::string state_prev, Eigen::Vector3
   return uVals{u, qla_ref, ctrlMode};
 }
 
-uVals Gait::KinInvStand(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v,
-                        Eigen::Vector3d w, Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref) {
+uVals Gait::KinInvStand(Eigen::Quaterniond Q) {
+  Eigen::Quaterniond Q_ref;
   Q_ref.setIdentity();
   z_ref = 0;
   peb_ref(2) = -model.h0 * 5 / 3;
@@ -113,13 +120,29 @@ uVals Gait::KinInvStand(std::string state, std::string state_prev, Eigen::Vector
   return uVals{u, qla_ref, ctrlMode};
 }
 
+uVals Gait::GetUp(Eigen::Quaterniond Q) {
+  Eigen::Quaterniond Q_ref;
+  Q_ref.setIdentity();
+  z_ref = 0;
+
+  peb_ref << peb_ref_trajx(i), 0.0, peb_ref_trajz(i);
+  Eigen::Vector2d qla_ref = legPtr->KinInv(peb_ref);
+  std::string ctrlMode = "Pos";
+  u.segment<3>(2) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
+  i += 1;
+  if (i >= N_getup) {
+    i = N_getup - 1;
+  }
+  return uVals{u, qla_ref, ctrlMode};
+}
+
 uVals Gait::Sit() {
   Eigen::Quaterniond Q_ref;
   Q_ref.setIdentity();
   z_ref = 0;
-  Eigen::Vector2d qla_ref = model.qa_sit;
+  Eigen::Vector2d qla_ref = model.qla_sit;
   std::string ctrlMode = "Pos";
-  u.segment<3>(2) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
+  // u.segment<3>(2) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
   return uVals{u, qla_ref, ctrlMode};
 }
 

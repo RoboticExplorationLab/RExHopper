@@ -15,7 +15,9 @@ class Leg {                       // The class
   void UpdateState(Eigen::Vector2d q_in, Eigen::Quaterniond Q_base);
 
   Eigen::Vector2d KinInv(Eigen::Vector3d p_ref);
-  Eigen::Vector3d KinFwd();
+  Eigen::Vector3d GetPos();
+  Eigen::Vector3d KinFwd(double q0, double q2);
+
   Eigen::Vector3d GetVel();
   void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
   Eigen::Vector2d OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref);

@@ -74,9 +74,12 @@ Eigen::Matrix<double, 2, 1> Leg::KinInv(Eigen::Vector3d p_ref) {
   return qa_out;
 };
 
-Eigen::Vector3d Leg::KinFwd() {
-  double q0 = q(0);
-  double q2 = q(2);
+Eigen::Vector3d Leg::GetPos() {
+  // solve based on leg's current state
+  return KinFwd(q(0), q(2));
+}
+
+Eigen::Vector3d Leg::KinFwd(double q0, double q2) {
   double x0a = L0 * cos(q0);
   double z0a = L0 * sin(q0);
   double rho = sqrt(pow(x0a, 2) + pow(z0a, 2));  // rho = sp.sqrt((x0a + d) ** 2 + z0a ** 2)
@@ -126,7 +129,7 @@ void Leg::GenMx() {
 }
 
 Eigen::Vector2d Leg::OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref) {
-  Eigen::Vector3d p = KinFwd();
+  Eigen::Vector3d p = GetPos();
   Eigen::Vector3d v = GetVel();
   Eigen::Vector3d pdd_ref;
   // pdd_ref = (p_ref - p) + (v_ref - v);

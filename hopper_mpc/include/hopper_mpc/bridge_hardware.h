@@ -80,7 +80,7 @@ class HardwareBridge : public Bridge {  // The class
   // double posEst_prev;
   // int count;
   double t_mocap;
-  Eigen::Vector2d qa_home;
+  Eigen::Vector2d qla_home;
 
   std::shared_ptr<saved_offsets> saved;
   std::shared_ptr<saved_offsets> saved_get;

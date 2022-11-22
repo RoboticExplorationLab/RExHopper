@@ -77,9 +77,8 @@ int main(int argc, char* argv[]) {
   hopper.n_a = 5;
   hopper.s_pol = 1;
   hopper.h0 = 0.27;             // leg height in default configuration
-  hopper.p0 << 0, 0, 0.5;       // default starting position
-  hopper.p0_sit << 0, 0, 0.27;  // default starting position
-  hopper.K_s = 996;
+  hopper.p0 << 0, 0, 0.50;      // default starting position
+  hopper.p0_sit << 0, 0, 0.30;  // default starting position for sitting
   hopper.K = 5000;
   hopper.mu = 0.5;
   hopper.g = 9.807;
@@ -105,24 +104,14 @@ int main(int argc, char* argv[]) {
               0, 0, 1, 0, 0,
               0, 0, 0, 1, 0, 
               0, 0, 0, 0, 1;  // clang-format on
-  hopper.qa_home << 29 * M_PI / 180, -187 * M_PI / 180;                                          // homing hardstop locations
-  hopper.qa_sit << 0 * M_PI / 180, -150 * M_PI / 180;                                            // sitting position
-  hopper.qa_stand << -0.886343, -2.13709;                                                        // standing position
+  hopper.qla_home << 29 * M_PI / 180, -187 * M_PI / 180;                                         // homing hardstop locations
+  hopper.qla_sit << 0 * M_PI / 180, -140 * M_PI / 180;                                           // sitting position
+  hopper.qla_stand << -0.886343, -2.13709;                                                       // standing position
   hopper.k_kin << 45, 45 * 0.02;
 
   double dt = 0.001;  // 1 kHz
 
-  // causes weird numerical bugs, TODO: Fix
-  // has to be in main to maintain existence
-  // int argcr = 0;
-  // char** argvr = NULL;
-  // ros::init(argcr, argvr, "hopper_ctrl");  // ROS
-  // ros::AsyncSpinner spinner(0);            // run threads async
-  // spinner.start();                         // async spinner runs in bg
-
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, home, skip_kf);
   runner.Run();  // Call the method
-
-  // ros::waitForShutdown();  // should be the last call in main (causes program to hang!!)
   return 0;
 }

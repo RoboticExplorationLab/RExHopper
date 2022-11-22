@@ -34,7 +34,7 @@ void HardwareBridge::Init() {
   t_hist.reserve(N_lookback);
   t_mocap = 0;
 
-  qa_home = model.qa_home;
+  qla_home = model.qla_home;
 
   // ODrives
   ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
@@ -111,8 +111,8 @@ void HardwareBridge::Init() {
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";
   // std::cin.ignore();
-  SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qa_stand(0));
-  SetPosCtrlMode(ODriveCANright, node_id_q2, model.qa_stand(1));
+  SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_stand(0));
+  SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_stand(1));
 
   std::cout << "Controller starting in : \n3... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -254,8 +254,8 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPos() {
   qa(4) = ODriveCANyaw->GetPosition(node_id_rwz) * 2 * M_PI;
 
   // correct homing position
-  qa(0) += qa_home(0);
-  qa(1) += qa_home(1);
+  qa(0) += qla_home(0);
+  qa(1) += qla_home(1);
   return qa;
 }
 
@@ -272,8 +272,8 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointVel() {
 Eigen::Vector2d HardwareBridge::ConvertToODrivePos(Eigen::Vector2d qa) {
   // convert joint pos back to ODrive pos (turns instead of radians, no homed/offset, no gear ratio, motor polarity)
   Eigen::Vector2d qo;
-  qo(0) = (-qa_home(0) + qa(0)) * -7 / (2 * M_PI) + q_offset(0);
-  qo(1) = (-qa_home(1) + qa(1)) * 7 / (2 * M_PI) + q_offset(1);
+  qo(0) = (-qla_home(0) + qa(0)) * -7 / (2 * M_PI) + q_offset(0);
+  qo(1) = (-qla_home(1) + qa(1)) * 7 / (2 * M_PI) + q_offset(1);
   // qo(2) = qa(2) / (2 * M_PI);
   // qo(3) = qa(3) / (2 * M_PI);  // polarity?
   // qo(4) = qa(4) / (2 * M_PI);

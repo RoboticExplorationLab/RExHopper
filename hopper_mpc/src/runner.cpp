@@ -131,18 +131,14 @@ void Runner::Run() {
   for (int k = 0; k < N_run; k++) {
     auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
 
-    retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
-    if (k == 0) {                                       // TODO: Move this outside of the loop?
+    retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
+    if (k == 0) {
       // TODO: rotate mocap position as well based on mocap yaw
-      // Q_offset = Utils::GetZQuat(retvals.Q);  // initial offset for yaw adjustment
       Q_offset = Utils::ExtractYawQuat(retvals.Q);
     }
-    // TODO: Make the offset adjustment have no effect on pitch and roll
     Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
-    // Q = retvals.Q;
 
-    bool stop = FallCheck(Q, t) + bridgePtr->stop;
-    // bool stop = bridgePtr->stop;
+    bool stop = FallCheck(Q, t) + bridgePtr->stop;  // bool stop = bridgePtr->stop;
     if (stop == true) {
       std::cout << "Stopping control loop \n";
       k_final = k;
@@ -161,7 +157,7 @@ void Runner::Run() {
 
     legPtr->UpdateState(qa.segment<2>(0), Q);  // grab first two actuator pos values
     rwaPtr->UpdateState(dqa.segment<3>(2));    // grab last three actuator vel values
-    Eigen::Vector3d peb = legPtr->KinFwd();    // pos of end-effector in body frame (P.E.B.)
+    Eigen::Vector3d peb = legPtr->GetPos();    // pos of end-effector in body frame (P.E.B.)
     Eigen::Vector3d veb = legPtr->GetVel();    // vel of end-effector in body frame (V.E.B.)
 
     Eigen::Matrix3d R2 = Utils::EulerToQuat(0.0, legPtr->q(2), 0.0).matrix();  // check to make sure this stuff works
@@ -195,19 +191,25 @@ void Runner::Run() {
     s = C.at(k);  // bool s = ContactSchedule(t, 0);
     GaitCycleUpdate(s, sh, v(2));
 
-    if (ctrl == "raibert") {
-      uvals = gaitPtr->Raibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
-    } else if (ctrl == "stand") {
-      uvals = gaitPtr->KinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
-    } else if (ctrl == "sit") {
+    if (home == false && k <= 1500) {
       uvals = gaitPtr->Sit();
-    } else if (ctrl == "idle") {
-      uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
-    } else if (ctrl == "circle") {
-      uvals = gaitPtr->CircleTest();
+    } else if (home == false && 1500 < k <= 2000) {
+      uvals = gaitPtr->GetUp(Q);
     } else {
-      throw "Invalid ctrl name! Use 'raibert', 'stand', 'sit', 'idle', or 'circle'";
-      break;
+      if (ctrl == "raibert") {
+        uvals = gaitPtr->Raibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
+      } else if (ctrl == "stand") {
+        uvals = gaitPtr->KinInvStand(Q);
+      } else if (ctrl == "sit") {
+        uvals = gaitPtr->Sit();
+      } else if (ctrl == "idle") {
+        uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
+      } else if (ctrl == "circle") {
+        uvals = gaitPtr->CircleTest();
+      } else {
+        throw "Invalid ctrl name! Use 'raibert', 'stand', 'sit', 'idle', or 'circle'";
+        break;
+      }
     }
 
     u = uvals.u;

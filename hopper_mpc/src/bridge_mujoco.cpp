@@ -143,13 +143,14 @@ void MujocoBridge::Init() {
   // making sure the first time step updates the ctrl previous_time
   // last_update = timezero - 1.0 / ctrl_update_freq;
 
+  // RENDERING STUFF
+  double fps = 60;           // 60 frames rendered per real second
+  double simhertz = 1 / dt;  // timesteps per simulated second
+  // then only render visuals once every 16.66 timesteps
+  refresh_rate = simhertz / fps;
+  t_refresh += 0;
+
   // initialize variables
-  qa_cal << model.q_init(0), model.q_init(2), 0, 0, 0;
-  double kp = model.k_kin(0);
-  double kd = model.k_kin(1);
-  pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kd));
-  pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
-  sh = 0;
 
   // actuator models
   ActuatorModel r80;
@@ -188,19 +189,19 @@ void MujocoBridge::Init() {
   a3.reset(new Actuator(r100, dt));
   a4.reset(new Actuator(r80, dt));
 
-  // RENDERING STUFF
-  double fps = 60;           // 60 frames rendered per real second
-  double simhertz = 1 / dt;  // timesteps per simulated second
-  // then only render visuals once every 16.66 timesteps
-  refresh_rate = simhertz / fps;
-  t_refresh += 0;
+  qa_cal << model.q_init(0), model.q_init(2), 0, 0, 0;
+  double kp = model.k_kin(0);
+  double kd = model.k_kin(1);
+  pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kd));
+  pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
+  sh = 0;
 
   if (home == false) {  // the robot is not homing, so it must start from a sitting position
     d->qpos[0] = model.p0_sit(0);
     d->qpos[1] = model.p0_sit(1);
     d->qpos[2] = model.p0_sit(2);
-    d->qpos[7] = model.qa_sit(0) - qa_cal(0);  // joint 0
-    d->qpos[9] = model.qa_sit(1) - qa_cal(1);  // joint 2
+    d->qpos[7] = model.qla_sit(0) - qa_cal(0);  // joint 0
+    d->qpos[9] = model.qla_sit(1) - qa_cal(1);  // joint 2
   } else {
     d->qpos[0] = model.p0(0);
     d->qpos[1] = model.p0(1);
@@ -221,7 +222,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     } else {
       dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
     }
-    u = -u;
+    u *= -1;
     mj_step1(m, d);  // mj_step(m, d);
     auto [tau0, i0, v0] = a0->Actuate(u(0), dqa(0));
     auto [tau1, i1, v1] = a1->Actuate(u(1), dqa(1));
@@ -234,6 +235,8 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     d->ctrl[3] = tau3;  // moves rw1
     d->ctrl[4] = tau4;  // moves rwz
     mj_step2(m, d);
+
+    // std::cout << tau0 << ", " << tau1 << ", " << tau2 << ", " << tau3 << ", " << tau4 << "\n";
 
     // get measurements
     if (fixed == true) {

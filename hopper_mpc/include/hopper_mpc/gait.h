@@ -20,8 +20,8 @@ class Gait {  // The class
                 Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
   uVals KinInvVert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v, Eigen::Vector3d w,
                    Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
-  uVals KinInvStand(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v,
-                    Eigen::Vector3d w, Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
+  uVals KinInvStand(Eigen::Quaterniond Q);
+  uVals GetUp(Eigen::Quaterniond Q);
   uVals Sit();
   uVals Idle();
   uVals CircleTest();
@@ -44,6 +44,14 @@ class Gait {  // The class
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;
   std::unique_ptr<PID3> pid_vPtr;
+
+  // getup
+  Eigen::Vector3d peb_ref_init;
+  Eigen::Vector3d peb_ref_final;
+  Eigen::VectorXd peb_ref_trajx;
+  Eigen::VectorXd peb_ref_trajz;
+  int i = 0;
+  int N_getup = 500;
 
   // circletest vars
   double x1 = 0;
