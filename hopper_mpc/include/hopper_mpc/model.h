@@ -3,8 +3,8 @@
 
 struct Model {
   std::string name;
-  std::string csvpath;
-  std::string urdfpath;
+  std::string mjcf_path;
+  std::string mjcf_fixed_path;
   std::string aname[5];
   int n_a;
   int s_pol;
@@ -32,7 +32,7 @@ struct Model {
   Eigen::Vector2d qla_sit;        // position for default standing
   Eigen::Vector2d qla_stand;      // position for default standing
   Eigen::Vector2d k_kin;          // inv kin control gains kp and kd
-
+  int N_getup;                    // number of timesteps to get up from sitting position
   // Note: q and a vectors will have many different sizes depending on the situation.
   // This can be confusing.
   // (q) Vectors of length 7 include every movable joint on the robot. General purpose.

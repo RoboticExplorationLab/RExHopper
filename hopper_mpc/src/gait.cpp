@@ -24,6 +24,7 @@ Gait::Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<L
   u.setZero();
 
   // standup
+  N_getup = model.N_getup;
   peb_ref_init = legPtr->KinFwd(model.qla_sit(0), model.qla_sit(1));
   peb_ref_final << 0, 0, -model.h0 * 5 / 3;
   peb_ref_trajx = Eigen::VectorXd::LinSpaced(N_getup, peb_ref_init(0), peb_ref_final(0));

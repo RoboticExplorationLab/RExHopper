@@ -37,8 +37,8 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   t_start = 0.5 * t_p * phi_switch;  // start halfway through stance phase
   t_stance = t_p * phi_switch;       // time spent in stance
   N_c = t_stance / dt;               // number of timesteps spent in contact
-  N_sit = 100;                       // number of timesteps spent sitting at the goal
-
+  N_stop = 100;                      // number of timesteps spent stopped at the goal
+  N_sit = 1500;                      // number of timesteps spent sitting
   // class definitions
   if (bridge_ == "hardware") {
     bridgePtr.reset(new HardwareBridge(model, dt, fixed, home));
@@ -157,7 +157,7 @@ void Runner::Run() {
     qa = retvals.qa;
     dqa = retvals.dqa;  // note that this isn't being used in legPtr right now...
 
-    sh = ContactCheck(bridgePtr->sh, sh_prev, k);
+    sh = ContactCheck(bridgePtr->sh, sh_prev, k);  // TODO: stop using exclusively bridgeptr for this
 
     legPtr->UpdateState(qa.segment<2>(0), Q);  // grab first two actuator pos values
     rwaPtr->UpdateState(dqa.segment<3>(2));    // grab last three actuator vel values
@@ -193,11 +193,11 @@ void Runner::Run() {
     }
 
     s = C.at(k);  // bool s = ContactSchedule(t, 0);
-    GaitCycleUpdate(s, sh, v(2));
+    UpdateGaitCycle(s, sh, v(2));
 
-    if (home == false && k <= 1500) {
+    if (home == false && k <= N_sit) {
       uvals = gaitPtr->Sit();
-    } else if (home == false && 1500 < k <= 2000) {
+    } else if (home == false && N_sit < k <= (N_sit + model.N_getup)) {
       uvals = gaitPtr->GetUp(Q);
     } else {
       if (ctrl == "raibert") {
@@ -224,7 +224,8 @@ void Runner::Run() {
     for (int i = 0; i < model.n_a; i++) {
       u(i) = Utils::Clip(u(i), -model.a_tau_stall(i) * 1.5, model.a_tau_stall(i) * 1.5);
     }
-    // std::cout << obPtr->TorqueEst(bridgePtr->tau.segment<2>(0)).transpose() << "\n";
+
+    // Eigen::Vector4d tau_dist = obPtr->TorqueEst(bridgePtr->tau.segment<2>(0));
     grf = obPtr->ForceEst(bridgePtr->tau.segment<2>(0));
 
     // previous
@@ -313,23 +314,22 @@ void Runner::Run() {
     // }
     // Plots::PlotMap2D(k_final, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
     // Plots::PlotMap3D(k_final, "3D Position vs Time", "p", p_vec, 0, 0);
-    // Plots::PlotSingle(k_final, "Normal Ground Reaction Force", grf_normal);
-    // Plots::Plot2(k_final, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
-    // Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
-    // Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
+    Plots::Plot2(k_final, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
+    Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
+    Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
     // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
     // Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
-    // Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
+    Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
     Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
     // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
     // gc_state_hist);
-    Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
+    // Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
     // Plots::Plot3(k_final, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
     // Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
   }
 }
 
-void Runner::GaitCycleUpdate(bool s, bool sh, double dz) {
+void Runner::UpdateGaitCycle(bool s, bool sh, double dz) {
   if (gc_state == "Cmpr" && dz >= 0) {
     gc_state = "Push";
     gc_id = 1;
@@ -400,7 +400,7 @@ bool Runner::ContactCheck(bool sh, bool sh_prev, int k) {
 }
 
 trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vector3d p_final) {
-  std::size_t N_traj = N_run - N_sit;
+  std::size_t N_traj = N_run - N_stop;
   std::size_t N_ref = N_run + N_k;
   std::vector<Eigen::Vector3d> p_refv(N_traj);
   std::vector<Eigen::Vector3d> v_refv(N_traj);
@@ -428,9 +428,9 @@ trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vec
   }
   v_refv.back() << 0, 0, 0;  // Make sure value of v_refv for final timestep is zeros
 
-  std::vector<Eigen::Vector3d> p_sitv(N_sit + N_k);
-  std::vector<Eigen::Vector3d> v_sitv(N_sit + N_k);
-  for (int i = 0; i < N_sit + N_k; i++) {
+  std::vector<Eigen::Vector3d> p_sitv(N_stop + N_k);
+  std::vector<Eigen::Vector3d> v_sitv(N_stop + N_k);
+  for (int i = 0; i < N_stop + N_k; i++) {
     p_sitv.push_back(p_refv.back());  // add final value
     v_sitv.push_back(v_refv.back());  // add final value
   }

@@ -51,7 +51,7 @@ class Gait {  // The class
   Eigen::VectorXd peb_ref_trajx;
   Eigen::VectorXd peb_ref_trajz;
   int i = 0;
-  int N_getup = 500;
+  int N_getup;
 
   // circletest vars
   double x1 = 0;

@@ -36,7 +36,8 @@ class Runner {  // The class
   double t_start;     // start halfway through stance phase
   double t_stance;    // time spent in stance
   int N_c;            // number of timesteps spent in contact
-  int N_sit;          // number of timesteps to "sit" at end of traj
+  int N_stop;         // number of timesteps to "stop" at end of traj
+  int N_sit;          // number of timesteps spent sitting at the beginning
 
   // --- if it is body frame it MUST have a b at the end of the name! --- //
   // --- otherwise assume world frame! --- //
@@ -111,7 +112,7 @@ class Runner {  // The class
   std::vector<bool> ContactMap(int N, double dt, double t);
   std::vector<bool> ContactUpdate(std::vector<bool> C, int k);
   trajVals GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vector3d p_final);
-  void GaitCycleUpdate(bool s, bool sh, double dz);
+  void UpdateGaitCycle(bool s, bool sh, double dz);
   int GaitCycleRef(double t);
   bool ContactCheck(bool sh, bool sh_prev, int k);
   bool FallCheck(Eigen::Quaterniond Q, double t);

@@ -85,10 +85,9 @@ void MujocoBridge::Init() {
 
   std::string path_mjcf;
   if (fixed == true) {
-    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf_fixed.xml";
+    path_mjcf = model.mjcf_fixed_path;
   } else {
-    path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf.xml";
-    // path_mjcf = "/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+    path_mjcf = model.mjcf_path;
   }
   char* cwd;
   char buff[PATH_MAX + 1];

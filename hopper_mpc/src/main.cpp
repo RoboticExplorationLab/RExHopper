@@ -66,9 +66,9 @@ int main(int argc, char* argv[]) {
   }
 
   Model hopper;
-  hopper.name = "rw";
-  hopper.csvpath = "res/hopper_rev08/urdf/hopper_rev08.csv";
-  hopper.urdfpath = "res/hopper_rev08/urdf/hopper_rev08.urdf";
+  hopper.name = "rev09";
+  hopper.mjcf_path = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf.xml";
+  hopper.mjcf_fixed_path = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf_fixed.xml";
   hopper.aname[0] = "q0";
   hopper.aname[1] = "q2";
   hopper.aname[2] = "rw1";
@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
   hopper.qla_sit << 0 * M_PI / 180, -140 * M_PI / 180;                                           // sitting position
   hopper.qla_stand << -0.886343, -2.13709;                                                       // standing position
   hopper.k_kin << 45, 45 * 0.02;
-
+  hopper.N_getup = 500;
   double dt = 0.001;  // 1 kHz
 
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, home, skip_kf);
