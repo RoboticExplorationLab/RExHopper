@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <iostream>
-#include "hopper_mpc/cx5.h"
+#include "hopper_mpc/sub_cx5.h"
 
 TEST(BBB, test) {
   // reminder: run the docker image first

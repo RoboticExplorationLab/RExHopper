@@ -9,6 +9,7 @@
 #include "hopper_mpc/kf.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
+#include "hopper_mpc/observer.h"
 #include "hopper_mpc/rwa.h"
 
 struct trajVals {
@@ -19,7 +20,7 @@ struct trajVals {
 class Runner {  // The class
 
  public:  // Access specifier
-  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool record_,
+  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool home_,
          bool skip_kf_);  // constructor
 
   void Run();
@@ -81,13 +82,6 @@ class Runner {  // The class
   bool sh_saved;
   bool sh_prev;
 
-  // circletest vars
-  double x1;
-  double z1;
-  double z;
-  double r;
-  int flip;
-
   Model model;
   int N_run;           // number of timesteps in sim
   double dt;           // timestep size
@@ -96,7 +90,7 @@ class Runner {  // The class
   bool plot;
   bool fixed;
   bool spr;
-  bool record;
+  bool home;
   bool skip_kf;
   double g;  // gravitational constant
 
@@ -108,6 +102,7 @@ class Runner {  // The class
   std::unique_ptr<Bridge> bridgePtr;
   std::unique_ptr<Gait> gaitPtr;
   std::unique_ptr<Kf> kfPtr;
+  std::unique_ptr<Observer> obPtr;
 
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;
@@ -119,6 +114,5 @@ class Runner {  // The class
   void GaitCycleUpdate(bool s, bool sh, double dz);
   int GaitCycleRef(double t);
   bool ContactCheck(bool sh, bool sh_prev, int k);
-  void FallCheck(Eigen::Quaterniond Q);
-  void CircleTest();
+  bool FallCheck(Eigen::Quaterniond Q, double t);
 };

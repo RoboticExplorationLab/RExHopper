@@ -1,50 +1,26 @@
-//
-// Created by shuoy on 10/19/21.
-// Modified by bbokser starting on 06/26/22.
-//
 #include "hopper_mpc/utils.hpp"
 #include <vector>
 #include "Eigen/Core"
 #include "Eigen/Dense"
+#include "rot_conv/rot_conv.h"
 
 Utils::Utils(){};
 
-Eigen::Vector3d Utils::QuatToEuler(Eigen::Quaterniond quat) {
-  Eigen::Vector3d rst;
-
-  // order https://github.com/libigl/eigen/blob/master/Eigen/src/Geometry/Quaternion.h
-  Eigen::Matrix<double, 4, 1> coeff = quat.coeffs();
-  double x = coeff(0);
-  double y = coeff(1);
-  double z = coeff(2);
-  double w = coeff(3);
-
-  double y_sqr = y * y;
-
-  double t0 = +2.0 * (w * x + y * z);
-  double t1 = +1.0 - 2.0 * (x * x + y_sqr);
-
-  rst[0] = atan2(t0, t1);
-
-  double t2 = +2.0 * (w * y - z * x);
-  t2 = t2 > +1.0 ? +1.0 : t2;
-  t2 = t2 < -1.0 ? -1.0 : t2;
-  rst[1] = asin(t2);
-
-  double t3 = +2.0 * (w * z + x * y);
-  double t4 = +1.0 - 2.0 * (y_sqr + z * z);
-  rst[2] = atan2(t3, t4);
-  return rst;
-};
+Eigen::Vector3d Utils::QuatToEuler(const Eigen::Quaterniond Q) {
+  // Euler ZYX Intrinsic, as specified by
+  // https://dspace.mit.edu/bitstream/handle/1721.1/138000/convex_mpc_2fix.pdf?sequence=2&isAllowed=y
+  // See also: https://github.com/AIS-Bonn/rot_conv_lib
+  rot_conv::EulerAngles euler;
+  rot_conv::EulerFromQuat(Q, euler);
+  Eigen::Vector3d euler_eig;
+  euler_eig << euler.roll, euler.pitch, euler.yaw;
+  return euler_eig;
+}
 
 Eigen::Quaterniond Utils::EulerToQuat(const double roll, const double pitch, const double yaw) {
-  // taken from https://stackoverflow.com/questions/21412169/creating-a-rotation-matrix-with-pitch-yaw-roll-using-eigen
-  Eigen::AngleAxisd rollAngle(roll, Eigen::Vector3d::UnitX());
-  Eigen::AngleAxisd pitchAngle(pitch, Eigen::Vector3d::UnitY());
-  Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
-
-  Eigen::Quaterniond q = yawAngle * pitchAngle * rollAngle;
-  return q;
+  // Euler ZYX Intrinsic
+  Eigen::Quaterniond Q = rot_conv::QuatFromEuler(yaw, pitch, roll);
+  return Q;
 }
 
 Eigen::Matrix3d Utils::Skew(Eigen::Vector3d vec) {
@@ -75,11 +51,8 @@ double Utils::Clip(double n, double lower, double upper) {
   return std::max(lower, std::min(n, upper));
 }
 
-Eigen::Quaterniond Utils::VecToQuat(Eigen::Vector3d v2) {
+Eigen::Quaterniond Utils::VecToQuat(Eigen::Vector3d v1, Eigen::Vector3d v2) {
   // Conversion of line vector to quaternion rotation b/t it and a datum vector v1
-  //   v1 = np.array([0, 0, -1])  # datum vector, chosen as aligned with z-axis (representing leg direction)
-  Eigen::Vector3d v1;
-  v1 << 0, 0, -1;  // datum vector, chosen as aligned with z-axis (representing leg direction)
   Eigen::Vector3d u1;
   u1 = v1.normalized();
   Eigen::Quaterniond Q;
@@ -102,10 +75,51 @@ Eigen::Quaterniond Utils::VecToQuat(Eigen::Vector3d v2) {
 }
 
 double Utils::AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2) {
+  // unsigned angle between two quaternions
   Eigen::Quaterniond Qd;
   Qd = Q1.inverse() * Q2;
-
   return 2 * atan2(Qd.vec().norm(), Qd.w());
+}
+
+Eigen::Quaterniond Utils::GenYawQuat(const double z_angle) {
+  // create quaternion with only a yaw axis rotation (no pitch/roll, constrained to z-axis)
+  // double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion (only works assuming no pitch/roll)
+  Eigen::Quaterniond Q_z;
+  Q_z.w() = cos(z_angle / 2);
+  Q_z.x() = 0;
+  Q_z.y() = 0;
+  Q_z.z() = sin(z_angle / 2);
+  return Q_z;
+}
+
+Eigen::Quaterniond Utils::ExtractYawQuat(Eigen::Quaterniond Q) {
+  // extract the yaw angle rotation of a quaternion
+  Eigen::Vector3d v1;
+  v1 << 1, 0, 0;                         // vector pointing straight forward
+  Eigen::Vector3d v2 = Q.matrix() * v1;  // get directional vector
+  v2(2) = 0;                             // remove z-axis of the vector
+  Eigen::Quaterniond Qd = VecToQuat(v1, v2);
+  return Qd;
+}
+
+double Utils::ExtractX(Eigen::Quaterniond Q) {
+  // extract the x (roll) angle rotation from a quaternion
+  Eigen::Vector3d v1;
+  v1 << 0, 0, 1;                         // vector pointing straight up
+  Eigen::Vector3d v2 = Q.matrix() * v1;  // get directional vector
+  // double angle = acos((u1.dot(u2)) / (u1.norm() * u2.norm()));  // unsigned angle
+  double angle = atan2(v2(2), v2(1)) - atan2(v1(2), v1(1));  // signed angle in yz plane, cc positive
+  return angle;
+}
+
+double Utils::ExtractZ(Eigen::Quaterniond Q) {
+  // extract the z (yaw) angle rotation from a quaternion
+  Eigen::Vector3d v1;
+  v1 << 1, 0, 0;                         // vector pointing straight forward
+  Eigen::Vector3d v2 = Q.matrix() * v1;  // get directional vector
+  // double angle = acos((u1.dot(u2)) / (u1.norm() * u2.norm()));  // unsigned angle
+  double angle = atan2(v2(1), v2(0)) - atan2(v1(1), v1(0));  // signed angle in xy plane, cc positive
+  return angle;
 }
 
 double Utils::PolyFit(const std::vector<double>& t, const std::vector<double>& v, int k, double t_new) {

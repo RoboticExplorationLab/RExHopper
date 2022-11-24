@@ -13,9 +13,9 @@ struct retVals {  // Declare a local structure
   Eigen::Matrix<double, 5, 1> dqa;  // actuated joint velocities
 };
 
-class Bridge {                                                  // The class
- public:                                                        // Access specifier
-  Bridge(Model model_, double dt_, bool fixed_, bool record_);  // constructor
+class Bridge {                                                // The class
+ public:                                                      // Access specifier
+  Bridge(Model model_, double dt_, bool fixed_, bool home_);  // constructor
   virtual void Init() = 0;
   virtual retVals SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) = 0;
   virtual void End() = 0;
@@ -26,6 +26,7 @@ class Bridge {                                                  // The class
   Eigen::Matrix<double, 5, 1> rf_y;  // measured force on joints
   Eigen::Matrix<double, 5, 1> rf_z;  // measured force on joints
   bool sh;
+  bool stop = false;
 
  protected:
   Model model;
@@ -33,7 +34,7 @@ class Bridge {                                                  // The class
   double g;
   double mu;
   bool fixed;
-  bool record;
+  bool home;
   Eigen::Matrix<double, 5, 1> qa_cal;
   Eigen::Matrix<double, 5, 1> qa_raw;
 

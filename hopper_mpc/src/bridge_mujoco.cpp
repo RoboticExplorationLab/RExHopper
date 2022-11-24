@@ -78,7 +78,7 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
   mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
 }
 
-MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_) {}
+MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool home_) : Base(model_, dt_, fixed_, home_) {}
 
 void MujocoBridge::Init() {
   char error[ERROR_SIZE] = "Could not load binary model";
@@ -143,13 +143,14 @@ void MujocoBridge::Init() {
   // making sure the first time step updates the ctrl previous_time
   // last_update = timezero - 1.0 / ctrl_update_freq;
 
+  // RENDERING STUFF
+  double fps = 60;           // 60 frames rendered per real second
+  double simhertz = 1 / dt;  // timesteps per simulated second
+  // then only render visuals once every 16.66 timesteps
+  refresh_rate = simhertz / fps;
+  t_refresh += 0;
+
   // initialize variables
-  qa_cal << model.q_init(0), model.q_init(2), 0, 0, 0;
-  double kp = model.k_kin(0);
-  double kd = model.k_kin(1);
-  pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kd));
-  pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
-  sh = 0;
 
   // actuator models
   ActuatorModel r80;
@@ -188,12 +189,24 @@ void MujocoBridge::Init() {
   a3.reset(new Actuator(r100, dt));
   a4.reset(new Actuator(r80, dt));
 
-  // RENDERING STUFF
-  double fps = 60;           // 60 frames rendered per real second
-  double simhertz = 1 / dt;  // timesteps per simulated second
-  // then only render visuals once every 16.66 timesteps
-  refresh_rate = simhertz / fps;
-  t_refresh += 0;
+  qa_cal << model.q_init(0), model.q_init(2), 0, 0, 0;
+  double kp = model.k_kin(0);
+  double kd = model.k_kin(1);
+  pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kd));
+  pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
+  sh = 0;
+
+  if (home == false) {  // the robot is not homing, so it must start from a sitting position
+    d->qpos[0] = model.p0_sit(0);
+    d->qpos[1] = model.p0_sit(1);
+    d->qpos[2] = model.p0_sit(2);
+    d->qpos[7] = model.qla_sit(0) - qa_cal(0);  // joint 0
+    d->qpos[9] = model.qla_sit(1) - qa_cal(1);  // joint 2
+  } else {
+    d->qpos[0] = model.p0(0);
+    d->qpos[1] = model.p0(1);
+    d->qpos[2] = model.p0(2);
+  }
 }
 
 retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
@@ -209,7 +222,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     } else {
       dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
     }
-    u = -u;
+    u *= -1;
     mj_step1(m, d);  // mj_step(m, d);
     auto [tau0, i0, v0] = a0->Actuate(u(0), dqa(0));
     auto [tau1, i1, v1] = a1->Actuate(u(1), dqa(1));
@@ -223,6 +236,8 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     d->ctrl[4] = tau4;  // moves rwz
     mj_step2(m, d);
 
+    // std::cout << tau0 << ", " << tau1 << ", " << tau2 << ", " << tau3 << ", " << tau4 << "\n";
+
     // get measurements
     if (fixed == true) {
       qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
@@ -231,6 +246,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       qa_raw << d->qpos[7], d->qpos[9], d->qpos[11], d->qpos[12], d->qpos[13];
       dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
       // first seven indices are for base pos and quat in floating body mode
+      // for velocities, it's the first six indices
     }
 
     qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
@@ -238,7 +254,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     p << d->sensordata[0], d->sensordata[1], d->sensordata[2];
 
     if (d->time == 0.001) {
-      Q.coeffs() << 0, 0, 0, 1;  // Q initializes as all zeros which is invalid
+      Q.setIdentity();  // sensordata quaternion initializes as all zeros which is invalid
     } else {
       Q.w() = d->sensordata[3];
       Q.x() = d->sensordata[4];
@@ -264,15 +280,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     aef << d->sensordata[37], d->sensordata[38], d->sensordata[39];  // foot accelerometer
 
     t_refresh += 1;
-    // std::this_thread::sleep_for(std::chrono::milliseconds(5));
     if (t_refresh > refresh_rate) {
-      // std::cout << "grf_normal = " << grf_normal << "\n ";
-      // std::cout << "bridge sh = " << sh << "\n ";
-      // std::cout << "raw pos = " << qa_raw_.transpose() << "\n";
-      // std::cout << "corrected pos = " << qa.transpose() << "\n";
-      // std::cout << "ctrl: " << d->ctrl[0] << ", " << d->ctrl[1] << ", " << d->ctrl[2] << ", " << d->ctrl[3] << ", " << d->ctrl[4] <<
-      // "\n";
-
       // visualization
       t_refresh = 0;  // reset refresh counter
       // 15 ms is a little smaller than 60 Hz.

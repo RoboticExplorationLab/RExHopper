@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <iostream>
 
-RaisimBridge::RaisimBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_), server(&world) {}
+RaisimBridge::RaisimBridge(Model model_, double dt_, bool fixed_, bool home_) : Base(model_, dt_, fixed_, home_), server(&world) {}
 
 void RaisimBridge::Init() {
   // char tmp[256];

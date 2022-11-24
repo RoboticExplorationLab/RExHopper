@@ -32,6 +32,11 @@ find_package(glfw3 REQUIRED)
 # find_package(raisim CONFIG REQUIRED)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(PythonLibs REQUIRED)
+find_package(Boost REQUIRED COMPONENTS serialization)
+add_library(boost::serialization INTERFACE IMPORTED)
+set_target_properties(boost::serialization PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${Boost_INCLUDE_DIRS}"
+  INTERFACE_LINK_LIBRARIES "${Boost_SERIALIZATION_LIBRARIES}")
 
 catkin_package(
   INCLUDE_DIRS 
@@ -70,14 +75,17 @@ add_executable(${PROJECT_NAME}
   src/leg.cpp 
   src/gait.cpp
   src/kf.cpp
-  src/mocap_node.cpp
   src/rwa.cpp
   src/pid.cpp
   src/utils.cpp
   src/actuator.cpp
-  src/cx5.cpp 
+  src/sub_cx5.cpp 
+  src/sub_mocap.cpp
   src/wt901.cpp
   src/observer.cpp
+  src/lowpass.cpp
+  src/rot_conv.cpp
+  src/rot_conv_extras.cpp
   ../hopper_can_interface/src/ODriveCan.cpp
   ../hopper_can_interface/src/CanInterface.cpp
   ../hopper_can_interface/src/BufferedCanMsg.cpp
@@ -90,6 +98,7 @@ target_link_libraries(${PROJECT_NAME}
   pcanbasic 
   Threads::Threads
   mraa
+  boost::serialization
   # mscl
   # raisim::raisim
   ${PYTHON_LIBRARIES}

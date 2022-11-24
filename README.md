@@ -35,17 +35,42 @@ Click on green button in lower left -> reopen in container
 Whenever you change Dockerfile and want to rebuild the env ->  Ctrl+shift+p -> rebuild container
 
 
-## Setting Up the 3DMCX5
+<!-- ## First Time Setup of the 3DMCX5  (This is wrong)
 1. Install [SensorConnect](https://www.microstrain.com/software/sensorconnect) on a Windows computer. Connect the 3DMCX5 by USB.
 2. In SensorConnect, set the sensor ranges:
    - Accelerometer: 20g
    - Gyroscope: 500 deg/s
 3. Set UART Baud Rate to 921600.
-4. Save and disconnect. Connect to the Hopper computer via USB.
-<!-- 4. In Configuration > Mounting, set the following transformation in Euler Angles -->
+4. In Configuration > Mounting, set the following transformation in Euler Angles:
+   [-0.5236, 0, 1.571]  (-30, 0, 90 deg)  <- cv7 actually this needs to  be set in the params.yml...
+   [0, 0.5236, -1.571]  <- cx5
+5. Save to startup configuration and disconnect. Connect to the Hopper computer via USB. -->
 
-## Starting the IMU Publisher
-Before the code can be executed, the IMU docker image must be started. If you haven't already, pull the microstrain-inertial ROS Docker image for the [3DM AHRS](https://hub.docker.com/r/microstrain/ros-microstrain_inertial_driver).
+
+## Code Execution Setup
+In RosDockerWorkspace git:(main):
+
+```
+catkin build 
+wssetup
+```
+
+whenever you add/remove header files, or if you see clang errors:
+
+```
+catkin clean
+```
+
+### Running the MuJoCo Simulation
+
+```
+rosrun hopper_mpc hopper_mpc mpc raibert 5000 mujoco --plot
+```
+
+## Running Hardware Control
+
+### Starting the IMU Publisher
+Before the hardware controller can be started, the IMU docker image must be started. If you haven't already, pull the microstrain-inertial ROS Docker image for the [3DM AHRS](https://hub.docker.com/r/microstrain/ros-microstrain_inertial_driver).
 
 ```
 sudo docker pull microstrain/ros-microstrain_inertial_driver:ros
@@ -72,25 +97,45 @@ You can check what it's publishing with
 rostopic list
 ```
 
-## Mocap Node
+### Mocap Node
+In a separate terminal:
 ```
+wssetup
 roslaunch mocap_optitrack mocap.launch
 ```
-
-## Code Execution
-
-In RosDockerWorkspace git:(main):
-
+### Hardware Control Initialization
 ```
-catkin build 
-wssetup
-rosrun hopper_mpc hopper_mpc mpc 5000 mujoco
-rosrun hopper_mpc hopper_mpc mpc 5000 raisim
-rosrun hopper_mpc hopper_mpc mpc 5000 hardware
+rosrun hopper_mpc hopper_mpc mpc raibert 5000 hardware --plot
 ```
 
-whenever you add/remove header files, or if you see clang errors:
+## Argparse Arguments Explained
 
-```
-catkin clean
-```
+   - ctrl
+      - `mpc`
+         - Convex MPC
+      - `raibert`
+         - Raibert hopping
+      - `stand`
+         - Balance while standing
+      - `idle`
+         - Do nothing
+      - `circle`
+         - A leg movement test, should be paired with `--fixed`
+
+   - N_run
+      - Specify the number of timesteps to run for
+
+   - bridge
+      - `hardware`
+         - Control the hardware
+      - `mujoco`  
+         - Run MuJoCo sim
+
+   - `--plot`
+      - Enable plotting
+   - `--fixed`
+      - Fix the body in place (in sim)
+   - `--home` 
+      - Home leg positions (on hardware)
+   - `--skip_kf`
+      - Don't use the kalman filter

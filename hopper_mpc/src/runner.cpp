@@ -5,8 +5,8 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/plots.hpp"
 
-Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
-               bool record_, bool skip_kf_) {
+Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool home_,
+               bool skip_kf_) {
   model = model_;
   N_run = N_run_;
   dt = dt_;
@@ -15,7 +15,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   plot = plot_;
   fixed = fixed_;
   spr = spr_;
-  record = record_;
+  home = home_;
   skip_kf = skip_kf_;
 
   g = model.g;  // should g be defined here?
@@ -41,16 +41,21 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   // class definitions
   if (bridge_ == "hardware") {
-    bridgePtr.reset(new HardwareBridge(model, dt, fixed, record));
+    bridgePtr.reset(new HardwareBridge(model, dt, fixed, home));
   } else if (bridge_ == "mujoco") {
-    bridgePtr.reset(new MujocoBridge(model, dt, fixed, record));
+    bridgePtr.reset(new MujocoBridge(model, dt, fixed, home));
     // } else if (bridge_ == "raisim") {
-    // bridgePtr.reset(new RaisimBridge(model, dt, fixed, record));
+    // bridgePtr.reset(new RaisimBridge(model, dt, fixed, home));
   } else {
     throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
   // initialize state
-  p << 0, 0, 0.5;   // must match starting position in mjcf!!
+  if (home == true) {
+    p = model.p0;
+  } else {
+    p = model.p0_sit;
+  }
+
   Q.setIdentity();  // a vector expression of the coefficients (x,y,z,w)
   v.setZero();
   w.setZero();
@@ -73,45 +78,33 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   ctrlMode = "Torque";                                               // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
-  qla_ref << qla_ref(0), qla_ref(1) + 0.5;
-  peb_ref << 0, 0, -model.h0;  // desired operational space leg position in body frame
-  veb_ref.setZero();           // desired operational space leg velocity
-  fb_ref.setZero();            // desired operational space leg force
-  u.setZero();                 // ctrl Torques
+  peb_ref << 0, 0, -model.h0;                                        // desired operational space leg position in body frame
+  veb_ref.setZero();                                                 // desired operational space leg velocity
+  fb_ref.setZero();                                                  // desired operational space leg force
+  u.setZero();                                                       // ctrl Torques
   legPtr = std::make_shared<Leg>(model, dt);
-  rwaPtr = std::make_shared<Rwa>(dt);
+  rwaPtr = std::make_shared<Rwa>(bridge, dt);
 
   gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
   kfPtr.reset(new Kf(dt));
+  obPtr.reset(new Observer(dt, &legPtr));
 
   k_changed = 0;
   sh_saved = 0;
-
-  // variables for CircleTest
-  x1 = 0;
-  z1 = -0.4;
-  z = -0.3;  // peb_ref(2);
-  r = 0.1;
-  flip = -1;
 }
 
-void Runner::Run() {  // Method/function defined inside the class
+void Runner::Run() {
   bridgePtr->Init();
-  // Eigen::Vector3d pe_0 = p + Q.matrix() * peb_ref;
-  // Eigen::Vector3d ve_0 = v + Q.matrix() * veb_ref;
-  // std::cout << "pe_0 = " << pe_0.transpose() << "\n";
-  // std::cout << "ve_0 = " << ve_0.transpose() << "\n";
+
   kfPtr->InitState(p, v, p + Q.matrix() * peb_ref, v + Q.matrix() * veb_ref);
   double t = 0.0;
 
+  // initialize vectors of state history for plotting
   std::vector<std::vector<double>> p_raw_vec(N_run), v_raw_vec(N_run), pe_raw_vec(N_run), ve_raw_vec(N_run);
   std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
-
-  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), peb_vec(N_run),
-      peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), dqa_vec(N_run), reactf_vec(N_run);
-
-  std::vector<std::vector<double>> a_vec(N_run), ae_vec(N_run);
-
+  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), dqa_vec(N_run);
+  std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), reactf_vec(N_run);
+  std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ae_vec(N_run), grf_vec(N_run);
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
   int joint_id = 1;  // joint to check reaction forces at
@@ -128,23 +121,33 @@ void Runner::Run() {  // Method/function defined inside the class
 
   double max_elapsed;
   auto t0_chrono = std::chrono::high_resolution_clock::now();  // Record start time
+
+  Eigen::Vector3d grf(0, 0, 0);
+
   retVals retvals;
   uVals uvals;
   kfVals kfvals;
 
   Eigen::Quaterniond Q_offset;
 
+  int k_final = N_run - 1;  // the final number of steps used, defaults to N_run -1
+
   for (int k = 0; k < N_run; k++) {
     auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
 
-    retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);  // still need c, tau, i, v, grf
-    if (k == 0) {                                       // TODO: Move this outside of the loop?
+    retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
+    if (k == 0) {
       // TODO: rotate mocap position as well based on mocap yaw
-      Q_offset = retvals.Q;  // initial offset for yaw adjustment
+      Q_offset = Utils::ExtractYawQuat(retvals.Q);
     }
     Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
 
-    FallCheck(Q);
+    bool stop = FallCheck(Q, t) + bridgePtr->stop;  // bool stop = bridgePtr->stop;
+    if (stop == true) {
+      std::cout << "Stopping control loop \n";
+      k_final = k;
+      break;
+    }
 
     wb = retvals.wb;
     w = Q.matrix() * wb;  // angular vel in the world frame
@@ -152,13 +155,14 @@ void Runner::Run() {  // Method/function defined inside the class
     a = Q.matrix() * ab;  // acceleration in the world frame
 
     qa = retvals.qa;
-    dqa = retvals.dqa;
+    dqa = retvals.dqa;  // note that this isn't being used in legPtr right now...
 
     sh = ContactCheck(bridgePtr->sh, sh_prev, k);
 
-    legPtr->UpdateState(qa.block<2, 1>(0, 0), Q);  // grab first two actuator pos values
-    Eigen::Vector3d peb = legPtr->KinFwd();        // pos of end-effector in body frame (P.E.B.)
-    Eigen::Vector3d veb = legPtr->GetVel();        // vel of end-effector in body frame (V.E.B.)
+    legPtr->UpdateState(qa.segment<2>(0), Q);  // grab first two actuator pos values
+    rwaPtr->UpdateState(dqa.segment<3>(2));    // grab last three actuator vel values
+    Eigen::Vector3d peb = legPtr->GetPos();    // pos of end-effector in body frame (P.E.B.)
+    Eigen::Vector3d veb = legPtr->GetVel();    // vel of end-effector in body frame (V.E.B.)
 
     Eigen::Matrix3d R2 = Utils::EulerToQuat(0.0, legPtr->q(2), 0.0).matrix();  // check to make sure this stuff works
     Eigen::Matrix3d R3 = Utils::EulerToQuat(0.0, legPtr->q(3), 0.0).matrix();
@@ -191,45 +195,57 @@ void Runner::Run() {  // Method/function defined inside the class
     s = C.at(k);  // bool s = ContactSchedule(t, 0);
     GaitCycleUpdate(s, sh, v(2));
 
-    if (ctrl == "raibert") {
-      uvals = gaitPtr->uRaibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
-      u = uvals.u;
-      qla_ref = uvals.qla_ref;
-      ctrlMode = uvals.ctrlMode;
-    } else if (ctrl == "stand") {
-      uvals = gaitPtr->uKinInvStand(gc_state, gc_state_prev, p, Q, v, w, p_ref, Q_ref, v_ref, w_ref);
-      u = uvals.u;
-      qla_ref = uvals.qla_ref;
-      ctrlMode = uvals.ctrlMode;
-    } else if (ctrl == "idle") {
-      u << 0, 0, 0, 0, 0;  // do nothing
-      ctrlMode = "None";
-    } else if (ctrl == "circle") {
-      CircleTest();  // edits peb_ref in-place
-      qla_ref = legPtr->KinInv(peb_ref);
-      ctrlMode = "Pos";
+    if (home == false && k <= 1500) {
+      uvals = gaitPtr->Sit();
+    } else if (home == false && 1500 < k <= 2000) {
+      uvals = gaitPtr->GetUp(Q);
     } else {
-      throw "Invalid ctrl name! Use 'raibert', 'stand', 'idle', or 'circle'";
+      if (ctrl == "raibert") {
+        uvals = gaitPtr->Raibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
+      } else if (ctrl == "stand") {
+        uvals = gaitPtr->KinInvStand(Q);
+      } else if (ctrl == "sit") {
+        uvals = gaitPtr->Sit();
+      } else if (ctrl == "idle") {
+        uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
+      } else if (ctrl == "circle") {
+        uvals = gaitPtr->CircleTest();
+      } else {
+        throw "Invalid ctrl name! Use 'raibert', 'stand', 'sit', 'idle', or 'circle'";
+        break;
+      }
     }
-    // std::cout << "u = " << u.transpose() << "\n";
-    gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
+
+    u = uvals.u;
+    qla_ref = uvals.qla_ref;
+    ctrlMode = uvals.ctrlMode;
+
+    // clip torques to max possible
+    for (int i = 0; i < model.n_a; i++) {
+      u(i) = Utils::Clip(u(i), -model.a_tau_stall(i) * 1.5, model.a_tau_stall(i) * 1.5);
+    }
+    // std::cout << obPtr->TorqueEst(bridgePtr->tau.segment<2>(0)).transpose() << "\n";
+    grf = obPtr->ForceEst(bridgePtr->tau.segment<2>(0));
+
+    // previous
+    gc_state_prev = gc_state;
     sh_prev = sh;
 
     if (plot == true) {
-      // record values
-      if (skip_kf == false) {
-        Eigen::Vector3d pe_raw = retvals.p + Q.matrix() * peb;
-        Eigen::Vector3d ve_raw = retvals.v + Q.matrix() * veb;
-        p_raw_vec.at(k) = {retvals.p(0), retvals.p(1), retvals.p(2)};
-        v_raw_vec.at(k) = {retvals.v(0), retvals.v(1), retvals.v(2)};
-        pe_raw_vec.at(k) = {pe_raw(0), pe_raw(1), pe_raw(2)};
-        ve_raw_vec.at(k) = {ve_raw(0), ve_raw(1), ve_raw(2)};
-      };
+      p_raw_vec.at(k) = {retvals.p(0), retvals.p(1), retvals.p(2)};
+      v_raw_vec.at(k) = {retvals.v(0), retvals.v(1), retvals.v(2)};
+      Eigen::Vector3d pe_raw = retvals.p + Q.matrix() * peb;
+      Eigen::Vector3d ve_raw = retvals.v + Q.matrix() * veb;
+      pe_raw_vec.at(k) = {pe_raw(0), pe_raw(1), pe_raw(2)};
+      ve_raw_vec.at(k) = {ve_raw(0), ve_raw(1), ve_raw(2)};
 
       p_vec.at(k) = {p(0), p(1), p(2)};
       v_vec.at(k) = {v(0), v(1), v(2)};
       pe_vec.at(k) = {pe(0), pe(1), pe(2)};
       ve_vec.at(k) = {ve(0), ve(1), ve(2)};
+
+      Eigen::Vector3d euler = Utils::QuatToEuler(Q);
+      euler_vec.at(k) = {euler(0) * 180 / M_PI, euler(1) * 180 / M_PI, euler(2) * 180 / M_PI};
 
       theta_vec.at(k) = {rwaPtr->theta(0) * 180 / M_PI, rwaPtr->theta(1) * 180 / M_PI, rwaPtr->theta(2) * 180 / M_PI};
       theta_ref_vec.at(k) = {rwaPtr->setp(0) * 180 / M_PI, rwaPtr->setp(1) * 180 / M_PI, rwaPtr->setp(2) * 180 / M_PI};
@@ -247,17 +263,18 @@ void Runner::Run() {  // Method/function defined inside the class
 
       dqa_vec.at(k) = {dqa(0), dqa(1), dqa(2), dqa(3), dqa(4)};
 
-      sh_hist.at(k) = sh;
-      s_hist.at(k) = s;
-
-      gc_state_hist.at(k) = gc_id;
-      gc_state_ref.at(k) = GaitCycleRef(t + ts);  // the gait starts from ts, so t_actual = t + ts
-      grf_normal.at(k) = bridgePtr->grf_normal;
-
       reactf_vec.at(k) = {bridgePtr->rf_x(joint_id), bridgePtr->rf_y(joint_id), bridgePtr->rf_z(joint_id)};
+
+      grf_vec.at(k) = {grf(0), grf(1), grf(2)};
 
       a_vec.at(k) = {a(0), a(1), a(2)};
       ae_vec.at(k) = {ae(0), ae(1), ae(2)};
+
+      sh_hist.at(k) = sh;
+      s_hist.at(k) = s;
+      gc_state_hist.at(k) = gc_id;
+      gc_state_ref.at(k) = GaitCycleRef(t + ts);  // the gait starts from ts, so t_actual = t + ts
+      grf_normal.at(k) = bridgePtr->grf_normal;
     }
 
     t += dt;  // theoretical time
@@ -288,25 +305,27 @@ void Runner::Run() {  // Method/function defined inside the class
   // std::cout << "Max elapsed: " << max_elapsed << " s\n";
 
   if (plot == true) {
-    if (skip_kf == false) {
-      Plots::Plot3(N_run, "Position, Filtered vs Raw", "p", p_vec, p_raw_vec, 0);
-      Plots::Plot3(N_run, "Velocity, Filtered vs Raw", "v", v_vec, v_raw_vec, 0);
-      Plots::Plot3(N_run, "Foot Position, Filtered vs Raw", "pe", pe_vec, pe_raw_vec, 0);
-      Plots::Plot3(N_run, "Foot Velocity, Filtered vs Raw", "ve", ve_vec, ve_raw_vec, 0);
-    }
-    // Plots::PlotMap2D(N_run, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
-    // Plots::PlotMap3D(N_run, "3D Position vs Time", "p", p_vec, 0, 0);
-    // Plots::PlotSingle(N_run, "Normal Ground Reaction Force", grf_normal);
-    // Plots::Plot2(N_run, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
-
-    Plots::Plot3(N_run, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
-    // Plots::Plot3(N_run, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
-    Plots::Plot5(N_run, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
-    Plots::Plot5(N_run, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
-    // Plots::PlotMulti3(N_run, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
-    // gc_state_hist); Plots::PlotSingle(N_run, "Ground Reaction Force Normal", grf_normal);
-    Plots::Plot3(N_run, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
-    Plots::Plot3(N_run, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
+    // if (skip_kf == false) {
+    //   Plots::Plot3(k_final, "Position, Filtered vs Raw", "p", p_vec, p_raw_vec, 0);
+    //   Plots::Plot3(k_final, "Velocity, Filtered vs Raw", "v", v_vec, v_raw_vec, 0);
+    //   Plots::Plot3(k_final, "Foot Position, Filtered vs Raw", "pe", pe_vec, pe_raw_vec, 0);
+    //   Plots::Plot3(k_final, "Foot Velocity, Filtered vs Raw", "ve", ve_vec, ve_raw_vec, 0);
+    // }
+    // Plots::PlotMap2D(k_final, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
+    // Plots::PlotMap3D(k_final, "3D Position vs Time", "p", p_vec, 0, 0);
+    // Plots::PlotSingle(k_final, "Normal Ground Reaction Force", grf_normal);
+    // Plots::Plot2(k_final, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
+    // Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
+    // Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
+    // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
+    // Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
+    // Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
+    Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
+    // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
+    // gc_state_hist);
+    Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
+    // Plots::Plot3(k_final, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
+    // Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
   }
 }
 
@@ -421,37 +440,17 @@ trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vec
   return trajVals{p_refv, v_refv};  // TODO: sine wave for mpc
 }
 
-void Runner::FallCheck(Eigen::Quaterniond Q) {
+bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   Eigen::Quaterniond Q0;
   Q0.setIdentity();
-
-  double z_angle = 2 * asin(Q.z());  // z-axis of body quaternion
   Eigen::Quaterniond Q_z, Q_no_yaw;
-  Q_z.w() = cos(z_angle / 2);
-  Q_z.x() = 0;
-  Q_z.y() = 0;
-  Q_z.z() = sin(z_angle / 2);
+  Q_z = Utils::ExtractYawQuat(Q);
   Q_no_yaw = (Q * (Q_z.inverse())).normalized();  // the base quaternion ignoring heading
-
+  bool stop = false;
   // std::cout << "angle = " << Utils::AngleBetween(Q0, Q_no_yaw) << "\n";
   if (Utils::AngleBetween(Q0, Q_no_yaw) > (45 * M_PI / 180)) {
-    std::cout << "Fall likely; engaging emergency actuator deactivation \n";
-    bridgePtr->End();
+    std::cout << "Fall likely; engaging emergency actuator deactivation at t = " << t << " s\n";
+    stop = true;
   }
+  return stop;
 };
-
-void Runner::CircleTest() {
-  // edits peb_ref in-place
-  z += 0.0005 * flip;  // std::cout << z << "\n";
-  if (z <= -0.5 || z >= -0.3) {
-    flip *= -1;
-  }
-  double x = (sqrt(pow(r, 2) - pow(z - z1, 2)) + x1) * -flip;
-  if (isnan(x)) {
-    x = 0;
-  }
-  peb_ref(0) = x;
-  peb_ref(2) = z;
-
-  // std::cout << "peb_ref = " << peb_ref(0) << ", " << peb_ref(1) << ", " << peb_ref(2) << "\n";
-}
