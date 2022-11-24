@@ -87,6 +87,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
   kfPtr.reset(new Kf(dt));
+  obPtr.reset(new Observer(dt, &legPtr));
 
   k_changed = 0;
   sh_saved = 0;
@@ -103,7 +104,7 @@ void Runner::Run() {
   std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
   std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), dqa_vec(N_run);
   std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), reactf_vec(N_run);
-  std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ae_vec(N_run);
+  std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ae_vec(N_run), grf_vec(N_run);
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
   int joint_id = 1;  // joint to check reaction forces at
@@ -120,6 +121,9 @@ void Runner::Run() {
 
   double max_elapsed;
   auto t0_chrono = std::chrono::high_resolution_clock::now();  // Record start time
+
+  Eigen::Vector3d grf;
+
   retVals retvals;
   uVals uvals;
   kfVals kfvals;
@@ -218,22 +222,22 @@ void Runner::Run() {
 
     // clip torques to max possible
     for (int i = 0; i < model.n_a; i++) {
-      u(i) = Utils::Clip(u(i), -model.a_tau_stall(i), model.a_tau_stall(i));
+      u(i) = Utils::Clip(u(i), -model.a_tau_stall(i) * 1.5, model.a_tau_stall(i) * 1.5);
     }
 
-    gc_state_prev = gc_state;  // should be last // u << 0.1, 0.1, 0.1, 0.1, 0.1;
+    // grf = obPtr->ForceEst(bridgePtr->tau.segment<2>(0));
+
+    // previous
+    gc_state_prev = gc_state;
     sh_prev = sh;
 
     if (plot == true) {
-      // home values
-      if (skip_kf == false) {
-        Eigen::Vector3d pe_raw = retvals.p + Q.matrix() * peb;
-        Eigen::Vector3d ve_raw = retvals.v + Q.matrix() * veb;
-        p_raw_vec.at(k) = {retvals.p(0), retvals.p(1), retvals.p(2)};
-        v_raw_vec.at(k) = {retvals.v(0), retvals.v(1), retvals.v(2)};
-        pe_raw_vec.at(k) = {pe_raw(0), pe_raw(1), pe_raw(2)};
-        ve_raw_vec.at(k) = {ve_raw(0), ve_raw(1), ve_raw(2)};
-      };
+      p_raw_vec.at(k) = {retvals.p(0), retvals.p(1), retvals.p(2)};
+      v_raw_vec.at(k) = {retvals.v(0), retvals.v(1), retvals.v(2)};
+      Eigen::Vector3d pe_raw = retvals.p + Q.matrix() * peb;
+      Eigen::Vector3d ve_raw = retvals.v + Q.matrix() * veb;
+      pe_raw_vec.at(k) = {pe_raw(0), pe_raw(1), pe_raw(2)};
+      ve_raw_vec.at(k) = {ve_raw(0), ve_raw(1), ve_raw(2)};
 
       p_vec.at(k) = {p(0), p(1), p(2)};
       v_vec.at(k) = {v(0), v(1), v(2)};
@@ -259,17 +263,18 @@ void Runner::Run() {
 
       dqa_vec.at(k) = {dqa(0), dqa(1), dqa(2), dqa(3), dqa(4)};
 
-      sh_hist.at(k) = sh;
-      s_hist.at(k) = s;
-
-      gc_state_hist.at(k) = gc_id;
-      gc_state_ref.at(k) = GaitCycleRef(t + ts);  // the gait starts from ts, so t_actual = t + ts
-      grf_normal.at(k) = bridgePtr->grf_normal;
-
       reactf_vec.at(k) = {bridgePtr->rf_x(joint_id), bridgePtr->rf_y(joint_id), bridgePtr->rf_z(joint_id)};
+
+      grf_vec.at(k) = {grf(0), grf(1), grf(2)};
 
       a_vec.at(k) = {a(0), a(1), a(2)};
       ae_vec.at(k) = {ae(0), ae(1), ae(2)};
+
+      sh_hist.at(k) = sh;
+      s_hist.at(k) = s;
+      gc_state_hist.at(k) = gc_id;
+      gc_state_ref.at(k) = GaitCycleRef(t + ts);  // the gait starts from ts, so t_actual = t + ts
+      grf_normal.at(k) = bridgePtr->grf_normal;
     }
 
     t += dt;  // theoretical time
@@ -315,8 +320,10 @@ void Runner::Run() {
     // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
     Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
     Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
+    // Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
     // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
-    // gc_state_hist); Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
+    // gc_state_hist);
+    Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
     // Plots::Plot3(k_final, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
     // Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
   }

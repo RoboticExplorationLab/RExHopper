@@ -75,12 +75,12 @@ add_executable(${PROJECT_NAME}
   src/leg.cpp 
   src/gait.cpp
   src/kf.cpp
-  src/mocap_node.cpp
   src/rwa.cpp
   src/pid.cpp
   src/utils.cpp
   src/actuator.cpp
-  src/cx5.cpp 
+  src/sub_cx5.cpp 
+  src/sub_mocap.cpp
   src/wt901.cpp
   src/observer.cpp
   src/lowpass.cpp

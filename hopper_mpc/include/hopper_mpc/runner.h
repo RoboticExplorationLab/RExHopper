@@ -9,6 +9,7 @@
 #include "hopper_mpc/kf.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
+#include "hopper_mpc/observer.h"
 #include "hopper_mpc/rwa.h"
 
 struct trajVals {
@@ -101,6 +102,7 @@ class Runner {  // The class
   std::unique_ptr<Bridge> bridgePtr;
   std::unique_ptr<Gait> gaitPtr;
   std::unique_ptr<Kf> kfPtr;
+  std::unique_ptr<Observer> obPtr;
 
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;

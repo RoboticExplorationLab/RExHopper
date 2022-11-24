@@ -13,7 +13,7 @@ void HardwareBridge::Init() {
   char** argvr = NULL;
   ros::init(argcr, argvr, "hopper_ctrl");  // ROS
 
-  mocapPtr.reset(new MocapNode());
+  mocapPtr.reset(new MocapSub(dt));
   cx5Ptr.reset(new Cx5());
   // i2c
   wt901Ptr.reset(new Wt901());
@@ -26,13 +26,6 @@ void HardwareBridge::Init() {
   v.setZero();
   wb.setZero();
   p_prev.setZero();
-
-  int N_lookback = 6;
-  px_hist.reserve(N_lookback);
-  py_hist.reserve(N_lookback);
-  pz_hist.reserve(N_lookback);
-  t_hist.reserve(N_lookback);
-  t_mocap = 0;
 
   qla_home = model.qla_home;
 
@@ -178,29 +171,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   // --- begin collecting sensor data --- //
   ros::spinOnce();
   // get p and v from mocap
-  p = mocapPtr->p_mocap;  // get position from mocap system
-  double dt_mocap = mocapPtr->dt_mocap;
-
-  // check if mocap has updated yet
-  // if (dt_mocap != 0.0) {
-  //   t_mocap = mocapPtr->t_mocap;  // get time from mocap system
-  //   // mocap has updated, so it's time to update vector of saved p and t for polyfitting
-  //   std::move(begin(px_hist) + 1, end(px_hist), begin(px_hist));  // shift the vector to the right by one (deleting the first value)
-  //   px_hist.back() = p(0);
-  //   std::move(begin(py_hist) + 1, end(py_hist), begin(py_hist));  // shift the vector to the right by one (deleting the first value)
-  //   py_hist.back() = p(1);
-  //   std::move(begin(pz_hist) + 1, end(pz_hist), begin(pz_hist));  // shift the vector to the right by one (deleting the first value)
-  //   pz_hist.back() = p(2);
-  //   // update vector of saved t
-  //   std::move(begin(t_hist) + 1, end(t_hist), begin(t_hist));  // shift the vector to the right by one (deleting the first value)
-  //   t_hist.back() = t_mocap;
-  // } else {
-  //   t_mocap += dt;  // estimate time since last mocap update
-  //   // if p is not being updated by the mocap, interpolate it using polynomial regression
-  //   p(0) = Utils::PolyFit(t_hist, px_hist, 3, t_mocap);
-  //   p(1) = Utils::PolyFit(t_hist, py_hist, 3, t_mocap);
-  //   p(2) = Utils::PolyFit(t_hist, pz_hist, 3, t_mocap);
-  // }
+  p = mocapPtr->p;  // get position from mocap system
 
   v = (p - p_prev) / dt;
 
@@ -213,7 +184,8 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   // aef = wt901Ptr->CollectAcc();  // TODO: make this asynchronous otherwise it wastes too much time
 
   // get motor torques
-  tau = GetJointTorqueMeasured();  // TODO: Make this work
+  // tau = GetJointTorqueMeasured();  // TODO: Make this work
+  tau = u;  // placeholder
   tau_ref = u;
   // --- end collecting sensor data --- //
 

@@ -2,9 +2,9 @@
 
 #include "hopper_can_interface/ODriveCan.h"
 #include "hopper_mpc/bridge.h"
-#include "hopper_mpc/cx5.h"
-#include "hopper_mpc/mocap_node.h"
 #include "hopper_mpc/model.h"
+#include "hopper_mpc/sub_cx5.h"
+#include "hopper_mpc/sub_mocap.h"
 #include "hopper_mpc/wt901.h"
 // std
 #include "Eigen/Core"
@@ -67,16 +67,12 @@ class HardwareBridge : public Bridge {  // The class
   void CheckEndStops(Eigen::Matrix<double, 5, 1> qa);
   // double TurnsToRadians(double turns);
 
-  std::unique_ptr<MocapNode> mocapPtr;
+  std::unique_ptr<MocapSub> mocapPtr;
   std::unique_ptr<Wt901> wt901Ptr;
   std::unique_ptr<Cx5> cx5Ptr;
 
   Eigen::Vector3d p_prev;
 
-  std::vector<double> px_hist;
-  std::vector<double> py_hist;
-  std::vector<double> pz_hist;
-  std::vector<double> t_hist;
   // double posEst_prev;
   // int count;
   double t_mocap;
