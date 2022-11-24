@@ -8,10 +8,10 @@ device_setup : True
 
 # 0 = None, 1 = Euler Angles, 2 - matrix, 3 - quaternion
 filter_sensor2vehicle_frame_selector: 1
-filter_sensor2vehicle_frame_transformation_euler: [-0.5236, 0.0, 1.571]
+filter_sensor2vehicle_frame_transformation_euler: [0, 0.5236, -1.571]  # [-0.5236, 0.0, 1.571] for cv7
 filter_vel_in_vehicle_frame : True
 
-filter_declination_source: 1  # Note: When using a CV7, this MUST be changed to either 1, or 3 or the node will not start
+# filter_declination_source: 1  # Note: When using a CV7, this MUST be changed to either 1, or 3 or the node will not start
 # raw_file_enable : True
 # raw_file_directory : ""
 

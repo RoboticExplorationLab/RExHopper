@@ -82,9 +82,11 @@ int main(int argc, char* argv[]) {
   hopper.K = 5000;
   hopper.mu = 0.5;
   hopper.g = 9.807;
+  hopper.m << 0.585808, 0.0809766, 0.734902, 0.108053;  // TODO: scrape from mjcf?
   hopper.q_init << -30 * M_PI / 180, -120 * M_PI / 180, -150 * M_PI / 180, 120 * M_PI / 180, 0, 0, 0;
   hopper.dq_init << 0, 0, 0, 0, 0, 0, 0;
 
+  // TODO: Update these values
   hopper.l_c0 << 0.00532254792641475, 0.0312919315403303, 0.000492239493659961;  // leg link CoM positions
   hopper.l_c1 << 0.133101645966398, 0.00662597443711556, 0;
   hopper.l_c2 << 0.0181413414698164, -0.0300644982791918, -0.00029245641838564;

@@ -37,7 +37,7 @@ std::vector<double> Plots::ExtractVectorCol(int N, std::vector<std::vector<doubl
   std::vector<double> vec_col(N);
   int k = 0;
   for (auto i : vec) {
-    if (k >= N - 1) {
+    if (k > N - 1) {
       break;
     }
     vec_col.at(k) = i.at(col);
@@ -57,8 +57,17 @@ void Plots::SubPlot(std::string name, std::vector<double> timesteps, std::vector
 
 void Plots::PlotSingle(int N, std::string title, std::vector<double> vec) {
   auto timesteps = StartPlot(N, title);
+  std::vector<double> vec_resized(N);
+  int k = 0;
+  for (auto i : vec) {
+    if (k > N - 1) {
+      break;
+    }
+    vec_resized.at(k) = i;
+    k += 1;
+  }
 
-  plt::plot(timesteps, vec, "r");
+  plt::plot(timesteps, vec_resized, "r");
 
   plt::show();
 };

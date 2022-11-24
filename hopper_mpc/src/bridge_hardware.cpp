@@ -172,14 +172,13 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   ros::spinOnce();
   // get p and v from mocap
   p = mocapPtr->p;  // get position from mocap system
-
   v = (p - p_prev) / dt;
 
   // get Q, wb, and ab from cx5 IMU
   Q = cx5Ptr->Q;
   wb = cx5Ptr->omega;
   ab = cx5Ptr->alpha;
-  // std::cout << "Q = " << Q.coeffs().transpose() << "\n";
+
   // get aef from wt901 IMU
   // aef = wt901Ptr->CollectAcc();  // TODO: make this asynchronous otherwise it wastes too much time
 
