@@ -4,17 +4,24 @@
 #include "hopper_mpc/bridge.h"
 #include "hopper_mpc/bridge_hardware.h"
 #include "hopper_mpc/bridge_mujoco.h"
-#include "hopper_mpc/bridge_raisim.h"
+// #include "hopper_mpc/bridge_raisim.h"
 #include "hopper_mpc/gait.h"
+#include "hopper_mpc/kf.h"
 #include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
+#include "hopper_mpc/observer.h"
 #include "hopper_mpc/rwa.h"
+
+struct trajVals {
+  std::vector<Eigen::Vector3d> p_refv;
+  std::vector<Eigen::Vector3d> v_refv;
+};
 
 class Runner {  // The class
 
  public:  // Access specifier
-  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
-         bool record_);  // constructor
+  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool home_,
+         bool skip_kf_);  // constructor
 
   void Run();
 
@@ -29,17 +36,26 @@ class Runner {  // The class
   double t_start;     // start halfway through stance phase
   double t_stance;    // time spent in stance
   int N_c;            // number of timesteps spent in contact
-  int N_sit;          // number of timesteps to "sit" at end of traj
+  int N_stop;         // number of timesteps to "stop" at end of traj
+  int N_sit;          // number of timesteps spent sitting at the beginning
+
+  // --- if it is body frame it MUST have a b at the end of the name! --- //
+  // --- otherwise assume world frame! --- //
 
   Eigen::Vector3d p;     // base world frame position
   Eigen::Quaterniond Q;  // base world frame quaternion
-  Eigen::Vector3d v;     // base body frame velocity
-  Eigen::Vector3d w;     // base body frame rotational velocity
+  Eigen::Vector3d v;     // base world frame velocity
+  Eigen::Vector3d wb;    // base body frame rotational velocity
+  Eigen::Vector3d w;     // base world frame rotational velocity
+  Eigen::Vector3d ab;    // base body frame acceleration
+  Eigen::Vector3d a;     // base world frame acceleration
+  Eigen::Vector3d aeb;   // foot body frame acceleration
+  Eigen::Vector3d ae;    // foot world frame acceleration
 
   Eigen::Vector3d p_ref;     // base world frame position
   Eigen::Quaterniond Q_ref;  // base world frame quaternion
-  Eigen::Vector3d v_ref;     // base body frame velocity
-  Eigen::Vector3d w_ref;     // base body frame rotational velocity
+  Eigen::Vector3d v_ref;     // base world frame velocity
+  Eigen::Vector3d w_ref;     // base world frame rotational velocity
 
   Eigen::Matrix<double, 5, 1> qa;
   Eigen::Matrix<double, 5, 1> dqa;
@@ -51,6 +67,8 @@ class Runner {  // The class
   Eigen::Matrix<double, 5, 1> u;        // control torques
   Eigen::Matrix<double, 2, 1> qla_ref;  // leg actuator position setpoints
   std::string ctrlMode;
+  Eigen::Vector3d pe;
+  Eigen::Vector3d ve;
   Eigen::Vector3d peb_ref;  // body frame end effector position reference
   Eigen::Vector3d veb_ref;  // body frame end effector vel reference
   Eigen::Vector3d fb_ref;   // body frame end effector force ref
@@ -58,26 +76,23 @@ class Runner {  // The class
   int n_X;  // number of sim states
   int n_U;  // number of sim controls
 
+  double ts;  // starting time
+
   // contact checker variables
   int k_changed;
   bool sh_saved;
   bool sh_prev;
 
-  // circletest vars
-  double x1;
-  double z1;
-  double z;
-  double r;
-  int flip;
-
   Model model;
-  int N_run;         // number of timesteps in sim
-  double dt;         // timestep size
-  std::string ctrl;  // controller
+  int N_run;           // number of timesteps in sim
+  double dt;           // timestep size
+  std::string ctrl;    // controller
+  std::string bridge;  // bridge (interface)
   bool plot;
   bool fixed;
   bool spr;
-  bool record;
+  bool home;
+  bool skip_kf;
   double g;  // gravitational constant
 
   Eigen::VectorXd L;
@@ -87,15 +102,18 @@ class Runner {  // The class
 
   std::unique_ptr<Bridge> bridgePtr;
   std::unique_ptr<Gait> gaitPtr;
+  std::unique_ptr<Kf> kfPtr;
+  std::unique_ptr<Observer> obPtr;
 
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;
 
-  bool ContactSchedule(double t, double t0);
-  std::vector<bool> ContactMap(int N, double dt, double ts, double t0);
+  bool ContactSchedule(double t);
+  std::vector<bool> ContactMap(int N, double dt, double t);
   std::vector<bool> ContactUpdate(std::vector<bool> C, int k);
   trajVals GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vector3d p_final);
-  void GaitCycleUpdate(bool s, bool sh, double dz);
+  void UpdateGaitCycle(bool s, bool sh, double dz);
+  int GaitCycleRef(double t);
   bool ContactCheck(bool sh, bool sh_prev, int k);
-  void CircleTest();
+  bool FallCheck(Eigen::Quaterniond Q, double t);
 };

@@ -15,23 +15,26 @@ class Leg {                       // The class
   void UpdateState(Eigen::Vector2d q_in, Eigen::Quaterniond Q_base);
 
   Eigen::Vector2d KinInv(Eigen::Vector3d p_ref);
-  Eigen::Vector3d KinFwd();
+  Eigen::Vector3d GetPos();
+  Eigen::Vector3d KinFwd(double q0, double q2);
+
   Eigen::Vector3d GetVel();
   void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
   Eigen::Vector2d OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref);
   Eigen::Vector2d OpSpaceForceCtrl(Eigen::Vector3d f);
   Eigen::Vector2d KinInvPosCtrl(Eigen::Vector3d p_ref, double kp, double kd);
-  void GenMCG();
-  void GenJac();
-  void GenMx();
 
- private:
   Eigen::Matrix<double, 4, 4> M;
   Eigen::Matrix<double, 4, 1> C;
   Eigen::Matrix<double, 4, 1> G;
   Eigen::Matrix<double, 3, 2> Ja;
   Eigen::Matrix3d Mx;
+  Eigen::Matrix<double, 3, 4> J;
 
+ private:
+  void GenMCG();
+  void GenJac();
+  void GenMx();
   Eigen::Matrix<double, 2, 1> qa_out;
 
   Model model;
@@ -48,7 +51,7 @@ class Leg {                       // The class
 
   const double singularity_thresh = 0.00025;
   Eigen::Matrix3d Mx_inv;
-  Eigen::Matrix<double, 3, 4> J;
+
   Eigen::DiagonalMatrix<double, 3> kp_diag;
   Eigen::DiagonalMatrix<double, 3> kd_diag;
   Eigen::Vector3d K;

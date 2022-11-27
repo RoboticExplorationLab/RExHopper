@@ -2,10 +2,12 @@
 #include "mujoco/glfw3.h"
 #include "mujoco/mujoco.h"
 // for sleep timers
+
 #include <chrono>
 #include <iostream>
 #include <thread>
-
+// for getcwd()
+#include <unistd.h>
 mjModel* m;      // MuJoCo model
 mjData* d;       // MuJoCo data
 mjvCamera cam;   // abstract camera
@@ -76,17 +78,25 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
   mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
 }
 
-MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_) {}
+MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool home_) : Base(model_, dt_, fixed_, home_) {}
 
 void MujocoBridge::Init() {
   char error[ERROR_SIZE] = "Could not load binary model";
+
+  std::string path_mjcf;
   if (fixed == true) {
-    str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf_fixed.xml";
+    path_mjcf = model.mjcf_fixed_path;
   } else {
-    str = "/workspaces/RosDockerWorkspace/src/RExHopper/hopper_mpc/res/hopper_rev08/hopper_rev08_mjcf.xml";
+    path_mjcf = model.mjcf_path;
   }
-  char* dir = new char[150];  // just needs to be larger than the actual string
-  strcpy(dir, str.c_str());
+  char* cwd;
+  char buff[PATH_MAX + 1];
+  cwd = getcwd(buff, PATH_MAX + 1);  // get current working directory
+  std::string path_cwd = cwd;
+  str = path_cwd + path_mjcf;  // combine current directory with relative path for mjcf
+
+  char* dir = new char[PATH_MAX + 1];  // just needs to be larger than the actual string
+  strcpy(dir, str.c_str());            // converting back to char... probably wasteful but whatevs
   if (std::strlen(dir) > 4 && !std::strcmp(dir + std::strlen(dir) - 4, ".mjb")) {
     m = mj_loadModel(dir, 0);
   } else {
@@ -132,13 +142,14 @@ void MujocoBridge::Init() {
   // making sure the first time step updates the ctrl previous_time
   // last_update = timezero - 1.0 / ctrl_update_freq;
 
+  // RENDERING STUFF
+  double fps = 60;           // 60 frames rendered per real second
+  double simhertz = 1 / dt;  // timesteps per simulated second
+  // then only render visuals once every 16.66 timesteps
+  refresh_rate = simhertz / fps;
+  t_refresh += 0;
+
   // initialize variables
-  qa_cal << model.q_init(0), model.q_init(2), 0, 0, 0;
-  double kp = model.k_kin(0);
-  double kd = model.k_kin(1);
-  pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kd));
-  pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
-  sh = 0;
 
   // actuator models
   ActuatorModel r80;
@@ -177,12 +188,24 @@ void MujocoBridge::Init() {
   a3.reset(new Actuator(r100, dt));
   a4.reset(new Actuator(r80, dt));
 
-  // RENDERING STUFF
-  double fps = 60;           // 60 frames rendered per real second
-  double simhertz = 1 / dt;  // timesteps per simulated second
-  // then only render visuals once every 16.66 timesteps
-  refresh_rate = simhertz / fps;
-  t_refresh += 0;
+  qa_cal << model.q_init(0), model.q_init(2), 0, 0, 0;
+  double kp = model.k_kin(0);
+  double kd = model.k_kin(1);
+  pid_q0Ptr.reset(new PID1(dt, kp, 0.0, kd));
+  pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
+  sh = 0;
+
+  if (home == false) {  // the robot is not homing, so it must start from a sitting position
+    d->qpos[0] = model.p0_sit(0);
+    d->qpos[1] = model.p0_sit(1);
+    d->qpos[2] = model.p0_sit(2);
+    d->qpos[7] = model.qla_sit(0) - qa_cal(0);  // joint 0
+    d->qpos[9] = model.qla_sit(1) - qa_cal(1);  // joint 2
+  } else {
+    d->qpos[0] = model.p0(0);
+    d->qpos[1] = model.p0(1);
+    d->qpos[2] = model.p0(2);
+  }
 }
 
 retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
@@ -198,7 +221,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     } else {
       dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
     }
-    u = -u;
+    u *= -1;
     mj_step1(m, d);  // mj_step(m, d);
     auto [tau0, i0, v0] = a0->Actuate(u(0), dqa(0));
     auto [tau1, i1, v1] = a1->Actuate(u(1), dqa(1));
@@ -212,6 +235,8 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     d->ctrl[4] = tau4;  // moves rwz
     mj_step2(m, d);
 
+    // std::cout << tau0 << ", " << tau1 << ", " << tau2 << ", " << tau3 << ", " << tau4 << "\n";
+
     // get measurements
     if (fixed == true) {
       qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
@@ -220,6 +245,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       qa_raw << d->qpos[7], d->qpos[9], d->qpos[11], d->qpos[12], d->qpos[13];
       dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
       // first seven indices are for base pos and quat in floating body mode
+      // for velocities, it's the first six indices
     }
 
     qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
@@ -227,40 +253,33 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     p << d->sensordata[0], d->sensordata[1], d->sensordata[2];
 
     if (d->time == 0.001) {
-      Q.coeffs() << 0, 0, 0, 1;  // Q initializes as all zeros which is invalid
+      Q.setIdentity();  // sensordata quaternion initializes as all zeros which is invalid
     } else {
       Q.w() = d->sensordata[3];
       Q.x() = d->sensordata[4];
       Q.y() = d->sensordata[5];
       Q.z() = d->sensordata[6];
     }
+
     v << d->sensordata[7], d->sensordata[8], d->sensordata[9];
-    w << d->sensordata[10], d->sensordata[11], d->sensordata[12];
-    double grf_normal = d->sensordata[13];
-    // sh = (grf_normal != 0);  // Contact detection, convert grf normal to bool
-    if (grf_normal >= 50) {  // check if contact is legit
-      sh = true;
-    } else {
-      sh = false;
-    }
-    // TODO: this data seems wrong...?
-    tau << d->sensordata[15], d->sensordata[18], d->sensordata[21], d->sensordata[24], d->sensordata[27];
+
+    wb << d->sensordata[10], d->sensordata[11], d->sensordata[12];
+
+    grf_normal = d->sensordata[13];
+    sh = grf_normal >= 60 ? true : false;  // check if contact is legit
+
+    tau << d->sensordata[14], d->sensordata[15], d->sensordata[16], d->sensordata[17], d->sensordata[18];
     tau_ref = u;
 
-    t_refresh += 1;
-    // std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    if (t_refresh > refresh_rate) {
-      // std::cout << "grf_normal = " << grf_normal << "\n ";
-      // std::cout << "sh = " << sh << "\n ";
-      // std::cout << "v = " << v(0) << ", " << v(1) << ", " << v(2) << "\n ";
-      // std::cout << "contact normal force = " << d->sensordata[13] << "\n ";
-      // std::cout << "pos = " << qa_raw_(0) << ", " << qa_raw_(1) << ", " << qa_raw_(2) << ", " << qa_raw_(3) << ", " << qa_raw_(4) <<
-      // "\n";
-      // std::cout << "corrected pos = " << qa(0) * 180 / M_PI << ", " << qa(1) * 180 / M_PI << ", " << qa(2) * 180 / M_PI << ", "
-      //           << qa(3) * 180 / M_PI << ", " << qa(4) * 180 / M_PI << "\n";
-      // std::cout << "ctrl: " << d->ctrl[0] << ", " << d->ctrl[1] << ", " << d->ctrl[2] << ", " << d->ctrl[3] << ", " << d->ctrl[4] <<
-      // "\n";
+    rf_x << d->sensordata[19], d->sensordata[22], d->sensordata[25], d->sensordata[28], d->sensordata[31];
+    rf_y << d->sensordata[20], d->sensordata[23], d->sensordata[26], d->sensordata[29], d->sensordata[32];
+    rf_z << d->sensordata[21], d->sensordata[24], d->sensordata[27], d->sensordata[30], d->sensordata[33];
 
+    ab << d->sensordata[34], d->sensordata[35], d->sensordata[36];   // base accelerometer
+    aef << d->sensordata[37], d->sensordata[38], d->sensordata[39];  // foot accelerometer
+
+    t_refresh += 1;
+    if (t_refresh > refresh_rate) {
       // visualization
       t_refresh = 0;  // reset refresh counter
       // 15 ms is a little smaller than 60 Hz.
@@ -283,7 +302,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     End();
   }
 
-  return retVals{p, Q, v, w, qa, dqa, sh};
+  return retVals{p, Q, v, wb, ab, aef, qa, dqa};
 }
 
 void MujocoBridge::End() {

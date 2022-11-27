@@ -124,7 +124,7 @@ class ODriveCan final : private CanInterface {
   // int32_t GetEncoderShadowCount(int axis_id);
   // int32_t GetEncoderCountInCPR(int axis_id);
   // float GetIqSetpoint(int axis_id);
-  // float GetIqMeasured(int axis_id);
+  float GetIqMeasured(int axis_id);
   // float GetSensorlessPosition(int axis_id);
   // float GetSensorlessVelocity(int axis_id);
   // uint32_t GetMotorError(int axis_id);

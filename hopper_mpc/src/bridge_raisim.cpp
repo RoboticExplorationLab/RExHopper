@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <iostream>
 
-RaisimBridge::RaisimBridge(Model model_, double dt_, bool fixed_, bool record_) : Base(model_, dt_, fixed_, record_), server(&world) {}
+RaisimBridge::RaisimBridge(Model model_, double dt_, bool fixed_, bool home_) : Base(model_, dt_, fixed_, home_), server(&world) {}
 
 void RaisimBridge::Init() {
   // char tmp[256];
@@ -78,7 +78,7 @@ retVals RaisimBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
   server.integrateWorldThreadSafe();
   // world.integrate();
   qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
-  return retVals{p, Q, v, w, qa, dqa, sh};
+  return retVals{p, Q, vb, wb, ab, qa, dqa, sh};
 }
 
 void RaisimBridge::End() {

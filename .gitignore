@@ -32,3 +32,5 @@
 *.app
 
 .devcontainer/activation.raisim
+*.log
+MUJOCO_LOG.TXT

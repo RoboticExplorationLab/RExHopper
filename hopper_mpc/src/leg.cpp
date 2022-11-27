@@ -74,9 +74,12 @@ Eigen::Matrix<double, 2, 1> Leg::KinInv(Eigen::Vector3d p_ref) {
   return qa_out;
 };
 
-Eigen::Vector3d Leg::KinFwd() {
-  double q0 = q(0);
-  double q2 = q(2);
+Eigen::Vector3d Leg::GetPos() {
+  // solve based on leg's current state
+  return KinFwd(q(0), q(2));
+}
+
+Eigen::Vector3d Leg::KinFwd(double q0, double q2) {
   double x0a = L0 * cos(q0);
   double z0a = L0 * sin(q0);
   double rho = sqrt(pow(x0a, 2) + pow(z0a, 2));  // rho = sp.sqrt((x0a + d) ** 2 + z0a ** 2)
@@ -114,10 +117,6 @@ void Leg::GenMx() {
   Eigen::JacobiSVD<Eigen::Matrix<double, 3, 3> > svd(Mx_inv, Eigen::ComputeFullU);
   Eigen::Matrix<double, 3, 3> U = svd.matrixU();
   Eigen::Vector3d s = svd.singularValues();
-  // Eigen::Matrix<double, 3, 3> V = U.transpose();
-  // std::cout << M.coeff(0, 0) << ", " << M.coeff(0, 1) << ", " << M.coeff(0, 2) << ", " << M.coeff(1, 0) << ", " << M.coeff(1, 1) << ", "
-  //           << M.coeff(1, 2) << ", " << M.coeff(2, 0) << ", " << M.coeff(2, 1) << ", " << M.coeff(2, 2) << "\n";
-  // std::cout << s(0) << ", " << s(1) << ", " << s(2) << "\n";
   for (int i = 0; i < 3; i++) {
     // cut off singular values which cause control problems
     if (s(i) < singularity_thresh) {
@@ -127,12 +126,10 @@ void Leg::GenMx() {
     }
   }
   Mx = U * (s.asDiagonal() * U.transpose());  // V = U.transpose(), so V.transpose() = U
-  // std::cout << Mx.coeff(0, 0) << ", " << Mx.coeff(0, 1) << ", " << Mx.coeff(0, 2) << ", " << Mx.coeff(1, 0) << ", " << Mx.coeff(1, 1)
-  //           << ", " << Mx.coeff(1, 2) << ", " << Mx.coeff(2, 0) << ", " << Mx.coeff(2, 1) << ", " << Mx.coeff(2, 2) << "\n";
 }
 
 Eigen::Vector2d Leg::OpSpacePosCtrl(Eigen::Vector3d p_ref, Eigen::Vector3d v_ref) {
-  Eigen::Vector3d p = KinFwd();
+  Eigen::Vector3d p = GetPos();
   Eigen::Vector3d v = GetVel();
   Eigen::Vector3d pdd_ref;
   // pdd_ref = (p_ref - p) + (v_ref - v);

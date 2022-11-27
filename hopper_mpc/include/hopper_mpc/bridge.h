@@ -2,14 +2,31 @@
 
 #include "hopper_mpc/model.h"
 
-class Bridge {                                                  // The class
- public:                                                        // Access specifier
-  Bridge(Model model_, double dt_, bool fixed_, bool record_);  // constructor
+struct retVals {  // Declare a local structure
+  Eigen::Vector3d p;
+  Eigen::Quaterniond Q;
+  Eigen::Vector3d v;                // linear vel in WORLD frame
+  Eigen::Vector3d wb;               // angular vel in BODY frame
+  Eigen::Vector3d ab;               // linear acceleration in BODY frame
+  Eigen::Vector3d aef;              // linear foot acceleration in FOOT frame
+  Eigen::Matrix<double, 5, 1> qa;   // actuated joint positions
+  Eigen::Matrix<double, 5, 1> dqa;  // actuated joint velocities
+};
+
+class Bridge {                                                // The class
+ public:                                                      // Access specifier
+  Bridge(Model model_, double dt_, bool fixed_, bool home_);  // constructor
   virtual void Init() = 0;
   virtual retVals SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) = 0;
   virtual void End() = 0;
   Eigen::Matrix<double, 5, 1> tau;      // measured torque
   Eigen::Matrix<double, 5, 1> tau_ref;  // ref torque before gear ratios
+  double grf_normal;
+  Eigen::Matrix<double, 5, 1> rf_x;  // measured force on joints
+  Eigen::Matrix<double, 5, 1> rf_y;  // measured force on joints
+  Eigen::Matrix<double, 5, 1> rf_z;  // measured force on joints
+  bool sh;
+  bool stop = false;
 
  protected:
   Model model;
@@ -17,16 +34,17 @@ class Bridge {                                                  // The class
   double g;
   double mu;
   bool fixed;
-  bool record;
+  bool home;
   Eigen::Matrix<double, 5, 1> qa_cal;
   Eigen::Matrix<double, 5, 1> qa_raw;
 
-  Eigen::Matrix<double, 3, 1> p;
+  Eigen::Vector3d p;
   Eigen::Quaterniond Q;
-  Eigen::Matrix<double, 3, 1> v;  // linear vel in global frame
-  Eigen::Matrix<double, 3, 1> w;  // angular vel in global frame (is this relative to CoM or global origin???)
+  Eigen::Vector3d v;    // linear vel in WORLD frame
+  Eigen::Vector3d wb;   // angular vel in BODY frame
+  Eigen::Vector3d ab;   // linear acc in BODY frame
+  Eigen::Vector3d aef;  // linear foot acc in FOOT frame
 
   Eigen::Matrix<double, 5, 1> qa;
   Eigen::Matrix<double, 5, 1> dqa;
-  bool sh;
 };

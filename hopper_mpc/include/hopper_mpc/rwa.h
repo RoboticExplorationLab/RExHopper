@@ -1,16 +1,17 @@
 #pragma once
 #include "Eigen/Dense"
+#include "hopper_mpc/lowpass.h"
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/pid.h"
 
-class Rwa {         // The class
- public:            // Access specifier
-  Rwa(double dt_);  // constructor
+class Rwa {                               // The class
+ public:                                  // Access specifier
+  Rwa(std::string bridge, double dt_);  // constructor
   // Eigen::Vector3d q;
-  // Eigen::Vector3d dq;
+  Eigen::Vector3d dq;
   // Eigen::Vector3d q_prev;
 
-  // void UpdateState(Eigen::Vector3d q_in);
+  void UpdateState(Eigen::Vector3d dq_in);
   // void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
   Eigen::Vector3d AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref);
   Eigen::Vector3d TorqueCtrl(Eigen::Vector3d tau_ref);
@@ -33,6 +34,9 @@ class Rwa {         // The class
   // PID3 pid_vel;
   std::unique_ptr<PID3> pid_tauPtr;
   std::unique_ptr<PID3> pid_velPtr;
+  // filter
+  std::unique_ptr<LowPass3D> lowpassPtr1;
+  std::unique_ptr<LowPass3D> lowpassPtr2;
 
   Eigen::DiagonalMatrix<double, 3> kp_diag;
   Eigen::DiagonalMatrix<double, 3> kd_diag;
