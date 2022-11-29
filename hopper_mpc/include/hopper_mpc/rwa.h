@@ -4,8 +4,8 @@
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/pid.h"
 
-class Rwa {                               // The class
- public:                                  // Access specifier
+class Rwa {                             // The class
+ public:                                // Access specifier
   Rwa(std::string bridge, double dt_);  // constructor
   // Eigen::Vector3d q;
   Eigen::Vector3d dq;
@@ -41,7 +41,7 @@ class Rwa {                               // The class
   Eigen::DiagonalMatrix<double, 3> kp_diag;
   Eigen::DiagonalMatrix<double, 3> kd_diag;
   Eigen::Vector2d tau;
-  Eigen::Vector3d AttitudeIn(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base);
+  Eigen::Vector3d AttitudeIn(Eigen::Quaterniond Q_base);
   Eigen::Vector3d AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref);
   double GetXRotatedAboutZ(Eigen::Quaterniond Q_in, double z);
 };

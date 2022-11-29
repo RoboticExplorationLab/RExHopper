@@ -109,9 +109,9 @@ int main(int argc, char* argv[]) {
   hopper.qla_home << 29 * M_PI / 180, -187 * M_PI / 180;                                         // homing hardstop locations
   hopper.qla_sit << 0 * M_PI / 180, -140 * M_PI / 180;                                           // sitting position
   hopper.qla_stand << -0.886343, -2.13709;                                                       // standing position
-  hopper.k_kin << 45, 45 * 0.02;
-  hopper.N_getup = 500;
-  double dt = 0.001;  // 1 kHz
+  hopper.k_kin << 45, 45 * 0.02;                                                                 // kinematic PD gains
+  hopper.N_getup = 500;  // number of timesteps taken to stand up from sitting
+  double dt = 0.001;     // 1 kHz
 
   Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, home, skip_kf);
   runner.Run();  // Call the method

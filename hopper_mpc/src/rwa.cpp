@@ -58,10 +58,11 @@ double Rwa::GetXRotatedAboutZ(Eigen::Quaterniond Q_in, double z) {
   return angle;
 }
 
-Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base) {
+Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_base) {
   // get body angle in rw axes
-  theta(0) = GetXRotatedAboutZ(Q_base, a);
-  theta(1) = GetXRotatedAboutZ(Q_base, b);
+  Eigen::Quaterniond Q_base_forward = (Q_base * (Utils::ExtractYawQuat(Q_base).inverse())).normalized();
+  theta(0) = GetXRotatedAboutZ(Q_base_forward, a);
+  theta(1) = GetXRotatedAboutZ(Q_base_forward, b);
   // theta(2) = 2 * asin(Q_base.z());  // z-axis of body quaternion
   theta(2) = Utils::ExtractZ(Q_base);
   return theta;
@@ -79,7 +80,7 @@ Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
 
 Eigen::Vector3d Rwa::AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref) {
   // simple reaction wheel attitude control w/ derivative on measurement pid
-  theta = lowpassPtr1->Filter(AttitudeIn(Q_ref, Q_base));
+  theta = lowpassPtr1->Filter(AttitudeIn(Q_base));
   // theta = AttitudeIn(Q_ref, Q_base);
   setp = AttitudeSetp(Q_ref, z_ref);
   Eigen::Vector3d setp_dq(0, 0, 0);                                // Make this nonzero to reduce static friction?

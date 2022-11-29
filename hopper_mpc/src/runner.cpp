@@ -321,8 +321,8 @@ void Runner::Run() {
     // Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
     Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
     Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
-    // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
-    // gc_state_hist);
+
+    Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State", gc_state_hist);
     // Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
     // Plots::Plot3(k_final, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
     // Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
