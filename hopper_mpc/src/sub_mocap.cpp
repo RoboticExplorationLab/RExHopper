@@ -5,10 +5,10 @@ MocapSub::MocapSub(double dt_) {
   dt = dt_;
 
   int N_lookback = 6;
-  px_hist.reserve(N_lookback);
-  py_hist.reserve(N_lookback);
-  pz_hist.reserve(N_lookback);
-  t_hist.reserve(N_lookback);
+  px_hist.resize(N_lookback);
+  py_hist.resize(N_lookback);
+  pz_hist.resize(N_lookback);
+  t_hist.resize(N_lookback);
   t_mocap = 0;
   // initialize values
   for (int i = 0; i < N_lookback; i++) {

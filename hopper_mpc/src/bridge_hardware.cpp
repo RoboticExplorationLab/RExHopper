@@ -14,6 +14,7 @@ void HardwareBridge::Init() {
   ros::init(argcr, argvr, "hopper_ctrl");  // ROS
 
   mocapPtr.reset(new MocapSub(dt));
+
   cx5Ptr.reset(new Cx5());
   // i2c
   wt901Ptr.reset(new Wt901());
@@ -59,7 +60,7 @@ void HardwareBridge::Init() {
   float vel_lim_rw = 32;  // 64 max
   float cur_lim_rw = 60;
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // so I have time to run over to the testing jig
+  // std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // so I have time to run over to the testing jig
 
   home = true;  // for safety, don't remove this unless you know wtf you're doing
   if (home == true) {
@@ -100,12 +101,21 @@ void HardwareBridge::Init() {
   // DANGER!! disable while fiddling with IMU settings!!!
   Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
   Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
-  // Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
+  Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";
   // std::cin.ignore();
-  SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_stand(0));
-  SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_stand(1));
+  bool sit = true;
+  // if (home == true) {
+  if (sit == false) {
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_stand(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_stand(1));
+  } else {
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
+    std::cout << "Once robot is in stable sitting position, press any key to continue. \n";
+    std::cin.ignore();
+  }
 
   std::cout << "Controller starting in : \n3... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));

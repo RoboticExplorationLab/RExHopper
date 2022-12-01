@@ -38,12 +38,14 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   t_stance = t_p * phi_switch;       // time spent in stance
   N_c = t_stance / dt;               // number of timesteps spent in contact
   N_stop = 100;                      // number of timesteps spent stopped at the goal
-  N_sit = 1500;                      // number of timesteps spent sitting
+
   // class definitions
   if (bridge_ == "hardware") {
     bridgePtr.reset(new HardwareBridge(model, dt, fixed, home));
+    N_sit = 0;  // number of timesteps spent sitting
   } else if (bridge_ == "mujoco") {
     bridgePtr.reset(new MujocoBridge(model, dt, fixed, home));
+    N_sit = 1500;  // number of timesteps spent sitting
     // } else if (bridge_ == "raisim") {
     // bridgePtr.reset(new RaisimBridge(model, dt, fixed, home));
   } else {
@@ -95,7 +97,6 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
 void Runner::Run() {
   bridgePtr->Init();
-
   kfPtr->InitState(p, v, p + Q.matrix() * peb_ref, v + Q.matrix() * veb_ref);
   double t = 0.0;
 
