@@ -125,7 +125,6 @@ uVals Gait::GetUp(Eigen::Quaterniond Q) {
   Eigen::Quaterniond Q_ref;
   Q_ref.setIdentity();
   z_ref = 0;
-
   peb_ref << peb_ref_trajx(i), 0.0, peb_ref_trajz(i);
   Eigen::Vector2d qla_ref = legPtr->KinInv(peb_ref);
   std::string ctrlMode = "Pos";

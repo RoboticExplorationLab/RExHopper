@@ -31,16 +31,20 @@ void HardwareBridge::Init() {
   qla_home = model.qla_home;
 
   // ODrives
-  ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
-  node_id_q0 = 0;
-  node_id_rwl = 3;
+  try {
+    ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
+    node_id_q0 = 0;
+    node_id_rwl = 3;
 
-  ODriveCANright.reset(new ODriveCan(Channel::CAN3, BandRate::BAUD_1M));
-  node_id_q2 = 1;
-  node_id_rwr = 2;
+    ODriveCANright.reset(new ODriveCan(Channel::CAN3, BandRate::BAUD_1M));
+    node_id_q2 = 1;
+    node_id_rwr = 2;
 
-  ODriveCANyaw.reset(new ODriveCan(Channel::CAN1, BandRate::BAUD_1M));
-  node_id_rwz = 4;
+    ODriveCANyaw.reset(new ODriveCan(Channel::CAN1, BandRate::BAUD_1M));
+    node_id_rwz = 4;
+  } catch (...) {
+    throw "Turn the power distribution on and try again!";
+  }
 
   std::map<std::string, int> mapCANleft;
   mapCANleft.insert(std::make_pair("q0", node_id_q0));
@@ -55,35 +59,40 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
-  float vel_lim_leg = 5;
-  float cur_lim_leg = 60;
-  float vel_lim_rw = 32;  // 64 max
+  float vel_lim_leg = 20;
+  float cur_lim_leg = 60;  // 60;
+  float vel_lim_rw = 32;   // 64 max
   float cur_lim_rw = 60;
 
-  // std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // so I have time to run over to the testing jig
-
-  home = true;  // for safety, don't remove this unless you know wtf you're doing
+  // NOTE: Always turn the power distribution on with the leg in the tight seated crouch position. EVEN WHEN HOMING WITH ROBOT FIXED IN
+  // MIDAIR! Otherwise saved homing will be wrong. Because the ODrive # rotations is based on the pos you were at when it turned on
   if (home == true) {
     std::cout << "Robot WILL HOME! Make sure it is either in the jig or being held, then press any key to continue. \n";
-    // std::cin.ignore();
+    std::cin.ignore();
+    // std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // so I have time to run over to the testing jig
     std::cout << "Starting homing procedure. \n";
     Home(ODriveCANleft, node_id_q0, -1, cur_lim_leg, vel_lim_leg);
     Home(ODriveCANright, node_id_q2, -1, cur_lim_leg, vel_lim_leg);
     std::cout << "Finished homing procedure. \n";
-
+    std::cout << "Saved homing offsets: q_offset = " << q_offset(0) << ", " << q_offset(1) << " \n";
     std::ofstream ofs("offsets.txt");  // create and open a character archive for output
     saved.reset(new saved_offsets(q_offset(0), q_offset(1)));
     {
       boost::archive::text_oarchive oa(ofs);  // save data to archive
       oa << *saved;                           // write class instance to archive
     }
+
+    // SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_stand(0));
+    // SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_stand(1));
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
+
   } else {
     std::cout << "Robot will NOT home! Make sure it is in startup configuration, then press any key to continue. \n";
     std::cin.ignore();
 
     Startup(ODriveCANleft, node_id_q0, vel_lim_leg, cur_lim_leg);
     Startup(ODriveCANright, node_id_q2, vel_lim_leg, cur_lim_leg);
-
     saved_get.reset(new saved_offsets);
     // saved_offsets saved_get;
     {
@@ -92,30 +101,21 @@ void HardwareBridge::Init() {
       ia >> *saved_get;  // read class state from archive
     }
     q_offset(0) = saved_get->q0_offset;  // copy in
-    q_offset(1) = saved_get->q2_offset;
-    std::cout << "Saved homing offsets loaded: q_offset = " << q_offset.transpose() << " \n";
-    // add # of rotations of rotor to get to starting configuration from homing position
-    // q_offset(0) += 1  // reduce torque/vel limits if you're going to mess with this stuff
+    q_offset(1) = saved_get->q2_offset;  // add # of rotations of rotor to get to starting configuration from homing position
+    std::cout << "Loaded homing offsets: q_offset = " << q_offset(0) << ", " << q_offset(1) << " \n";
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
+    std::cout << "Once robot is in a stable sitting position, press any key to continue. \n";
+    std::cin.ignore();
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
-  Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
-  Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
+  // Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
+  // Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
+  // Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";
   // std::cin.ignore();
-  bool sit = true;
-  // if (home == true) {
-  if (sit == false) {
-    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_stand(0));
-    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_stand(1));
-  } else {
-    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
-    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
-    std::cout << "Once robot is in stable sitting position, press any key to continue. \n";
-    std::cin.ignore();
-  }
 
   std::cout << "Controller starting in : \n3... \n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -168,9 +168,8 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
       SetTorCtrlMode(ODriveCANleft, node_id_q0);
       SetTorCtrlMode(ODriveCANright, node_id_q2);
     }
+    SetJointTorque(u);  // should not affect purely position controlled joints
   }
-
-  SetJointTorque(u);  // should not affect purely position controlled joints
 
   qa = GetJointPos();
   dqa = GetJointVel();

@@ -196,7 +196,11 @@ void Runner::Run() {
     s = C.at(k);  // bool s = ContactSchedule(t, 0);
     UpdateGaitCycle(s, sh, v(2));
 
-    if (home == false && k <= N_sit) {
+    if (ctrl == "idle") {
+      uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
+    } else if (ctrl == "circle") {
+      uvals = gaitPtr->CircleTest();
+    } else if (ctrl == "sit" || (home == false && k <= N_sit)) {
       uvals = gaitPtr->Sit();
     } else if (home == false && N_sit < k <= (N_sit + model.N_getup)) {
       uvals = gaitPtr->GetUp(Q);
@@ -205,12 +209,6 @@ void Runner::Run() {
         uvals = gaitPtr->Raibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
       } else if (ctrl == "stand") {
         uvals = gaitPtr->KinInvStand(Q);
-      } else if (ctrl == "sit") {
-        uvals = gaitPtr->Sit();
-      } else if (ctrl == "idle") {
-        uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
-      } else if (ctrl == "circle") {
-        uvals = gaitPtr->CircleTest();
       } else {
         throw "Invalid ctrl name! Use 'raibert', 'stand', 'sit', 'idle', or 'circle'";
         break;
@@ -319,7 +317,7 @@ void Runner::Run() {
     Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
     Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
     // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
-    // Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
+    Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
     Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
     Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
 
