@@ -137,11 +137,13 @@ void Runner::Run() {
     auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
 
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
-    if (k == 0) {
-      // TODO: rotate mocap position as well based on mocap yaw
-      Q_offset = Utils::ExtractYawQuat(retvals.Q);
-    }
-    Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
+    // if (k == 0) {
+    //   // TODO: rotate mocap position as well based on mocap yaw
+    //   Q_offset = Utils::ExtractYawQuat(retvals.Q);
+    //   // Q_offset = retvals.Q;
+    // }
+    // Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
+    Q = retvals.Q;
 
     bool stop = FallCheck(Q, t) + bridgePtr->stop;  // bool stop = bridgePtr->stop;
     if (stop == true) {
@@ -313,18 +315,17 @@ void Runner::Run() {
     // }
     // Plots::PlotMap2D(k_final, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
     // Plots::PlotMap3D(k_final, "3D Position vs Time", "p", p_vec, 0, 0);
-    Plots::Plot2(k_final, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
+    // Plots::Plot2(k_final, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
     Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
     Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
     // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
-    Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
+    // Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
     Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
-    Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
+    // Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
 
-    Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State", gc_state_hist);
-    // Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
-    // Plots::Plot3(k_final, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
-    // Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
+    // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
+    // gc_state_hist); Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal); Plots::Plot3(k_final, "Measured Base
+    // Acceleration", "acc", a_vec, a_vec, 0); Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
   }
 }
 

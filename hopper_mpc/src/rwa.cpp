@@ -15,17 +15,26 @@ Rwa::Rwa(std::string bridge, double dt_) {
 
   double ku;  // use gain of 13 for CoM bisection search.
   double ks;
+  double kd;  // 0.1875;
+  double kp;
+  double ki;
   if (bridge == "mujoco") {
     ku = 100;
     ks = 0.00032;
+
+    kp = 0.6;
+    ki = 0.0;
+    kd = 0.5;
   } else {
-    ku = 4;
-    ks = 0.0000032;
+    ku = 20;
+    ks = 0.0;
+    // ks = 0.00032;
+
+    kp = 0.6;
+    ki = 0.0;
+    kd = 0.125;
   }
 
-  double kp = 0.6;
-  double ki = 0.0;  // 0.56;  Ziegler-Nichols
-  double kd = 0.5;  // 0.1875;
   kp_tau << kp, kp, kp * 0.5;
   ki_tau << ki, ki, ki * 0.5;  // ki_tau << 0.1, 0.1, 0.01;
   kd_tau << kd, kd, kd * 0.5;  // 0.04, 0.04, 0.005;

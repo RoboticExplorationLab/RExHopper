@@ -74,6 +74,7 @@ void Plots::PlotSingle(int N, std::string title, std::vector<double> vec) {
   plt::plot(timesteps, vec_resized, "r");
 
   plt::show();
+  plt::save("plots/" + title + ".png");  // save the figure
 };
 
 void Plots::PlotMulti3(int N, std::string title, std::string name1, std::vector<double> vec1, std::string name2, std::vector<double> vec2,
@@ -95,7 +96,9 @@ void Plots::PlotMulti3(int N, std::string title, std::string name1, std::vector<
   plt::named_plot(name3, timesteps, vec3_resized, "b");
   plt::legend();
 
+  // plt::backend("Agg");
   plt::show();
+  plt::save("plots/" + title + ".png");  // save the figure
 };
 
 void Plots::PlotMap2D(int N, std::string title, std::string name, std::vector<std::vector<double>> vec,
@@ -120,6 +123,7 @@ void Plots::PlotMap2D(int N, std::string title, std::string name, std::vector<st
   plt::legend();
 
   plt::show();
+  plt::save("plots/" + title + ".png");  // save the figure
 };
 
 void Plots::PlotMap3D(int N, std::string title, std::string name, std::vector<std::vector<double>> vec, double xlim, double ylim) {
@@ -153,6 +157,7 @@ void Plots::PlotMap3D(int N, std::string title, std::string name, std::vector<st
   plt::legend();
 
   plt::show();
+  plt::save("plots/" + title + ".png");  // save the figure
 };
 
 void Plots::Plot2(int N, std::string title, std::string name, std::vector<std::vector<double>> vec, std::vector<std::vector<double>> ref,
@@ -172,6 +177,7 @@ void Plots::Plot2(int N, std::string title, std::string name, std::vector<std::v
   SubPlot(name + "_2", timesteps, vec2, ref2, ylim);
 
   plt::show();
+  plt::save("plots/" + title + ".png");  // save the figure
 };
 
 void Plots::Plot3(int N, std::string title, std::string name, std::vector<std::vector<double>> vec, std::vector<std::vector<double>> ref,
@@ -196,6 +202,7 @@ void Plots::Plot3(int N, std::string title, std::string name, std::vector<std::v
   SubPlot(name + "_z", timesteps, vec3, ref3, ylim);
 
   plt::show();
+  plt::save("plots/" + title + ".png");  // save the figure
 };
 
 void Plots::Plot5(int N, std::string title, std::string name, std::vector<std::vector<double>> vec, std::vector<std::vector<double>> ref,
@@ -231,4 +238,5 @@ void Plots::Plot5(int N, std::string title, std::string name, std::vector<std::v
   SubPlot(name + "_5", timesteps, vec5, ref5, ylim);
 
   plt::show();
+  plt::save("plots/" + title + ".png");  // save the figure
 };

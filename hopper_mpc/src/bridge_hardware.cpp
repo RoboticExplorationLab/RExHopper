@@ -31,20 +31,16 @@ void HardwareBridge::Init() {
   qla_home = model.qla_home;
 
   // ODrives
-  try {
-    ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
-    node_id_q0 = 0;
-    node_id_rwl = 3;
+  ODriveCANleft.reset(new ODriveCan(Channel::CAN4, BandRate::BAUD_1M));
+  node_id_q0 = 0;
+  node_id_rwl = 3;
 
-    ODriveCANright.reset(new ODriveCan(Channel::CAN3, BandRate::BAUD_1M));
-    node_id_q2 = 1;
-    node_id_rwr = 2;
+  ODriveCANright.reset(new ODriveCan(Channel::CAN3, BandRate::BAUD_1M));
+  node_id_q2 = 1;
+  node_id_rwr = 2;
 
-    ODriveCANyaw.reset(new ODriveCan(Channel::CAN1, BandRate::BAUD_1M));
-    node_id_rwz = 4;
-  } catch (...) {
-    throw "Turn the power distribution on and try again!";
-  }
+  ODriveCANyaw.reset(new ODriveCan(Channel::CAN1, BandRate::BAUD_1M));
+  node_id_rwz = 4;
 
   std::map<std::string, int> mapCANleft;
   mapCANleft.insert(std::make_pair("q0", node_id_q0));
@@ -59,9 +55,9 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
-  float vel_lim_leg = 20;
+  float vel_lim_leg = 10;
   float cur_lim_leg = 60;  // 60;
-  float vel_lim_rw = 32;   // 64 max
+  float vel_lim_rw = 20;   // 64 max
   float cur_lim_rw = 60;
 
   // NOTE: Always turn the power distribution on with the leg in the tight seated crouch position. EVEN WHEN HOMING WITH ROBOT FIXED IN
@@ -84,8 +80,10 @@ void HardwareBridge::Init() {
 
     // SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_stand(0));
     // SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_stand(1));
-    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
-    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
+    // SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
+    // SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.q_init(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.q_init(2));
 
   } else {
     std::cout << "Robot will NOT home! Make sure it is in startup configuration, then press any key to continue. \n";
@@ -116,14 +114,16 @@ void HardwareBridge::Init() {
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";
   // std::cin.ignore();
-
-  std::cout << "Controller starting in : \n3... \n";
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  std::cout << "2... \n";
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  std::cout << "1... \n";
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  std::cout << "Liftoff!!! \n";
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  SetJointPos(model.qla_stand);
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  // std::cout << "Controller starting in : \n3... \n";
+  // std::this_thread::sleep_for(std::chrono::seconds(1));
+  // std::cout << "2... \n";
+  // std::this_thread::sleep_for(std::chrono::seconds(1));
+  // std::cout << "1... \n";
+  // std::this_thread::sleep_for(std::chrono::seconds(1));
+  // std::cout << "Liftoff!!! \n";
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir, float cur_lim, float vel_lim) {
@@ -168,9 +168,8 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
       SetTorCtrlMode(ODriveCANleft, node_id_q0);
       SetTorCtrlMode(ODriveCANright, node_id_q2);
     }
-    SetJointTorque(u);  // should not affect purely position controlled joints
   }
-
+  SetJointTorque(u);  // needs to be outside if else for reaction wheels
   qa = GetJointPos();
   dqa = GetJointVel();
 
