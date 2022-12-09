@@ -40,7 +40,7 @@ uVals Gait::Raibert(std::string state, std::string state_prev, Eigen::Vector3d p
   Q_up.y() = sin(1 / 2);
   Q_up.z() = 0;
   Q_z = Utils::ExtractYawQuat(Q);
-  R_z = (Q_z.inverse()).matrix();                                        // rotation matrix for body->world z turn
+  R_z = (Q_z.conjugate()).matrix();                                      // rotation matrix for body->world z turn
   v_ref = Q_z.matrix() * (-pid_vPtr->PIDControl(R_z * p, R_z * p_ref));  // adjust for yaw, rotate back world->body
   double dist = (p_ref.block<2, 1>(0, 0) - p.block<2, 1>(0, 0)).norm();
   // if (dist >= 0.2) {
@@ -111,6 +111,7 @@ uVals Gait::KinInvStand(Eigen::Quaterniond Q) {
   Eigen::Quaterniond Q_ref;
   Q_ref.setIdentity();
   z_ref = 0;
+  // z_ref = 15 * M_PI / 180;
   peb_ref(2) = -model.h0 * 5 / 3;
   // double kp = model.k_kin(0) * 2;
   // double kd = model.k_kin(1) * 2;

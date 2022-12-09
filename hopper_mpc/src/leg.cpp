@@ -41,7 +41,7 @@ void Leg::UpdateState(Eigen::Vector2d qa_in, Eigen::Quaterniond Q_base) {
   q_prev = q;
   // dq_prev = dq;
   // Rotate gravity vector to match body orientation
-  gb = Q_base.inverse().matrix() * gb_init;  // world frame to body frame
+  gb = Q_base.conjugate().matrix() * gb_init;  // world frame to body frame
   GenMCG();
   GenJac();
   GenMx();

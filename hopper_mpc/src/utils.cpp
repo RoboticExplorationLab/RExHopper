@@ -77,7 +77,7 @@ Eigen::Quaterniond Utils::VecToQuat(Eigen::Vector3d v1, Eigen::Vector3d v2) {
 double Utils::AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2) {
   // unsigned angle between two quaternions
   Eigen::Quaterniond Qd;
-  Qd = Q1.inverse() * Q2;
+  Qd = Q1.conjugate() * Q2;
   return 2 * atan2(Qd.vec().norm(), Qd.w());
 }
 
@@ -94,11 +94,14 @@ Eigen::Quaterniond Utils::GenYawQuat(const double z_angle) {
 
 Eigen::Quaterniond Utils::ExtractYawQuat(Eigen::Quaterniond Q) {
   // extract the yaw angle rotation of a quaternion
-  Eigen::Vector3d v1;
-  v1 << 1, 0, 0;                         // vector pointing straight forward
-  Eigen::Vector3d v2 = Q.matrix() * v1;  // get directional vector
-  v2(2) = 0;                             // remove z-axis of the vector
-  Eigen::Quaterniond Qd = VecToQuat(v1, v2);
+  // Eigen::Vector3d v1;
+  // v1 << 1, 0, 0;                         // vector pointing straight forward
+  // Eigen::Vector3d v2 = Q.matrix() * v1;  // get directional vector
+  // // v2(2) = 0;                             // remove z-axis of the vector
+  // // Eigen::Quaterniond Qd = VecToQuat(v1, v2);
+  // double angle = atan2(v2(1), v2(0)) - atan2(v1(1), v1(0));  // signed angle in xy plane, cc positive
+  double angle = 2 * asin(Q.z());
+  Eigen::Quaterniond Qd = GenYawQuat(angle);
   return Qd;
 }
 

@@ -105,7 +105,7 @@ void Runner::Run() {
   std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
   std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), dqa_vec(N_run);
   std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), reactf_vec(N_run);
-  std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ae_vec(N_run), grf_vec(N_run);
+  std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ab_vec(N_run), ae_vec(N_run), grf_vec(N_run);
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
   int joint_id = 1;  // joint to check reaction forces at
@@ -137,15 +137,17 @@ void Runner::Run() {
     auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
 
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
-    // if (k == 0) {
-    //   // TODO: rotate mocap position as well based on mocap yaw
-    //   Q_offset = Utils::ExtractYawQuat(retvals.Q);
-    //   // Q_offset = retvals.Q;
-    // }
-    // Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
+    if (k == 0) {
+      // TODO: rotate mocap position as well based on mocap yaw
+      Q_offset = Utils::ExtractYawQuat(retvals.Q);
+      // Q_offset = retvals.Q;
+    }
+    // Q = (retvals.Q * (Q_offset.conjugate())).normalized();  // adjust yaw
+    // Q = (retvals.Q * Q_offset).normalized();  // adjust yaw
+    // Q = (retvals.Q * Utils::GenYawQuat(45 * M_PI / 180)).normalized();
     Q = retvals.Q;
-
-    bool stop = FallCheck(Q, t) + bridgePtr->stop;  // bool stop = bridgePtr->stop;
+    // bool stop = FallCheck(Q, t) + bridgePtr->stop;
+    bool stop = bridgePtr->stop;
     if (stop == true) {
       std::cout << "Stopping control loop \n";
       k_final = k;
@@ -270,6 +272,7 @@ void Runner::Run() {
       grf_vec.at(k) = {grf(0), grf(1), grf(2)};
 
       a_vec.at(k) = {a(0), a(1), a(2)};
+      ab_vec.at(k) = {ab(0), ab(1), ab(2)};
       ae_vec.at(k) = {ae(0), ae(1), ae(2)};
 
       sh_hist.at(k) = sh;
@@ -324,8 +327,10 @@ void Runner::Run() {
     // Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
 
     // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
-    // gc_state_hist); Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal); Plots::Plot3(k_final, "Measured Base
-    // Acceleration", "acc", a_vec, a_vec, 0); Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
+    // gc_state_hist); Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
+    Plots::Plot3(k_final, "Measured Base Acceleration in World Frame", "acc", a_vec, a_vec, 0);
+    Plots::Plot3(k_final, "Measured Base Acceleration in Body Frame", "acc", ab_vec, ab_vec, 0);
+    // Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
   }
 }
 

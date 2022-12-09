@@ -14,25 +14,36 @@ Rwa::Rwa(std::string bridge, double dt_) {
   sin45 = sin(45 * M_PI / 180);
 
   double ku;  // use gain of 13 for CoM bisection search.
-  double ks;
   double kd;  // 0.1875;
   double kp;
   double ki;
-  if (bridge == "mujoco") {
-    ku = 100;
-    ks = 0.00032;
 
+  double ks;
+  double ksp;
+  double ksi;
+  double ksd;
+
+  if (bridge == "mujoco") {
+    ku = 300;
     kp = 0.6;
-    ki = 0.0;
-    kd = 0.5;
+    ki = 0.0;  // an integral term would fight the cascaded velocity term
+    kd = 0.1875;
+
+    ks = 0.00006;
+    ksp = 1.0;
+    ksi = 0.03;
+    ksd = 0.06;
   } else {
     ku = 20;
-    ks = 0.0;
-    // ks = 0.00032;
-
     kp = 0.6;
     ki = 0.0;
-    kd = 0.125;
+    kd = 0.1875;
+
+    ks = 0.0;
+    // ks = 0.00032;
+    ksp = 1.0;
+    ksi = 0.03;
+    ksd = 0.06;
   }
 
   kp_tau << kp, kp, kp * 0.5;
@@ -40,12 +51,10 @@ Rwa::Rwa(std::string bridge, double dt_) {
   kd_tau << kd, kd, kd * 0.5;  // 0.04, 0.04, 0.005;
   pid_tauPtr.reset(new PID3(dt, kp_tau * ku, ki_tau * ku, kd_tau * ku));
 
-  double ksi = 0.03;
-  double ksp = 0.06;
-  kp_vel << ks, ks, ks * 0.01;
-  ki_vel << ks * ksi, ks * ksi, ks * ksi * 0.01;
-  kd_vel << ks * ksp, ks * ksp, ks * ksp * 0.01;
-  pid_velPtr.reset(new PID3(dt, kp_vel, ki_vel, kd_vel));
+  kp_vel << ksp, ksp, ksp * 0.01;
+  ki_vel << ksi, ksi, ksi * 0.01;
+  kd_vel << ksd, ksd, ksd * 0.01;
+  pid_velPtr.reset(new PID3(dt, kp_vel * ks, ki_vel * ks, kd_vel * ks));
 
   lowpassPtr1.reset(new LowPass3D(dt, 160));
   lowpassPtr2.reset(new LowPass3D(dt, 160));
@@ -60,20 +69,19 @@ double Rwa::GetXRotatedAboutZ(Eigen::Quaterniond Q_in, double z) {
   // rotate quaternion about its z - axis by specified angle "z"
   // and get rotation about x-axis of that (confusing, I know)
   Eigen::Quaterniond Q_res = Utils::GenYawQuat(z) * Q_in;
-  Q_res.normalize();
-  // double angle = 2 * asin(Q_res.x());
-  double angle = Utils::ExtractX(Q_res);
+  double angle = 2 * asin(Q_res.x());
+  // double angle = Utils::ExtractX(Q_res);
   // std::cout << "Original angle = " << angle << ", New angle = " << angle_new << "\n";
   return angle;
 }
 
 Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_base) {
   // get body angle in rw axes
-  Eigen::Quaterniond Q_base_forward = (Q_base * (Utils::ExtractYawQuat(Q_base).inverse())).normalized();
+  Eigen::Quaterniond Q_base_forward = Q_base * (Utils::ExtractYawQuat(Q_base).conjugate());
   theta(0) = GetXRotatedAboutZ(Q_base_forward, a);
   theta(1) = GetXRotatedAboutZ(Q_base_forward, b);
-  // theta(2) = 2 * asin(Q_base.z());  // z-axis of body quaternion
-  theta(2) = Utils::ExtractZ(Q_base);
+  theta(2) = 2 * asin(Q_base.z());  // z-axis of body quaternion
+  // theta(2) = Utils::ExtractZ(Q_base);
   return theta;
 }
 
