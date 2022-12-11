@@ -78,7 +78,7 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
   mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
 }
 
-MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool home_) : Base(model_, dt_, fixed_, home_) {}
+MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool skip_homing_) : Base(model_, dt_, fixed_, skip_homing_) {}
 
 void MujocoBridge::Init() {
   char error[ERROR_SIZE] = "Could not load binary model";
@@ -195,7 +195,7 @@ void MujocoBridge::Init() {
   pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
   sh = 0;
 
-  if (home == false) {  // the robot is not homing, so it must start from a sitting position
+  if (skip_homing == true) {  // the robot is not homing, so it must start from a sitting position
     d->qpos[0] = model.p0_sit(0);
     d->qpos[1] = model.p0_sit(1);
     d->qpos[2] = model.p0_sit(2);

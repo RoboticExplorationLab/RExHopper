@@ -20,8 +20,8 @@ struct trajVals {
 class Runner {  // The class
 
  public:  // Access specifier
-  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool home_,
-         bool skip_kf_);  // constructor
+  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
+         bool skip_homing_, bool skip_kf_);  // constructor
 
   void Run();
 
@@ -91,7 +91,7 @@ class Runner {  // The class
   bool plot;
   bool fixed;
   bool spr;
-  bool home;
+  bool skip_homing;
   bool skip_kf;
   double g;  // gravitational constant
 

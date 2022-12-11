@@ -5,8 +5,8 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/plots.hpp"
 
-Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool home_,
-               bool skip_kf_) {
+Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
+               bool skip_homing_, bool skip_kf_) {
   model = model_;
   N_run = N_run_;
   dt = dt_;
@@ -15,7 +15,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   plot = plot_;
   fixed = fixed_;
   spr = spr_;
-  home = home_;
+  skip_homing = skip_homing_;
   skip_kf = skip_kf_;
 
   g = model.g;  // should g be defined here?
@@ -41,18 +41,19 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   // class definitions
   if (bridge_ == "hardware") {
-    bridgePtr.reset(new HardwareBridge(model, dt, fixed, home));
+    bridgePtr.reset(new HardwareBridge(model, dt, fixed, skip_homing));
     N_sit = 0;  // number of timesteps spent sitting
   } else if (bridge_ == "mujoco") {
-    bridgePtr.reset(new MujocoBridge(model, dt, fixed, home));
+    bridgePtr.reset(new MujocoBridge(model, dt, fixed, skip_homing));
     N_sit = 1500;  // number of timesteps spent sitting
     // } else if (bridge_ == "raisim") {
-    // bridgePtr.reset(new RaisimBridge(model, dt, fixed, home));
+    // bridgePtr.reset(new RaisimBridge(model, dt, fixed, skip_homing));
   } else {
     throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
+  // TODO: This needs to be tied to sitting, not homing
   // initialize state
-  if (home == true) {
+  if (skip_homing == false) {
     p = model.p0;
   } else {
     p = model.p0_sit;
@@ -142,7 +143,7 @@ void Runner::Run() {
       Q_offset = Utils::ExtractYawQuat(retvals.Q);
       // Q_offset = retvals.Q;
     }
-    // Q = (retvals.Q * (Q_offset.conjugate())).normalized();  // adjust yaw
+    // Q = (retvals.Q * Q_offset.conjugate()).normalized();  // adjust yaw
     // Q = (retvals.Q * Q_offset).normalized();  // adjust yaw
     // Q = (retvals.Q * Utils::GenYawQuat(45 * M_PI / 180)).normalized();
     Q = retvals.Q;
@@ -204,9 +205,9 @@ void Runner::Run() {
       uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
     } else if (ctrl == "circle") {
       uvals = gaitPtr->CircleTest();
-    } else if (ctrl == "sit" || (home == false && k <= N_sit)) {
+    } else if (ctrl == "sit" || (skip_homing == true && k <= N_sit)) {  // TODO: Should be a different setting for starting from stand
       uvals = gaitPtr->Sit();
-    } else if (home == false && N_sit < k <= (N_sit + model.N_getup)) {
+    } else if (skip_homing == true && N_sit < k <= (N_sit + model.N_getup)) {
       uvals = gaitPtr->GetUp(Q);
     } else {
       if (ctrl == "raibert") {

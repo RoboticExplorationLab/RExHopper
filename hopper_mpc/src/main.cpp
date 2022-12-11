@@ -19,7 +19,10 @@ int main(int argc, char* argv[]) {
 
   program.add_argument("--spr").help("add parallel spring").default_value(false).implicit_value(true);
 
-  program.add_argument("--home").help("home leg positions").default_value(false).implicit_value(true);
+  program.add_argument("--skip_homing")
+      .help("skip homing leg positions (if robot is sitting and already correctly homed)")
+      .default_value(false)
+      .implicit_value(true);
 
   program.add_argument("--skip_kf").help("ignore kalman filter").default_value(false).implicit_value(true);
 
@@ -41,7 +44,7 @@ int main(int argc, char* argv[]) {
   bool plot = false;
   bool spr = false;
   bool fixed = false;
-  bool home = false;
+  bool skip_homing = false;
   bool skip_kf = false;
 
   if (program["--plot"] == true) {
@@ -56,9 +59,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Fixed base enabled" << std::endl;
     fixed = true;
   }
-  if (program["--home"] == true) {
+  if (program["--skip_homing"] == true) {
     std::cout << "Homing enabled" << std::endl;
-    home = true;
+    skip_homing = true;
   }
   if (program["--skip_kf"] == true) {
     std::cout << "Ignoring Kalman filter" << std::endl;
@@ -113,7 +116,7 @@ int main(int argc, char* argv[]) {
   hopper.N_getup = 500;  // number of timesteps taken to stand up from sitting
   double dt = 0.001;     // 1 kHz
 
-  Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, home, skip_kf);
+  Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, skip_homing, skip_kf);
   runner.Run();  // Call the method
   return 0;
 }

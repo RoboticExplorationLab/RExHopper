@@ -63,6 +63,9 @@ include_directories(
 # add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 # include_directories(${PYTHON_INCLUDE_DIRS})
 # target_link_libraries(hopper_mpc ${PYTHON_LIBRARIES})
+# add_library(sub_cx5
+#   src/sub_cx5.cpp  # for quaternion_test
+# )
 
 add_executable(${PROJECT_NAME}
   src/main.cpp

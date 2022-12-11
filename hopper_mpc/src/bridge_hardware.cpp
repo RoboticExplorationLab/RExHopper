@@ -5,7 +5,7 @@
 #include <iostream>
 #include "hopper_mpc/utils.hpp"
 
-HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool home_) : Base(model_, dt_, fixed_, home_) {}
+HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool skip_homing_) : Base(model_, dt_, fixed_, skip_homing_) {}
 
 void HardwareBridge::Init() {
   // ROS subscribers
@@ -62,7 +62,7 @@ void HardwareBridge::Init() {
 
   // NOTE: Always turn the power distribution on with the leg in the tight seated crouch position. EVEN WHEN HOMING WITH ROBOT FIXED IN
   // MIDAIR! Otherwise saved homing will be wrong. Because the ODrive # rotations is based on the pos you were at when it turned on
-  if (home == true) {
+  if (skip_homing == false) {
     std::cout << "Robot WILL HOME! Make sure it is either in the jig or being held, then press any key to continue. \n";
     std::cin.ignore();
     // std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // so I have time to run over to the testing jig
@@ -169,7 +169,8 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
       SetTorCtrlMode(ODriveCANright, node_id_q2);
     }
   }
-  SetJointTorque(u);  // needs to be outside if else for reaction wheels
+  u(0) *= -1;
+  SetJointTorque(-u);  // needs to be outside the "if else" for reaction wheels
   qa = GetJointPos();
   dqa = GetJointVel();
 
