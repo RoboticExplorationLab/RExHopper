@@ -100,7 +100,7 @@ Eigen::Quaterniond Utils::ExtractYawQuat(Eigen::Quaterniond Q) {
   // // v2(2) = 0;                             // remove z-axis of the vector
   // // Eigen::Quaterniond Qd = VecToQuat(v1, v2);
   // double angle = atan2(v2(1), v2(0)) - atan2(v1(1), v1(0));  // signed angle in xy plane, cc positive
-  double angle = -2 * asin(Q.z());
+  double angle = 2 * asin(Q.z());
   Eigen::Quaterniond Qd = GenYawQuat(angle);
   return Qd;
 }

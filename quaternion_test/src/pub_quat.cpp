@@ -1,14 +1,13 @@
-// #include <std_msgs/Int32.h>
 #include "Eigen/Dense"
-#include "ros/ros.h"
-// #include "sensor_msgs/Imu.h"
 #include "geometry_msgs/PoseStamped.h"
+#include "ros/ros.h"
 #include "sub_cx5.h"
 #include "utils.hpp"
 
 // rosrun quaternion_test quaternion_test_node
 // rosrun rviz rviz
 // change global options -> Fixed Frame = sensor_wgs84
+// Add -> "by topic" ->quat_topic and "by display type"->rviz_imu_plugin/imu
 int main(int argc, char** argv) {
   // Initialize and start the node
   ros::init(argc, argv, "quaternion_test");
@@ -27,13 +26,15 @@ int main(int argc, char** argv) {
 
   ros::Rate(200);
   int k = 0;
+  // have to wait for the subscriber to pick up a message
   while (sub_cx5.Q.w() == 1) {
     k += 1;
     ros::spinOnce();
   }
   std::cout << "k = " << k << "\n";
   Eigen::Quaterniond Q0 = sub_cx5.Q;
-  Eigen::Quaterniond Q_offset = Utils::ExtractYawQuat(sub_cx5.Q);
+  // Eigen::Quaterniond Q_offset = Utils::ExtractYawQuat(sub_cx5.Q);  // trusting the accuracy of IMU's down vector
+  Eigen::Quaterniond Q_offset = sub_cx5.Q.conjugate();  // assuming perfectly flat starting position
   std::cout << "Q0 = " << Q0.coeffs().transpose() << "\n";
   std::cout << "Q_offset = " << Q_offset.coeffs().transpose() << "\n";
 
@@ -42,7 +43,7 @@ int main(int argc, char** argv) {
     Q0 = sub_cx5.Q;
     // Eigen::Quaterniond Q = (Q0 * Utils::GenYawQuat(45 * M_PI / 180)).normalized();
     // Eigen::Quaterniond Q = (Q0 * Utils::ExtractYawQuat(Q0).conjugate()).normalized();
-    Eigen::Quaterniond Q = (Q0 * Q_offset.conjugate()).normalized();
+    Eigen::Quaterniond Q = (Q_offset * Q0).normalized();  // THIS WORKS!!
     pose_msg.pose.orientation.x = Q.x();
     pose_msg.pose.orientation.y = Q.y();
     pose_msg.pose.orientation.z = Q.z();
