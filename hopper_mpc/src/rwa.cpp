@@ -81,8 +81,8 @@ Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_base) {
   Eigen::Quaterniond Q_base_forward = Utils::ExtractYawQuat(Q_base).conjugate() * Q_base;
   theta(0) = GetXRotatedAboutZ(Q_base_forward, a);
   theta(1) = GetXRotatedAboutZ(Q_base_forward, b);
-  theta(2) = 2 * asin(Q_base.z());  // z-axis of body quaternion
-  // theta(2) = Utils::ExtractZ(Q_base);
+  // theta(2) = 2 * asin(Q_base.z());  // z-axis of body quaternion
+  theta(2) = Utils::ExtractZ(Q_base);
   return theta;
 }
 

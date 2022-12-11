@@ -57,7 +57,7 @@ void HardwareBridge::Init() {
 
   float vel_lim_leg = 10;
   float cur_lim_leg = 60;  // 60;
-  float vel_lim_rw = 20;   // 64 max
+  float vel_lim_rw = 40;   // 64 max
   float cur_lim_rw = 60;
 
   // NOTE: Always turn the power distribution on with the leg in the tight seated crouch position. EVEN WHEN HOMING WITH ROBOT FIXED IN
@@ -108,9 +108,9 @@ void HardwareBridge::Init() {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  // Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
-  // Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
-  // Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
+  Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
+  Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
+  Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
 
   // std::cout << "Controller ready to begin. Press any key to continue. \n";
   // std::cin.ignore();
@@ -170,6 +170,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
     }
   }
   u(0) *= -1;
+  u(2) *= -1;
   SetJointTorque(-u);  // needs to be outside the "if else" for reaction wheels
   qa = GetJointPos();
   dqa = GetJointVel();
