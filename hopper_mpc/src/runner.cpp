@@ -140,15 +140,14 @@ void Runner::Run() {
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
     if (k == 0) {
       // TODO: rotate mocap position as well based on mocap yaw
-      Q_offset = Utils::ExtractYawQuat(retvals.Q);
-      // Q_offset = retvals.Q;
+      // Q_offset = Utils::ExtractYawQuat(retvals.Q); // TODO: check if this is backward bc it doesn't need conjugate for some reason
+      Q_offset = retvals.Q.conjugate();
     }
-    // Q = (retvals.Q * Q_offset.conjugate()).normalized();  // adjust yaw
-    // Q = (retvals.Q * Q_offset).normalized();  // adjust yaw
-    // Q = (retvals.Q * Utils::GenYawQuat(45 * M_PI / 180)).normalized();
-    Q = retvals.Q;
-    // bool stop = FallCheck(Q, t) + bridgePtr->stop;
-    bool stop = bridgePtr->stop;
+    Q = (Q_offset * retvals.Q).normalized();  // adjust yaw
+    // Q = retvals.Q;
+
+    bool stop = FallCheck(Q, t) + bridgePtr->stop;
+    // bool stop = bridgePtr->stop;
     if (stop == true) {
       std::cout << "Stopping control loop \n";
       k_final = k;

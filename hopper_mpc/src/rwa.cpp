@@ -66,18 +66,19 @@ void Rwa::UpdateState(Eigen::Vector3d dq_in) {
 }
 
 double Rwa::GetXRotatedAboutZ(Eigen::Quaterniond Q_in, double z) {
-  // rotate quaternion about its z - axis by specified angle "z"
-  // and get rotation about x-axis of that (confusing, I know)
+  // while keeping the original rotation, rotate quaternion frame about z-axis by angle "z"
+  // and get rotation about x-axis of the new frame
+
   Eigen::Quaterniond Q_res = Utils::GenYawQuat(z) * Q_in;
-  double angle = 2 * asin(Q_res.x());
-  // double angle = Utils::ExtractX(Q_res);
+  // double angle = 2 * asin(Q_res.x());
+  double angle = Utils::ExtractX(Q_res);
   // std::cout << "Original angle = " << angle << ", New angle = " << angle_new << "\n";
   return angle;
 }
 
 Eigen::Vector3d Rwa::AttitudeIn(Eigen::Quaterniond Q_base) {
   // get body angle in rw axes
-  Eigen::Quaterniond Q_base_forward = Q_base * (Utils::ExtractYawQuat(Q_base).conjugate());
+  Eigen::Quaterniond Q_base_forward = Utils::ExtractYawQuat(Q_base).conjugate() * Q_base;
   theta(0) = GetXRotatedAboutZ(Q_base_forward, a);
   theta(1) = GetXRotatedAboutZ(Q_base_forward, b);
   theta(2) = 2 * asin(Q_base.z());  // z-axis of body quaternion

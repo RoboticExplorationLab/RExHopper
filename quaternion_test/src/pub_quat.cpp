@@ -7,7 +7,8 @@
 // rosrun quaternion_test quaternion_test_node
 // rosrun rviz rviz
 // change global options -> Fixed Frame = sensor_wgs84
-// Add -> "by topic" ->quat_topic and "by display type"->rviz_imu_plugin/imu
+// Add -> "by topic" -> quat_topic
+// Add "by display type"->rviz_imu_plugin/imu -> Topic -> nav/filtered/imu/data
 int main(int argc, char** argv) {
   // Initialize and start the node
   ros::init(argc, argv, "quaternion_test");
@@ -41,9 +42,9 @@ int main(int argc, char** argv) {
   while (ros::ok) {
     pub.publish(pose_msg);
     Q0 = sub_cx5.Q;
-    // Eigen::Quaterniond Q = (Q0 * Utils::GenYawQuat(45 * M_PI / 180)).normalized();
-    // Eigen::Quaterniond Q = (Q0 * Utils::ExtractYawQuat(Q0).conjugate()).normalized();
-    Eigen::Quaterniond Q = (Q_offset * Q0).normalized();  // THIS WORKS!!
+    Eigen::Quaterniond Q = (Utils::GenYawQuat(45 * M_PI / 180) * Q0).normalized();
+    // Eigen::Quaterniond Q = (Q_offset * Q0).normalized();  // For initial offset adj
+    // Eigen::Quaterniond Q = (Utils::ExtractYawQuat(Q0).conjugate() * Q0).normalized();  // for always facing forward
     pose_msg.pose.orientation.x = Q.x();
     pose_msg.pose.orientation.y = Q.y();
     pose_msg.pose.orientation.z = Q.z();
