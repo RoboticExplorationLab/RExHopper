@@ -34,16 +34,16 @@ int main(int argc, char** argv) {
   }
   std::cout << "k = " << k << "\n";
   Eigen::Quaterniond Q0 = sub_cx5.Q;
-  // Eigen::Quaterniond Q_offset = Utils::ExtractYawQuat(sub_cx5.Q);  // trusting the accuracy of IMU's down vector
-  Eigen::Quaterniond Q_offset = sub_cx5.Q.conjugate();  // assuming perfectly flat starting position
+  Eigen::Quaterniond Q_offset = Utils::ExtractYawQuat(sub_cx5.Q);  // trusting the accuracy of IMU's down vector
+  // Eigen::Quaterniond Q_offset = sub_cx5.Q.conjugate();  // assuming perfectly flat starting position
   std::cout << "Q0 = " << Q0.coeffs().transpose() << "\n";
   std::cout << "Q_offset = " << Q_offset.coeffs().transpose() << "\n";
 
   while (ros::ok) {
     pub.publish(pose_msg);
     Q0 = sub_cx5.Q;
-    Eigen::Quaterniond Q = (Utils::GenYawQuat(45 * M_PI / 180) * Q0).normalized();
-    // Eigen::Quaterniond Q = (Q_offset * Q0).normalized();  // For initial offset adj
+    // Eigen::Quaterniond Q = (Utils::GenYawQuat(45 * M_PI / 180) * Q0).normalized();
+    Eigen::Quaterniond Q = (Q_offset * Q0).normalized();  // For initial offset adj
     // Eigen::Quaterniond Q = (Utils::ExtractYawQuat(Q0).conjugate() * Q0).normalized();  // for always facing forward
     pose_msg.pose.orientation.x = Q.x();
     pose_msg.pose.orientation.y = Q.y();

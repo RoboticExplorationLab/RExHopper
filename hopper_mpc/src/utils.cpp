@@ -78,7 +78,7 @@ double Utils::AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2) {
   // unsigned angle between two quaternions
   Eigen::Quaterniond Qd;
   Qd = Q1.conjugate() * Q2;
-  return 2 * atan2(Qd.vec().norm(), Qd.w());
+  return WrapToPi(2 * atan2(Qd.vec().norm(), Qd.w()));
 }
 
 Eigen::Quaterniond Utils::GenYawQuat(const double z_angle) {

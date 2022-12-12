@@ -140,8 +140,8 @@ void Runner::Run() {
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
     if (k == 0) {
       // TODO: rotate mocap position as well based on mocap yaw
-      // Q_offset = Utils::ExtractYawQuat(retvals.Q); // TODO: check if this is backward bc it doesn't need conjugate for some reason
-      Q_offset = retvals.Q.conjugate();
+      Q_offset = Utils::ExtractYawQuat(retvals.Q);  // TODO: check if this is backward bc it doesn't need conjugate for some reason
+      // Q_offset = retvals.Q.conjugate();
     }
     Q = (Q_offset * retvals.Q).normalized();  // adjust yaw
     // Q = retvals.Q;
@@ -446,15 +446,14 @@ trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vec
 }
 
 bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
-  Eigen::Quaterniond Q0;
-  Q0.setIdentity();
-  Eigen::Quaterniond Q_z, Q_no_yaw;
-  Q_z = Utils::ExtractYawQuat(Q);
-  Q_no_yaw = (Q * (Q_z.inverse())).normalized();  // the base quaternion ignoring heading
+  Eigen::Quaterniond Q_frame;
+  Q_frame.setIdentity();
+  Eigen::Quaterniond Q_no_yaw;
+  Q_no_yaw = (Utils::ExtractYawQuat(Q).conjugate() * Q).normalized();  // the base quaternion ignoring heading
   bool stop = false;
-  // std::cout << "angle = " << Utils::AngleBetween(Q0, Q_no_yaw) << "\n";
-  if (Utils::AngleBetween(Q0, Q_no_yaw) > (45 * M_PI / 180)) {
-    std::cout << "Fall likely; engaging emergency actuator deactivation at t = " << t << " s\n";
+  double angle = Utils::AngleBetween(Q_frame, Q_no_yaw);
+  if (angle > (20 * M_PI / 180)) {
+    std::cout << "Fall likely; Deactivating at t = " << t << "with angle = " << angle << " s\n";
     stop = true;
   }
   return stop;

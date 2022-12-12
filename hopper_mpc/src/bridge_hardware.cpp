@@ -55,10 +55,14 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
-  float vel_lim_leg = 10;
-  float cur_lim_leg = 60;  // 60;
-  float vel_lim_rw = 40;   // 64 max
-  float cur_lim_rw = 60;
+  float vel_lim_rmdx10 = 10;
+  float cur_lim_rmdx10 = 60;  // 60;
+
+  float vel_lim_r100 = 40;   // max 4400 rpm = 73 rps = 461 rad/s
+  float cur_lim_r100 = 104;  // max 104
+
+  float vel_lim_r80 = 40;  // max 5250 rpm = 87.5 rps = 550 rad/s
+  float cur_lim_r80 = 46;  // max 46
 
   // NOTE: Always turn the power distribution on with the leg in the tight seated crouch position. EVEN WHEN HOMING WITH ROBOT FIXED IN
   // MIDAIR! Otherwise saved homing will be wrong. Because the ODrive # rotations is based on the pos you were at when it turned on
@@ -67,8 +71,8 @@ void HardwareBridge::Init() {
     std::cin.ignore();
     // std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // so I have time to run over to the testing jig
     std::cout << "Starting homing procedure. \n";
-    Home(ODriveCANleft, node_id_q0, -1, cur_lim_leg, vel_lim_leg);
-    Home(ODriveCANright, node_id_q2, -1, cur_lim_leg, vel_lim_leg);
+    Home(ODriveCANleft, node_id_q0, -1, cur_lim_rmdx10, vel_lim_rmdx10);
+    Home(ODriveCANright, node_id_q2, -1, cur_lim_rmdx10, vel_lim_rmdx10);
     std::cout << "Finished homing procedure. \n";
     std::cout << "Saved homing offsets: q_offset = " << q_offset(0) << ", " << q_offset(1) << " \n";
     std::ofstream ofs("offsets.txt");  // create and open a character archive for output
@@ -77,20 +81,19 @@ void HardwareBridge::Init() {
       boost::archive::text_oarchive oa(ofs);  // save data to archive
       oa << *saved;                           // write class instance to archive
     }
-
-    // SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_stand(0));
-    // SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_stand(1));
+    std::cout << "Controller ready to begin. Press any key to continue. \n";
+    std::cin.ignore();
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_stand(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_stand(1));
     // SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
     // SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
-    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.q_init(0));
-    SetPosCtrlMode(ODriveCANright, node_id_q2, model.q_init(2));
 
   } else {
     std::cout << "Robot will NOT home! Make sure it is in startup configuration, then press any key to continue. \n";
     std::cin.ignore();
 
-    Startup(ODriveCANleft, node_id_q0, vel_lim_leg, cur_lim_leg);
-    Startup(ODriveCANright, node_id_q2, vel_lim_leg, cur_lim_leg);
+    Startup(ODriveCANleft, node_id_q0, cur_lim_rmdx10, vel_lim_rmdx10);
+    Startup(ODriveCANright, node_id_q2, cur_lim_rmdx10, vel_lim_rmdx10);
     saved_get.reset(new saved_offsets);
     // saved_offsets saved_get;
     {
@@ -108,22 +111,11 @@ void HardwareBridge::Init() {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  Startup(ODriveCANright, node_id_rwr, cur_lim_rw, vel_lim_rw);
-  Startup(ODriveCANleft, node_id_rwl, cur_lim_rw, vel_lim_rw);
-  Startup(ODriveCANyaw, node_id_rwz, cur_lim_rw, vel_lim_rw);
+  Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
+  Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
+  Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
 
-  // std::cout << "Controller ready to begin. Press any key to continue. \n";
-  // std::cin.ignore();
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
-  SetJointPos(model.qla_stand);
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
-  // std::cout << "Controller starting in : \n3... \n";
-  // std::this_thread::sleep_for(std::chrono::seconds(1));
-  // std::cout << "2... \n";
-  // std::this_thread::sleep_for(std::chrono::seconds(1));
-  // std::cout << "1... \n";
-  // std::this_thread::sleep_for(std::chrono::seconds(1));
-  // std::cout << "Liftoff!!! \n";
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir, float cur_lim, float vel_lim) {
@@ -171,6 +163,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   }
   u(0) *= -1;
   u(2) *= -1;
+  // u(4) *= -1;
   SetJointTorque(-u);  // needs to be outside the "if else" for reaction wheels
   qa = GetJointPos();
   dqa = GetJointVel();
@@ -244,7 +237,7 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointVel() {
   Eigen::Matrix<double, 5, 1> dqa;
   dqa(0) = -ODriveCANleft->GetVelocity(node_id_q0) * 2 * M_PI / 7;  // ODrive velocity in RPS?
   dqa(1) = ODriveCANright->GetVelocity(node_id_q2) * 2 * M_PI / 7;
-  dqa(2) = ODriveCANright->GetVelocity(node_id_rwr) * 2 * M_PI;
+  dqa(2) = -ODriveCANright->GetVelocity(node_id_rwr) * 2 * M_PI;
   dqa(3) = ODriveCANleft->GetVelocity(node_id_rwl) * 2 * M_PI;
   dqa(4) = ODriveCANyaw->GetVelocity(node_id_rwz) * 2 * M_PI;
   return dqa;
@@ -292,7 +285,7 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointTorqueMeasured() {
   // TODO: Check if ODrive includes polarity in current measurement?
   tau(0) = -ODriveCANleft->GetIqMeasured(node_id_q0);  // ODrive velocity in RPS?
   tau(1) = ODriveCANright->GetIqMeasured(node_id_q2);
-  tau(2) = ODriveCANright->GetIqMeasured(node_id_rwr);
+  tau(2) = -ODriveCANright->GetIqMeasured(node_id_rwr);
   tau(3) = ODriveCANleft->GetIqMeasured(node_id_rwl);
   tau(4) = ODriveCANyaw->GetIqMeasured(node_id_rwz);
   tau = tau.cwiseProduct(model.a_kt);  // multiply by actuator kt to convert current to torque
