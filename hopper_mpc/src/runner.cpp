@@ -140,8 +140,8 @@ void Runner::Run() {
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
     if (k == 0) {
       // TODO: rotate mocap position as well based on mocap yaw
-      Q_offset = Utils::ExtractYawQuat(retvals.Q);  // TODO: check if this is backward bc it doesn't need conjugate for some reason
-      // Q_offset = retvals.Q.conjugate();
+      // Q_offset = Utils::ExtractYawQuat(retvals.Q).conjugate();
+      Q_offset = retvals.Q.conjugate();  // required for fixed tests
     }
     Q = (Q_offset * retvals.Q).normalized();  // adjust yaw
     // Q = retvals.Q;

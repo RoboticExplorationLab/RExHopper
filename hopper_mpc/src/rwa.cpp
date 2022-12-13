@@ -34,13 +34,12 @@ Rwa::Rwa(std::string bridge, double dt_) {
     ksi = 0.03;
     ksd = 0.06;
   } else {
-    ku = 200;
+    ku = 10;
     kp = 0.6;
     ki = 0.56;
     kd = 0.1875;
 
-    ks = 0.0;
-    ks = 0;  // 0.0001;
+    ks = 0.0;  // 0.0001;
     ksp = 1.0;
     ksi = 0.03;
     ksd = 0.06;

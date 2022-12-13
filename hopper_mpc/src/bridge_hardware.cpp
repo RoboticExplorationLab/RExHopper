@@ -58,7 +58,7 @@ void HardwareBridge::Init() {
   float vel_lim_rmdx10 = 10;
   float cur_lim_rmdx10 = 60;  // 60;
 
-  float vel_lim_r100 = 40;   // max 4400 rpm = 73 rps = 461 rad/s
+  float vel_lim_r100 = 20;   // max 4400 rpm = 73 rps = 461 rad/s
   float cur_lim_r100 = 104;  // max 104
 
   float vel_lim_r80 = 40;  // max 5250 rpm = 87.5 rps = 550 rad/s
@@ -81,10 +81,12 @@ void HardwareBridge::Init() {
       boost::archive::text_oarchive oa(ofs);  // save data to archive
       oa << *saved;                           // write class instance to archive
     }
+
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.q_init(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.q_init(2));
     std::cout << "Controller ready to begin. Press any key to continue. \n";
     std::cin.ignore();
-    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_stand(0));
-    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_stand(1));
+
     // SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
     // SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
 
@@ -111,8 +113,8 @@ void HardwareBridge::Init() {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
-  Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
+  // Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
+  // Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
   Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
