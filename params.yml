@@ -17,8 +17,8 @@ filter_sensor2vehicle_frame_selector: 1
 filter_sensor2vehicle_frame_transformation_euler: [0.0, -0.5236, 1.571]  # [0, 0.5236, -1.571]  # [-0.5236, 0.0, 1.571] for cv7
 filter_vel_in_vehicle_frame : True
 
-filter_declination_source: 1  # None (too much magnetic interference)
-filter_heading_source : 0  # None
+# filter_declination_source: 1  # None (too much magnetic interference)
+# filter_heading_source : 0  # None
 # raw_file_enable : True
 # raw_file_directory : ""
 

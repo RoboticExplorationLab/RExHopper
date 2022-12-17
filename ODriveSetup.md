@@ -18,9 +18,16 @@ Max Positive Current: Use the C rating on your batteries.
 ```
 odrv0.config.dc_max_positive_current = 600  # 120 * 5 
 ```
-Max Negative Current: -1 unless you have regen braking.
+Max Negative Current and Max Regen Current: -1  and 0 if you do not have regen braking. 
+
+If you do have regen braking, the highest value would be max charge rate * p count. Max charge rate should be found from the battery specifications, or you can use 1C to be safe...
+
+e.g. 1200 mAh 12S1P, Max Charge=5A -> 5 * 1 = 5
+
+But, remember to divide by the number of ODrives you apply this to. Since there are 5 ODrives, that's 1A regen per...
 ```
 odrv0.config.dc_max_negative_current = -1
+odrv0.config.max_regen_current = 1
 ```
 
 Use the onboard encoder:

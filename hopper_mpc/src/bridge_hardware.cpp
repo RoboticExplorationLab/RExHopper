@@ -58,11 +58,11 @@ void HardwareBridge::Init() {
   float vel_lim_rmdx10 = 10;
   float cur_lim_rmdx10 = 60;  // 60;
 
-  float vel_lim_r100 = 20;   // max 4400 rpm = 73 rps = 461 rad/s
-  float cur_lim_r100 = 104;  // max 104
+  float vel_lim_r100 = 60;  // max 4400 rpm = 73 rps = 461 rad/s
+  float cur_lim_r100 = 90;  // max 104
 
-  float vel_lim_r80 = 40;  // max 5250 rpm = 87.5 rps = 550 rad/s
-  float cur_lim_r80 = 46;  // max 46
+  float vel_lim_r80 = 60;  // max 5250 rpm = 87.5 rps = 550 rad/s
+  float cur_lim_r80 = 40;  // max 46
 
   // NOTE: Always turn the power distribution on with the leg in the tight seated crouch position. EVEN WHEN HOMING WITH ROBOT FIXED IN
   // MIDAIR! Otherwise saved homing will be wrong. Because the ODrive # rotations is based on the pos you were at when it turned on
@@ -113,8 +113,8 @@ void HardwareBridge::Init() {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  // Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
-  // Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
+  Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
+  Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
   Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
