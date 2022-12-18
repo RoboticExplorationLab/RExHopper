@@ -5,24 +5,28 @@ Overvoltage Trip Level: If using a power supply, use the max voltage of the powe
 ```
 odrv0.config.dc_bus_overvoltage_trip_level = 25  
 ```
-Or if using the batteries, use the number of cells * 4.25.
+Or if using the batteries, use the number of cells * 4.25 + 2. (Add a little extra in case the battery is filled up).
 ```
-odrv0.config.dc_bus_overvoltage_trip_level = 51
+odrv0.config.dc_bus_overvoltage_trip_level = 53
 ```
-Undervoltage Trip Level: Use the number of cells * 3.3.
+Undervoltage Trip Level: Use the number of cells * 3.6.
+
+3.3 V is the absolute minimum, but it's better to stop at 3.6 V.
 ```
-odrv0.config.dc_bus_undervoltage_trip_level = 39.6
+odrv0.config.dc_bus_undervoltage_trip_level = 43.2
 ```
 
-Max Positive Current: Use the C rating on your batteries.
+Max Positive Current: Use the C rating on your batteries divided by the number of ODrives being used. This is the current on the power supply side, so it's not necessarily going to match the current demanded by the motors.
+
+150C * 1.2 Ah / 5 = 36
 ```
-odrv0.config.dc_max_positive_current = 600  # 120 * 5 
+odrv0.config.dc_max_positive_current = 36
 ```
 Max Negative Current and Max Regen Current: -1  and 0 if you do not have regen braking. 
 
 If you do have regen braking, the highest value would be max charge rate * p count. Max charge rate should be found from the battery specifications, or you can use 1C to be safe...
 
-e.g. 1200 mAh 12S1P, Max Charge=5A -> 5 * 1 = 5
+12S1P, Max Charge=5A -> 5 * 1 = 5
 
 But, remember to divide by the number of ODrives you apply this to. Since there are 5 ODrives, that's 1A regen per...
 ```
