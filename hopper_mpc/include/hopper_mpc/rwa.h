@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include "Eigen/Dense"
 #include "hopper_mpc/lowpass.h"
 #include "hopper_mpc/model.h"
@@ -15,8 +16,10 @@ class Rwa {                             // The class
   // void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
   Eigen::Vector3d AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref);
   Eigen::Vector3d TorqueCtrl(Eigen::Vector3d tau_ref);
+  Eigen::Vector3d RotorSpeedCtrl();
   Eigen::Vector3d theta;
   Eigen::Vector3d setp;
+  Eigen::Vector3d dq_ref;
 
  private:
   double dt;
@@ -37,6 +40,11 @@ class Rwa {                             // The class
   // filter
   std::unique_ptr<LowPass3D> lowpassPtr1;
   std::unique_ptr<LowPass3D> lowpassPtr2;
+
+  Eigen::Vector3d kp_rs;
+  Eigen::Vector3d ki_rs;
+  Eigen::Vector3d kd_rs;
+  std::unique_ptr<PID3> pid_rsPtr;
 
   Eigen::DiagonalMatrix<double, 3> kp_diag;
   Eigen::DiagonalMatrix<double, 3> kd_diag;

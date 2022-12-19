@@ -19,6 +19,24 @@ class Utils {
 
   static double AngleBetween(Eigen::Quaterniond Q1, Eigen::Quaterniond Q2);
   static double WrapToPi(double a);
-  static double Clip(double n, double lower, double upper);
+
   static double PolyFit(const std::vector<double>& t, const std::vector<double>& v, int k, double t_new);
+
+  template <typename T>
+  static int Sign(T val);
+
+  // static double Clip(double n, double lower, double upper);
+  template <typename T>
+  static T Clip(const T& n, const T& lower, const T& upper);
 };
+
+template <typename T>
+int Utils::Sign(T val) {
+  // this returns 0 if the input is 0
+  return (T(0) < val) - (val < T(0));
+}
+
+template <typename T>
+T Utils::Clip(const T& n, const T& lower, const T& upper) {
+  return std::max(lower, std::min(n, upper));
+}

@@ -47,10 +47,6 @@ double Utils::WrapToPi(double a) {
   return fmod(a + M_PI, 2 * M_PI) - M_PI;
 };
 
-double Utils::Clip(double n, double lower, double upper) {
-  return std::max(lower, std::min(n, upper));
-}
-
 Eigen::Quaterniond Utils::VecToQuat(Eigen::Vector3d v1, Eigen::Vector3d v2) {
   // Conversion of line vector to quaternion rotation b/t it and a datum vector v1
   Eigen::Vector3d u1;
@@ -154,3 +150,7 @@ double Utils::PolyFit(const std::vector<double>& t, const std::vector<double>& v
   double v_out = coeff[0] + coeff[1] * t_new + coeff[2] * (pow(t_new, 2)) + coeff[3] * (pow(t_new, 3));
   return v_out;
 }
+
+// double Utils::Clip(double n, double lower, double upper) {
+//   return std::max(lower, std::min(n, upper));
+// }

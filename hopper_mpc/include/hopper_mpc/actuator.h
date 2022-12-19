@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include "hopper_mpc/lowpass.h"
 #include "hopper_mpc/model.h"
 
 struct ActuatorModel {
@@ -34,12 +36,6 @@ class Actuator {                                 // The class
   double kt;
   double tau_max;
   double omega_max;
-  double i_smoothed;  // smoothing bandwidth
-  double alpha;
 
-  template <typename T>
-  int sgn(T val);
-
-  template <typename T>
-  T clip(const T& n, const T& lower, const T& upper);
+  std::unique_ptr<LowPass> lowpassPtr;
 };

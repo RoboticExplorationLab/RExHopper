@@ -221,7 +221,9 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     } else {
       dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
     }
+
     u *= -1;
+    // std::cout << "u before =  " << u.transpose() << "\n";
     mj_step1(m, d);  // mj_step(m, d);
     auto [tau0, i0, v0] = a0->Actuate(u(0), dqa(0));
     auto [tau1, i1, v1] = a1->Actuate(u(1), dqa(1));
@@ -234,8 +236,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     d->ctrl[3] = tau3;  // moves rw1
     d->ctrl[4] = tau4;  // moves rwz
     mj_step2(m, d);
-
-    // std::cout << tau0 << ", " << tau1 << ", " << tau2 << ", " << tau3 << ", " << tau4 << "\n";
+    // std::cout << "tau = " << tau0 << ", " << tau1 << ", " << tau2 << ", " << tau3 << ", " << tau4 << "\n";
 
     // get measurements
     if (fixed == true) {

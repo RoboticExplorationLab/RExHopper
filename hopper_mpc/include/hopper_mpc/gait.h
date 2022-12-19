@@ -25,6 +25,7 @@ class Gait {  // The class
   uVals Sit();
   uVals Idle();
   uVals CircleTest();
+  uVals SpeedTest();
   Eigen::Vector3d peb_ref;
 
  private:

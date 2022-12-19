@@ -24,26 +24,26 @@ Rwa::Rwa(std::string bridge, double dt_) {
   double ksd;
 
   if (bridge == "mujoco") {
-    ku = 300;
+    ku = 800;
     kp = 0.6;
     ki = 0.0;  // an integral term would fight the cascaded velocity term
-    kd = 0.1875;
+    kd = 0.04;
 
     ks = 0.00006;
-    ksp = 1.0;
-    ksi = 0.03;
-    ksd = 0.06;
+    ksp = 0.0;
+    ksi = 1;  // TODO: run PID on the integral term? the position of the flywheel vels??
+    ksd = 0.0;
   } else {
-    ku = 80;
+    ku = 800;
     kp = 0.6;
     ki = 0.0;
-    kd = -0.1;  // 0.1875;
+    kd = 0.04;  // 0.1875;
 
-    ks = 0.0;
-    // ks = 0.0001;
-    ksp = 1.0;
-    ksi = 0.03;
-    ksd = 0.06;
+    // ks = 0.0;
+    ks = 0.00006;
+    ksp = 0.0;
+    ksi = 1;
+    ksd = 0.0;
   }
 
   kp_tau << kp, kp, kp * 0.5;
@@ -58,6 +58,15 @@ Rwa::Rwa(std::string bridge, double dt_) {
 
   lowpassPtr1.reset(new LowPass3D(dt, 160));
   lowpassPtr2.reset(new LowPass3D(dt, 80));
+
+  double kr = 0.04;
+  double krp = 1.0;
+  double kri = 0.1;
+  double krd = 0.03;
+  kp_rs << krp, krp, krp;
+  ki_rs << kri, kri, kri;
+  kd_rs << krd, krd, krd;
+  pid_rsPtr.reset(new PID3(dt, kp_rs * kr, ki_rs * kr, kd_rs * kr));
 }
 
 void Rwa::UpdateState(Eigen::Vector3d dq_in) {
@@ -98,14 +107,13 @@ Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
 
 Eigen::Vector3d Rwa::AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref) {
   // simple reaction wheel attitude control w/ derivative on measurement pid
-  theta = lowpassPtr1->Filter(AttitudeIn(Q_base));
-  // theta = AttitudeIn(Q_ref, Q_base);
+  // theta = lowpassPtr1->Filter(AttitudeIn(Q_base));
+  theta = AttitudeIn(Q_base);
   setp = AttitudeSetp(Q_ref, z_ref);
-  Eigen::Vector3d setp_dq(0, 0, 0);                                // Make this nonzero to reduce static friction?
-  Eigen::Vector3d vel_comp = pid_velPtr->PIDControl(dq, setp_dq);  // velocity compensation
-  // setp += lowpassPtr->Filter(vel_comp);  // filter the vel setpoint
+  dq_ref << 0.0, 0.0, 0.0;                                        // Make this nonzero to reduce static friction?
+  Eigen::Vector3d vel_comp = pid_velPtr->PIDControl(dq, dq_ref);  // velocity compensation
+  // setp += lowpassPtr2->Filter(vel_comp);                          // filter the vel setpoint
   setp += vel_comp;
-  setp = lowpassPtr2->Filter(setp);                   // filter the setpoint
   return pid_tauPtr->PIDControlWrapped(theta, setp);  // Cascaded PID Loop
 }
 
@@ -115,5 +123,13 @@ Eigen::Vector3d Rwa::TorqueCtrl(Eigen::Vector3d tau_ref) {
   tau(0) = (tau_ref(0) - tau_ref(1)) / (2 * sin45);
   tau(1) = (tau_ref(0) - tau_ref(1)) / (2 * sin45);
   tau(2) = tau_ref(2);
+  return tau;
+}
+
+Eigen::Vector3d Rwa::RotorSpeedCtrl() {
+  // rotor speed control (mostly just for testing polarity)
+  dq_ref << 5.0, 5.0, 5.0;                                  // Make this nonzero to reduce static friction?
+  Eigen::Vector3d tau = pid_rsPtr->PIDControl(dq, dq_ref);  // velocity compensation
+  // setp = lowpassPtr->Filter(setp);  // filter the vel setpoint
   return tau;
 }
