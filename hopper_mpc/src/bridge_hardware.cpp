@@ -239,7 +239,7 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointVel() {
   Eigen::Matrix<double, 5, 1> dqa;
   dqa(0) = -ODriveCANleft->GetVelocity(node_id_q0) * 2 * M_PI / 7;  // ODrive velocity in RPS?
   dqa(1) = ODriveCANright->GetVelocity(node_id_q2) * 2 * M_PI / 7;
-  dqa(2) = -ODriveCANright->GetVelocity(node_id_rwr) * 2 * M_PI;
+  dqa(2) = ODriveCANright->GetVelocity(node_id_rwr) * 2 * M_PI;
   dqa(3) = ODriveCANleft->GetVelocity(node_id_rwl) * 2 * M_PI;
   dqa(4) = ODriveCANyaw->GetVelocity(node_id_rwz) * 2 * M_PI;
   return dqa;

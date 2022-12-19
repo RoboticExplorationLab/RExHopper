@@ -19,10 +19,9 @@ Actuator::Actuator(ActuatorModel a_model_, double dt_) {
 
 OutVals Actuator::Actuate(double tau_ref, double dq) {
   // simulates actuator physics by limiting torque output as a function of motor speed
-  double i = tau_ref / kt;
-  double omega = dq * gr;  // motor speed is joint speed times gear ratio
+  double i = lowpassPtr->Filter(tau_ref / kt);  // smooth based on odrive bandwidth
+  double omega = dq * gr;                       // motor speed is joint speed times gear ratio
 
-  // i = lowpassPtr->Filter(i);  // smooth based on odrive bandwidth
   double tau_m = kt * i;
 
   double v = copysign(1.0, i) * v_max;                 // TODO: Make sure this doesn't create -1 from -0
