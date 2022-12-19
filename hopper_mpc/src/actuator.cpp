@@ -22,7 +22,7 @@ OutVals Actuator::Actuate(double tau_ref, double dq) {
   double i = tau_ref / kt;
   double omega = dq * gr;  // motor speed is joint speed times gear ratio
 
-  i = lowpassPtr->Filter(i);  // smooth based on odrive bandwidth
+  // i = lowpassPtr->Filter(i);  // smooth based on odrive bandwidth
   double tau_m = kt * i;
 
   double v = copysign(1.0, i) * v_max;                 // TODO: Make sure this doesn't create -1 from -0

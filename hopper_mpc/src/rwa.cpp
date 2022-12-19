@@ -107,15 +107,15 @@ Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
 
 Eigen::Vector3d Rwa::AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref) {
   // simple reaction wheel attitude control w/ derivative on measurement pid
-  // theta = lowpassPtr1->Filter(AttitudeIn(Q_base));
-  theta = AttitudeIn(Q_base);
+  theta = lowpassPtr1->Filter(AttitudeIn(Q_base));
+  // theta = AttitudeIn(Q_base);
   setp = AttitudeSetp(Q_ref, z_ref);
   dq_ref << 0.0, 0.0, 0.0;                                        // Make this nonzero to reduce static friction?
   Eigen::Vector3d vel_comp = pid_velPtr->PIDControl(dq, dq_ref);  // velocity compensation
   // setp += lowpassPtr2->Filter(vel_comp);                          // filter the vel setpoint
   setp += vel_comp;
 
-  // setp = lowpassPtr2->Filter(setp);                   // filter the setpoint
+  setp = lowpassPtr2->Filter(setp);                   // filter the setpoint
   return pid_tauPtr->PIDControlWrapped(theta, setp);  // Cascaded PID Loop
 }
 
