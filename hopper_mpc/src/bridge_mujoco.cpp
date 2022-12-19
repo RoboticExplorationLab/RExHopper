@@ -222,7 +222,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
     }
 
-    u *= -1.0;
+    u *= -1;
     // std::cout << "u before =  " << u.transpose() << "\n";
     mj_step1(m, d);  // mj_step(m, d);
     auto [tau0, i0, v0] = a0->Actuate(u(0), dqa(0));

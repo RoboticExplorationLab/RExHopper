@@ -24,7 +24,8 @@ OutVals Actuator::Actuate(double tau_ref, double dq) {
 
   i = lowpassPtr->Filter(i);  // smooth based on odrive bandwidth
   double tau_m = kt * i;
-  double v = copysign(1.0, i) * v_max;
+
+  double v = copysign(1.0, i) * v_max;                 // TODO: Make sure this doesn't create -1 from -0
   double tau_ul = (-omega * pow(kt, 2) + v * kt) / r;  // max motor torque for given speed
   double tau_ll = (-omega * pow(kt, 2) - v * kt) / r;  // min motor torque for given speed
   // std::cout << "v_max, v, omega, ul, ll = " << v_max << ", " << v << ", " << omega << ", " << tau_ul << ", " << tau_ll << "\n";
