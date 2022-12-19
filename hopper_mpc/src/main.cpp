@@ -7,7 +7,7 @@
 int main(int argc, char* argv[]) {
   argparse::ArgumentParser program("Hopper");
 
-  program.add_argument("ctrl").help("mpc, raibert, stand, idle, or circle");
+  program.add_argument("ctrl").help("mpc, raibert, stand, idle, rotorspeed, or circle");
 
   program.add_argument("N_run").help("number of timesteps the sim runs for").scan<'i', int>();
 
@@ -68,6 +68,12 @@ int main(int argc, char* argv[]) {
     skip_kf = true;
   }
 
+  // basic checks
+  if (fixed == false && (ctrl == "circle" || ctrl == "rotorspeed")) {
+    throw std::runtime_error("Invalid command combination: Cannot run this ctrl test unless robot is fixed in place");
+  }
+
+  // setup params
   Model hopper;
   hopper.name = "rev09";
   hopper.mjcf_path = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf.xml";

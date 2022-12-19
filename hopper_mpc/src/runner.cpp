@@ -104,7 +104,8 @@ void Runner::Run() {
   // initialize vectors of state history for plotting
   std::vector<std::vector<double>> p_raw_vec(N_run), v_raw_vec(N_run), pe_raw_vec(N_run), ve_raw_vec(N_run);
   std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
-  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), dqa_vec(N_run);
+  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run);
+  std::vector<std::vector<double>> dqa_vec(N_run), dqa_ref_vec(N_run);
   std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), reactf_vec(N_run);
   std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ab_vec(N_run), ae_vec(N_run), grf_vec(N_run);
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
@@ -204,6 +205,8 @@ void Runner::Run() {
       uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
     } else if (ctrl == "circle") {
       uvals = gaitPtr->CircleTest();
+    } else if (ctrl == "rotorspeed") {
+      uvals = gaitPtr->SpeedTest();
     } else if (ctrl == "sit" || (skip_homing == true && k <= N_sit)) {  // TODO: Should be a different setting for starting from stand
       uvals = gaitPtr->Sit();
     } else if (skip_homing == true && N_sit < k <= (N_sit + model.N_getup)) {
@@ -264,8 +267,9 @@ void Runner::Run() {
       // NOTE: magnitude of tau_ref depends on whether gr is being handled by actuator.cpp or simulator/hardware
       tau_ref_vec.at(k) = {bridgePtr->tau_ref(0), bridgePtr->tau_ref(1), bridgePtr->tau_ref(2), bridgePtr->tau_ref(3),
                            bridgePtr->tau_ref(4)};
-
+      // std::cout << dqa.transpose() << "\n";
       dqa_vec.at(k) = {dqa(0), dqa(1), dqa(2), dqa(3), dqa(4)};
+      dqa_ref_vec.at(k) = {0.0, 0.0, rwaPtr->dq_ref(0), rwaPtr->dq_ref(1), rwaPtr->dq_ref(2)};
 
       reactf_vec.at(k) = {bridgePtr->rf_x(joint_id), bridgePtr->rf_y(joint_id), bridgePtr->rf_z(joint_id)};
 
@@ -322,8 +326,8 @@ void Runner::Run() {
     Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
     Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
     // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
-    // Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
-    Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
+    Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
+    Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_ref_vec, 0);
     // Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
 
     // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",

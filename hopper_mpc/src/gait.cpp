@@ -173,3 +173,13 @@ uVals Gait::CircleTest() {
   // std::cout << "peb_ref = " << peb_ref(0) << ", " << peb_ref(1) << ", " << peb_ref(2) << "\n";
   return uVals{u, qla_ref, ctrlMode};
 }
+
+uVals Gait::SpeedTest() {
+  // check reaction wheel speed polarity matches torque polarity
+  Eigen::Vector2d qla_ref;
+  qla_ref.setZero();
+  std::string ctrlMode = "None";  // legs go limp
+
+  u.segment<3>(2) = rwaPtr->RotorSpeedCtrl();
+  return uVals{u, qla_ref, ctrlMode};
+}
