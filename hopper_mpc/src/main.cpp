@@ -75,9 +75,12 @@ int main(int argc, char* argv[]) {
 
   // setup params
   Model hopper;
-  hopper.name = "rev09";
-  hopper.mjcf_path = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf.xml";
-  hopper.mjcf_fixed_path = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf_fixed.xml";
+  // hopper.name = "rev09";
+  // hopper.mjcf_path = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf.xml";
+  // hopper.mjcf_fixed_path = "/src/RExHopper/hopper_mpc/res/hopper_rev09/hopper_rev09_mjcf_fixed.xml";
+  hopper.name = "rev10";
+  hopper.mjcf_path = "/src/RExHopper/hopper_mpc/res/hopper_rev10/hopper_rev10_mjcf.xml";
+  hopper.mjcf_fixed_path = "/src/RExHopper/hopper_mpc/res/hopper_rev10/hopper_rev10_mjcf_fixed.xml";
   hopper.aname[0] = "q0";
   hopper.aname[1] = "q2";
   hopper.aname[2] = "rw1";
