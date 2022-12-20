@@ -5,7 +5,7 @@
 #include <iostream>
 #include "hopper_mpc/utils.hpp"
 
-HardwareBridge::HardwareBridge(Model model_, double dt_, bool fixed_, bool skip_homing_) : Base(model_, dt_, fixed_, skip_homing_) {}
+HardwareBridge::HardwareBridge(Model model_, double dt_, std::string start_, bool skip_homing_) : Base(model_, dt_, start_, skip_homing_) {}
 
 void HardwareBridge::Init() {
   // ROS subscribers
@@ -58,8 +58,8 @@ void HardwareBridge::Init() {
   float vel_lim_rmdx10 = 10;
   float cur_lim_rmdx10 = 60;  // 60;
 
-  float vel_lim_r100 = 60;   // max 4400 rpm = 73 rps = 461 rad/s
-  float cur_lim_r100 = 100;  // max 104
+  float vel_lim_r100 = 60;  // max 4400 rpm = 73 rps = 461 rad/s
+  float cur_lim_r100 = 95;  // max 104
 
   float vel_lim_r80 = 60;  // max 5250 rpm = 87.5 rps = 550 rad/s
   float cur_lim_r80 = 46;  // max 46
@@ -82,14 +82,6 @@ void HardwareBridge::Init() {
       oa << *saved;                           // write class instance to archive
     }
 
-    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.q_init(0));
-    SetPosCtrlMode(ODriveCANright, node_id_q2, model.q_init(2));
-    std::cout << "Controller ready to begin. Press any key to continue. \n";
-    std::cin.ignore();
-
-    // SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
-    // SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
-
   } else {
     std::cout << "Robot will NOT home! Make sure it is in startup configuration, then press any key to continue. \n";
     std::cin.ignore();
@@ -106,10 +98,6 @@ void HardwareBridge::Init() {
     q_offset(0) = saved_get->q0_offset;  // copy in
     q_offset(1) = saved_get->q2_offset;  // add # of rotations of rotor to get to starting configuration from homing position
     std::cout << "Loaded homing offsets: q_offset = " << q_offset(0) << ", " << q_offset(1) << " \n";
-    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
-    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
-    std::cout << "Once robot is in a stable sitting position, press any key to continue. \n";
-    std::cin.ignore();
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
@@ -117,6 +105,18 @@ void HardwareBridge::Init() {
   Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
   Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
 
+  if (start == "start_stand") {
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.q_init(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.q_init(2));
+    std::cout << "Controller ready to begin. Press any key to continue. \n";
+    std::cin.ignore();
+  } else if (start == "start_sit") {
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_sit(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_sit(1));
+    std::cout << "Once robot is in a stable sitting position, press any key to continue. \n";
+    std::cin.ignore();
+  } else if (start == "fixed") {
+  }
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
 

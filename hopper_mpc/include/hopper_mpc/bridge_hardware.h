@@ -34,8 +34,8 @@ class saved_offsets {
 
 class HardwareBridge : public Bridge {  // The class
  public:
-  using Base = Bridge;                                                       // Access specifier
-  HardwareBridge(Model model_, double dt_, bool fixed_, bool skip_homing_);  // constructor
+  using Base = Bridge;                                                              // Access specifier
+  HardwareBridge(Model model_, double dt_, std::string start_, bool skip_homing_);  // constructor
   // --- virtual function overrides --- //
   void Init() override;
   retVals SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) override;

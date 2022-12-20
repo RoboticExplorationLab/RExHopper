@@ -34,13 +34,13 @@ Rwa::Rwa(std::string bridge, double dt_) {
     ksi = 1;  // TODO: run PID on the integral term? the position of the flywheel vels??
     ksd = 0.0;
   } else {
-    ku = 800;
+    ku = 60;
     kp = 0.6;
     ki = 0.0;
     kd = 0.04;  // 0.1875;
 
     // ks = 0.0;
-    ks = 0.00006;
+    ks = 0.000006;
     ksp = 0.0;
     ksi = 1;
     ksd = 0.0;

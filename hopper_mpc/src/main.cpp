@@ -7,17 +7,15 @@
 int main(int argc, char* argv[]) {
   argparse::ArgumentParser program("Hopper");
 
+  program.add_argument("bridge").help("hardware or mujoco");
+
+  program.add_argument("start").help("start_sit, start_stand, or fixed");
+
   program.add_argument("ctrl").help("mpc, raibert, stand, idle, rotorspeed, or circle");
 
   program.add_argument("N_run").help("number of timesteps the sim runs for").scan<'i', int>();
 
-  program.add_argument("bridge").help("hardware or mujoco");
-
   program.add_argument("--plot").help("enable plotting").default_value(false).implicit_value(true);
-
-  program.add_argument("--fixed").help("fix the robot in place").default_value(false).implicit_value(true);
-
-  program.add_argument("--spr").help("add parallel spring").default_value(false).implicit_value(true);
 
   program.add_argument("--skip_homing")
       .help("skip homing leg positions (if robot is sitting and already correctly homed)")
@@ -34,30 +32,22 @@ int main(int argc, char* argv[]) {
     std::exit(1);
   }
 
-  std::string ctrl = program.get<std::string>("ctrl");
-  std::cout << (ctrl) << std::endl;
-  int N_run = program.get<int>("N_run");
-  std::cout << (N_run) << std::endl;
   std::string bridge = program.get<std::string>("bridge");
-  std::cout << (bridge) << std::endl;
+  std::cout << "bridge = " << (bridge) << std::endl;
+  std::string start = program.get<std::string>("start");
+  std::cout << "start = " << (start) << std::endl;
+  std::string ctrl = program.get<std::string>("ctrl");
+  std::cout << "ctrl = " << (ctrl) << std::endl;
+  int N_run = program.get<int>("N_run");
+  std::cout << "N_run = " << (N_run) << std::endl;
 
   bool plot = false;
-  bool spr = false;
-  bool fixed = false;
   bool skip_homing = false;
   bool skip_kf = false;
 
   if (program["--plot"] == true) {
     std::cout << "Plotting enabled" << std::endl;
     plot = true;
-  }
-  if (program["--spr"] == true) {
-    std::cout << "Spring enabled" << std::endl;
-    spr = true;
-  }
-  if (program["--fixed"] == true) {
-    std::cout << "Fixed base enabled" << std::endl;
-    fixed = true;
   }
   if (program["--skip_homing"] == true) {
     std::cout << "Homing enabled" << std::endl;
@@ -69,7 +59,7 @@ int main(int argc, char* argv[]) {
   }
 
   // basic checks
-  if (fixed == false && (ctrl == "circle" || ctrl == "rotorspeed")) {
+  if (start != "fixed" && (ctrl == "circle" || ctrl == "rotorspeed")) {
     throw std::runtime_error("Invalid command combination: Cannot run this ctrl test unless robot is fixed in place");
   }
 
@@ -125,7 +115,7 @@ int main(int argc, char* argv[]) {
   hopper.N_getup = 500;  // number of timesteps taken to stand up from sitting
   double dt = 0.001;     // 1 kHz
 
-  Runner runner(hopper, N_run, dt, ctrl, bridge, plot, fixed, spr, skip_homing, skip_kf);
+  Runner runner(hopper, dt, bridge, start, ctrl, N_run, plot, skip_homing, skip_kf);
   runner.Run();  // Call the method
   return 0;
 }

@@ -5,16 +5,18 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/plots.hpp"
 
-Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_,
+Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_, std::string ctrl_, int N_run_, bool plot_,
                bool skip_homing_, bool skip_kf_) {
   model = model_;
-  N_run = N_run_;
+
   dt = dt_;
-  ctrl = ctrl_;
+
   bridge = bridge_;
+  start = start_;
+  ctrl = ctrl_;
+  N_run = N_run_;
+
   plot = plot_;
-  fixed = fixed_;
-  spr = spr_;
   skip_homing = skip_homing_;
   skip_kf = skip_kf_;
 
@@ -41,13 +43,13 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
 
   // class definitions
   if (bridge_ == "hardware") {
-    bridgePtr.reset(new HardwareBridge(model, dt, fixed, skip_homing));
+    bridgePtr.reset(new HardwareBridge(model, dt, start, skip_homing));
     N_sit = 0;  // number of timesteps spent sitting
   } else if (bridge_ == "mujoco") {
-    bridgePtr.reset(new MujocoBridge(model, dt, fixed, skip_homing));
+    bridgePtr.reset(new MujocoBridge(model, dt, start, skip_homing));
     N_sit = 1500;  // number of timesteps spent sitting
     // } else if (bridge_ == "raisim") {
-    // bridgePtr.reset(new RaisimBridge(model, dt, fixed, skip_homing));
+    // bridgePtr.reset(new RaisimBridge(model, dt, start, skip_homing));
   } else {
     throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
@@ -88,7 +90,7 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   legPtr = std::make_shared<Leg>(model, dt);
   rwaPtr = std::make_shared<Rwa>(bridge, dt);
 
-  gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
+  gaitPtr.reset(new Gait(model, dt, bridge, peb_ref, &legPtr, &rwaPtr));  // gait controller class
   kfPtr.reset(new Kf(dt));
   obPtr.reset(new Observer(dt, &legPtr));
 

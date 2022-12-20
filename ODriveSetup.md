@@ -53,7 +53,6 @@ Other initial settings to use:
 ```
 odrv0.axis0.config.calibration_lockin.current = 20
 odrv0.axis0.config.motor.current_soft_max = 60
-odrv0.axis0.config.motor.current_hard_max = 80
 odrv0.axis0.controller.config.vel_limit = 20
 odrv0.axis0.config.motor.current_control_bandwidth = 2000
 odrv0.axis0.config.encoder_bandwidth = 1500
@@ -67,6 +66,22 @@ Note that `resistance_calib_max_voltage` can't be more than half your bus voltag
 ```
 odrv0.axis0.config.motor.resistance_calib_max_voltage = 20
 ```
+
+## Current Hard Max
+The `current_hard_max` setting is a safety limit. If the motor surpasses this limit, the ODrive shuts down to protect it from overheating. The appropriate safety limit depends on the motor.
+
+- R100: 120 A
+- R80: 60 A
+- RMD-X10: 80 A
+
+Note that some of these are higher than the "peak" rated current. That's okay for us as long as the robot is only running for a few seconds at a time.
+
+Also note that ODrive Pro max current output is 120 A.
+
+```
+odrv0.axis0.config.motor.current_hard_max = 120
+```
+
 
 ## Calibration
 

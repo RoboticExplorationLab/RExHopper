@@ -14,7 +14,8 @@ struct uVals {
 class Gait {  // The class
 
  public:  // Access specifier
-  Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<Leg>* legPtr_, std::shared_ptr<Rwa>* rwaPtr_);  // constructor
+  Gait(Model model_, double dt_, std::string bridge_, Eigen::Vector3d peb_ref_, std::shared_ptr<Leg>* legPtr_,
+       std::shared_ptr<Rwa>* rwaPtr_);  // constructor
   void Run();
   uVals Raibert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v, Eigen::Vector3d w,
                 Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);

@@ -78,13 +78,13 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
   mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
 }
 
-MujocoBridge::MujocoBridge(Model model_, double dt_, bool fixed_, bool skip_homing_) : Base(model_, dt_, fixed_, skip_homing_) {}
+MujocoBridge::MujocoBridge(Model model_, double dt_, std::string start_, bool skip_homing_) : Base(model_, dt_, start_, skip_homing_) {}
 
 void MujocoBridge::Init() {
   char error[ERROR_SIZE] = "Could not load binary model";
 
   std::string path_mjcf;
-  if (fixed == true) {
+  if (start == "fixed") {
     path_mjcf = model.mjcf_fixed_path;
   } else {
     path_mjcf = model.mjcf_path;
@@ -216,7 +216,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       u(1) = pid_q2Ptr->PIDControl(qa(1), qla_ref(1));
     }
     // get dqa
-    if (fixed == true) {
+    if (start == "fixed") {
       dqa << d->qvel[0], d->qvel[2], d->qvel[4], d->qvel[5], d->qvel[6];
     } else {
       dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
@@ -239,7 +239,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     // std::cout << "tau = " << tau0 << ", " << tau1 << ", " << tau2 << ", " << tau3 << ", " << tau4 << "\n";
 
     // get measurements
-    if (fixed == true) {
+    if (start == "fixed") {
       qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
       dqa << d->qvel[0], d->qvel[2], d->qvel[4], d->qvel[5], d->qvel[6];
     } else {
