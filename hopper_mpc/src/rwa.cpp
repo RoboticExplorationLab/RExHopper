@@ -6,8 +6,11 @@
 
 Rwa::Rwa(std::string bridge, double dt_) {
   dt = dt_;
-  // q.setZero();  // we don't care about rw actuator pos
+  q.setZero();
   dq.setZero();
+  q_ref.setZero();
+  dq_ref.setZero();
+  // dq_ref << 0.0, 0.0, 0.0;  // Make this nonzero to reduce static friction?
 
   a = 45 * M_PI / 180;
   b = -45 * M_PI / 180;
@@ -18,59 +21,44 @@ Rwa::Rwa(std::string bridge, double dt_) {
   double kp;
   double ki;
 
-  double ks;
-  double ksp;
-  double ksi;
-  double ksd;
-
   if (bridge == "mujoco") {
-    ku = 800;
+    ku = 300;  // 800
     kp = 0.6;
     ki = 0.0;  // an integral term would fight the cascaded velocity term
     kd = 0.04;
-
-    ks = 0.00006;
-    ksp = 0.0;
-    ksi = 1;  // TODO: run PID on the integral term? the position of the flywheel vels??
-    ksd = 0.0;
   } else {
-    ku = 60;
+    ku = 300;
     kp = 0.6;
     ki = 0.0;
     kd = 0.04;  // 0.1875;
-
-    // ks = 0.0;
-    ks = 0.000006;
-    ksp = 0.0;
-    ksi = 1;
-    ksd = 0.0;
   }
-
   kp_tau << kp, kp, kp * 0.5;
   ki_tau << ki, ki, ki * 0.5;  // ki_tau << 0.1, 0.1, 0.01;
   kd_tau << kd, kd, kd * 0.5;  // 0.04, 0.04, 0.005;
   pid_tauPtr.reset(new PID3(dt, kp_tau * ku, ki_tau * ku, kd_tau * ku));
 
-  kp_vel << ksp, ksp, ksp * 0.01;
-  ki_vel << ksi, ksi, ksi * 0.01;
-  kd_vel << ksd, ksd, ksd * 0.01;
-  pid_velPtr.reset(new PID3(dt, kp_vel * ks, ki_vel * ks, kd_vel * ks));
-
-  lowpassPtr1.reset(new LowPass3D(dt, 160));
-  lowpassPtr2.reset(new LowPass3D(dt, 80));
-
-  double kr = 0.04;
+  double kr = 0.1;  // 0.04
   double krp = 1.0;
-  double kri = 0.1;
-  double krd = 0.03;
+  double kri = 0.1;  // 0.1
+  double krd = 0.5;  // 0.03
   kp_rs << krp, krp, krp;
   ki_rs << kri, kri, kri;
   kd_rs << krd, krd, krd;
   pid_rsPtr.reset(new PID3(dt, kp_rs * kr, ki_rs * kr, kd_rs * kr));
+
+  double kpos = 0.0001;  // 0.0001
+  double kpp = 1.0;      // flywheel position gain
+  double kpi = 0.0;      // gain on integral of position
+  double kpd = 0.0;      // roughly equivalent to velocity proportional term
+  kp_pos << kpp, kpp, kpp;
+  ki_pos << kpi, kpi, kpi;
+  kd_pos << kpd, kpd, kpd;
+  pid_posPtr.reset(new PID3(dt, kp_pos * kpos, ki_pos * kpos, kd_pos * kpos));
 }
 
-void Rwa::UpdateState(Eigen::Vector3d dq_in) {
+void Rwa::UpdateState(Eigen::Vector3d q_in, Eigen::Vector3d dq_in) {
   // Pull raw actuator joint vel values in from simulator or robot
+  q = q_in;
   dq = dq_in;
 }
 
@@ -107,13 +95,11 @@ Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
 
 Eigen::Vector3d Rwa::AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref) {
   // simple reaction wheel attitude control w/ derivative on measurement pid
-  // theta = lowpassPtr1->Filter(AttitudeIn(Q_base));
   theta = AttitudeIn(Q_base);
   setp = AttitudeSetp(Q_ref, z_ref);
-  dq_ref << 0.0, 0.0, 0.0;                                        // Make this nonzero to reduce static friction?
-  Eigen::Vector3d vel_comp = pid_velPtr->PIDControl(dq, dq_ref);  // velocity compensation
-  // setp += lowpassPtr2->Filter(vel_comp);                          // filter the vel setpoint
-  setp += vel_comp;
+
+  // setp += pid_velPtr->PIDControl(dq, dq_ref);  // velocity compensation
+  setp += pid_posPtr->PIDControl(q, q_ref);           // position compensation
   return pid_tauPtr->PIDControlWrapped(theta, setp);  // Cascaded PID Loop
 }
 
@@ -126,10 +112,18 @@ Eigen::Vector3d Rwa::TorqueCtrl(Eigen::Vector3d tau_ref) {
   return tau;
 }
 
-Eigen::Vector3d Rwa::RotorSpeedCtrl() {
+Eigen::Vector3d Rwa::RotorVelCtrl() {
   // rotor speed control (mostly just for testing polarity)
   dq_ref << 5.0, 5.0, 5.0;                                  // Make this nonzero to reduce static friction?
   Eigen::Vector3d tau = pid_rsPtr->PIDControl(dq, dq_ref);  // velocity compensation
+  // setp = lowpassPtr->Filter(setp);  // filter the vel setpoint
+  return tau;
+}
+
+Eigen::Vector3d Rwa::RotorPosCtrl() {
+  // rotor speed control (mostly just for testing polarity)
+  q_ref << 5.0, 5.0, 5.0;
+  Eigen::Vector3d tau = pid_rsPtr->PIDControl(q, q_ref);  // velocity compensation
   // setp = lowpassPtr->Filter(setp);  // filter the vel setpoint
   return tau;
 }

@@ -134,9 +134,9 @@ rosrun hopper_mpc hopper_mpc hardware start_stand stand 5000 --plot
       - `idle`
          - Do nothing
       - `circle`
-         - A leg movement test, should be paired with `--fixed`
-      - `rotorspeed`
-         - A reaction wheel movement test, should be paired with `--fixed`
+         - A leg movement test, should be paired with `fixed`
+      - `rotorvel` and `rotorpos`
+         - Reaction wheel movement tests, should be paired with `fixed` start
 
    - N_run
       - Specify the number of timesteps to run for

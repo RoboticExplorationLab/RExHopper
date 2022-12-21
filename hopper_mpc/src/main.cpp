@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
 
   program.add_argument("start").help("start_sit, start_stand, or fixed");
 
-  program.add_argument("ctrl").help("mpc, raibert, stand, idle, rotorspeed, or circle");
+  program.add_argument("ctrl").help("mpc, raibert, stand, idle, circle, rotorvel, or rotorpos");
 
   program.add_argument("N_run").help("number of timesteps the sim runs for").scan<'i', int>();
 
@@ -72,10 +72,10 @@ int main(int argc, char* argv[]) {
   std::vector<std::string> start_list{"start_stand", "start_sit", "fixed"};
   checklist(start_list, start, "start");
 
-  std::vector<std::string> ctrl_list{"mpc", "raibert", "stand", "idle", "rotorspeed", "circle"};
+  std::vector<std::string> ctrl_list{"mpc", "raibert", "stand", "idle", "circle", "rotorvel", "rotorpos"};
   checklist(ctrl_list, ctrl, "ctrl");
 
-  if (start != "fixed" && (ctrl == "circle" || ctrl == "rotorspeed")) {
+  if (start != "fixed" && (ctrl == "circle" || ctrl == "rotorvel" || ctrl == "rotorpos")) {
     throw std::runtime_error("Invalid command combination: Cannot run this ctrl test unless robot is fixed in place");
   }
 
