@@ -6,8 +6,10 @@
 
 Rwa::Rwa(std::string bridge, double dt_) {
   dt = dt_;
-  // q.setZero();  // we don't care about rw actuator pos
+  q.setZero();
   dq.setZero();
+  q_ref.setZero();
+  dq_ref.setZero();
 
   a = 45 * M_PI / 180;
   b = -45 * M_PI / 180;
@@ -69,8 +71,9 @@ Rwa::Rwa(std::string bridge, double dt_) {
   pid_rsPtr.reset(new PID3(dt, kp_rs * kr, ki_rs * kr, kd_rs * kr));
 }
 
-void Rwa::UpdateState(Eigen::Vector3d dq_in) {
+void Rwa::UpdateState(Eigen::Vector3d q_in, Eigen::Vector3d dq_in) {
   // Pull raw actuator joint vel values in from simulator or robot
+  q = q_in;
   dq = dq_in;
 }
 
@@ -110,10 +113,10 @@ Eigen::Vector3d Rwa::AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q
   // theta = lowpassPtr1->Filter(AttitudeIn(Q_base));
   theta = AttitudeIn(Q_base);
   setp = AttitudeSetp(Q_ref, z_ref);
-  dq_ref << 0.0, 0.0, 0.0;                                        // Make this nonzero to reduce static friction?
-  Eigen::Vector3d vel_comp = pid_velPtr->PIDControl(dq, dq_ref);  // velocity compensation
-  // setp += lowpassPtr2->Filter(vel_comp);                          // filter the vel setpoint
-  setp += vel_comp;
+  // dq_ref << 0.0, 0.0, 0.0;  // Make this nonzero to reduce static friction?
+  // setp += lowpassPtr2->Filter(pid_velPtr->PIDControl(dq, dq_ref)); // filter the vel setpoint
+  // setp += pid_velPtr->PIDControl(dq, dq_ref);         // velocity compensation
+  setp += pid_rposPtr->PIDControl(q, q_ref);          // position compensation!?
   return pid_tauPtr->PIDControlWrapped(theta, setp);  // Cascaded PID Loop
 }
 

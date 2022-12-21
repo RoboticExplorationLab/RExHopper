@@ -167,10 +167,10 @@ void Runner::Run() {
 
     sh = ContactCheck(bridgePtr->sh, sh_prev, k);  // TODO: stop using exclusively bridgeptr for this
 
-    legPtr->UpdateState(qa.segment<2>(0), Q);  // grab first two actuator pos values
-    rwaPtr->UpdateState(dqa.segment<3>(2));    // grab last three actuator vel values
-    Eigen::Vector3d peb = legPtr->GetPos();    // pos of end-effector in body frame (P.E.B.)
-    Eigen::Vector3d veb = legPtr->GetVel();    // vel of end-effector in body frame (V.E.B.)
+    legPtr->UpdateState(qa.segment<2>(0), Q);                  // grab first two actuator pos values
+    rwaPtr->UpdateState(qa.segment<2>(2), dqa.segment<3>(2));  // grab last three actuator vel values
+    Eigen::Vector3d peb = legPtr->GetPos();                    // pos of end-effector in body frame (P.E.B.)
+    Eigen::Vector3d veb = legPtr->GetVel();                    // vel of end-effector in body frame (V.E.B.)
 
     Eigen::Matrix3d R2 = Utils::EulerToQuat(0.0, legPtr->q(2), 0.0).matrix();  // check to make sure this stuff works
     Eigen::Matrix3d R3 = Utils::EulerToQuat(0.0, legPtr->q(3), 0.0).matrix();

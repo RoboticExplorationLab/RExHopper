@@ -8,11 +8,11 @@
 class Rwa {                             // The class
  public:                                // Access specifier
   Rwa(std::string bridge, double dt_);  // constructor
-  // Eigen::Vector3d q;
+  Eigen::Vector3d q;
   Eigen::Vector3d dq;
   // Eigen::Vector3d q_prev;
 
-  void UpdateState(Eigen::Vector3d dq_in);
+  void UpdateState(Eigen::Vector3d q_in, Eigen::Vector3d dq_in);
   // void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
   Eigen::Vector3d AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref);
   Eigen::Vector3d TorqueCtrl(Eigen::Vector3d tau_ref);
@@ -20,6 +20,7 @@ class Rwa {                             // The class
   Eigen::Vector3d theta;
   Eigen::Vector3d setp;
   Eigen::Vector3d dq_ref;
+  Eigen::Vector3d q_ref;
 
  private:
   double dt;
