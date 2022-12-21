@@ -19,8 +19,6 @@ class Gait {  // The class
   void Run();
   uVals Raibert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v, Eigen::Vector3d w,
                 Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
-  uVals KinInvVert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v, Eigen::Vector3d w,
-                   Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref);
   uVals KinInvStand(Eigen::Quaterniond Q);
   uVals GetUp(Eigen::Quaterniond Q);
   uVals Sit();

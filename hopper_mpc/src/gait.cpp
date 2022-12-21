@@ -90,31 +90,6 @@ uVals Gait::Raibert(std::string state, std::string state_prev, Eigen::Vector3d p
   return uVals{u, qla_ref, ctrlMode};
 }
 
-uVals Gait::KinInvVert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v,
-                       Eigen::Vector3d w, Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref) {
-  Q_ref.setIdentity();
-  z_ref = 0;
-  if (state == "Rise") {
-    peb_ref(2) = -model.h0;  // pull leg up to prevent stubbing
-  } else if (state == "Fall") {
-    peb_ref(2) = -model.h0 * 2;  // brace for impact
-  } else if (state == "Cmpr") {
-    peb_ref(2) = -model.h0 * 1.5;  // TODO: Try reducing gains for compression instead of changing position setpoint
-  } else if (state == "Push") {
-    peb_ref(2) = -model.h0 * 2;  // pushoff
-  }
-  std::string ctrlMode = "Torque";
-  Eigen::Vector3d veb_ref;
-  veb_ref.setZero();
-  u.block<2, 1>(0, 0) = legPtr->OpSpacePosCtrl(peb_ref, veb_ref);
-  Eigen::Vector2d qla_ref;
-  qla_ref.setZero();
-  // Eigen::Vector2d qla_ref = legPtr->KinInv(peb_ref);
-  // std::string ctrlMode = "Pos";
-  u.segment<3>(2) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
-  return uVals{u, qla_ref, ctrlMode};
-}
-
 uVals Gait::KinInvStand(Eigen::Quaterniond Q) {
   Eigen::Quaterniond Q_ref;
   Q_ref.setIdentity();

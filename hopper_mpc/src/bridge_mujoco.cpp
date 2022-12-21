@@ -195,7 +195,7 @@ void MujocoBridge::Init() {
   pid_q2Ptr.reset(new PID1(dt, kp, 0.0, kd));
   sh = 0;
 
-  if (skip_homing == true) {  // the robot is not homing, so it must start from a sitting position
+  if (start == "start_sit") {  // the robot starts from a sitting position
     d->qpos[0] = model.p0_sit(0);
     d->qpos[1] = model.p0_sit(1);
     d->qpos[2] = model.p0_sit(2);

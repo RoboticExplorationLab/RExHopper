@@ -209,9 +209,9 @@ void Runner::Run() {
       uvals = gaitPtr->CircleTest();
     } else if (ctrl == "rotorspeed") {
       uvals = gaitPtr->SpeedTest();
-    } else if (ctrl == "sit" || (skip_homing == true && k <= N_sit)) {  // TODO: Should be a different setting for starting from stand
+    } else if (ctrl == "sit" || (start == "start_sit" && k <= N_sit)) {
       uvals = gaitPtr->Sit();
-    } else if (skip_homing == true && N_sit < k <= (N_sit + model.N_getup)) {
+    } else if (start == "start_sit" && N_sit < k <= (N_sit + model.N_getup)) {
       uvals = gaitPtr->GetUp(Q);
     } else {
       if (ctrl == "raibert") {
