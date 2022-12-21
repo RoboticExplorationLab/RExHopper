@@ -106,7 +106,7 @@ void Runner::Run() {
   // initialize vectors of state history for plotting
   std::vector<std::vector<double>> p_raw_vec(N_run), v_raw_vec(N_run), pe_raw_vec(N_run), ve_raw_vec(N_run);
   std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
-  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run);
+  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qa_vec(N_run), qa_ref_vec(N_run);
   std::vector<std::vector<double>> dqa_vec(N_run), dqa_ref_vec(N_run);
   std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), reactf_vec(N_run);
   std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ab_vec(N_run), ae_vec(N_run), grf_vec(N_run);
@@ -168,7 +168,7 @@ void Runner::Run() {
     sh = ContactCheck(bridgePtr->sh, sh_prev, k);  // TODO: stop using exclusively bridgeptr for this
 
     legPtr->UpdateState(qa.segment<2>(0), Q);                  // grab first two actuator pos values
-    rwaPtr->UpdateState(qa.segment<2>(2), dqa.segment<3>(2));  // grab last three actuator vel values
+    rwaPtr->UpdateState(qa.segment<3>(2), dqa.segment<3>(2));  // grab last three actuator pos and vel values
     Eigen::Vector3d peb = legPtr->GetPos();                    // pos of end-effector in body frame (P.E.B.)
     Eigen::Vector3d veb = legPtr->GetVel();                    // vel of end-effector in body frame (V.E.B.)
 
@@ -207,8 +207,10 @@ void Runner::Run() {
       uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
     } else if (ctrl == "circle") {
       uvals = gaitPtr->CircleTest();
-    } else if (ctrl == "rotorspeed") {
-      uvals = gaitPtr->SpeedTest();
+    } else if (ctrl == "rotorvel") {
+      uvals = gaitPtr->VelTest();
+    } else if (ctrl == "rotorpos") {
+      uvals = gaitPtr->PosTest();
     } else if (ctrl == "sit" || (start == "start_sit" && k <= N_sit)) {
       uvals = gaitPtr->Sit();
     } else if (start == "start_sit" && N_sit < k <= (N_sit + model.N_getup)) {
@@ -259,8 +261,9 @@ void Runner::Run() {
       theta_vec.at(k) = {rwaPtr->theta(0) * 180 / M_PI, rwaPtr->theta(1) * 180 / M_PI, rwaPtr->theta(2) * 180 / M_PI};
       theta_ref_vec.at(k) = {rwaPtr->setp(0) * 180 / M_PI, rwaPtr->setp(1) * 180 / M_PI, rwaPtr->setp(2) * 180 / M_PI};
 
-      qla_vec.at(k) = {qa(0) * 180 / M_PI, qa(1) * 180 / M_PI};
-      qla_ref_vec.at(k) = {qla_ref(0) * 180 / M_PI, qla_ref(1) * 180 / M_PI};
+      qa_vec.at(k) = {qa(0) * 180 / M_PI, qa(1) * 180 / M_PI, qa(2) * 180 / M_PI, qa(3) * 180 / M_PI, qa(4) * 180 / M_PI};
+      qa_ref_vec.at(k) = {qla_ref(0) * 180 / M_PI, qla_ref(1) * 180 / M_PI, rwaPtr->q_ref(0) * 180 / M_PI, rwaPtr->q_ref(1) * 180 / M_PI,
+                          rwaPtr->q_ref(2) * 180 / M_PI};
 
       peb_vec.at(k) = {peb(0), peb(1), peb(2)};
       peb_ref_vec.at(k) = {gaitPtr->peb_ref(0), gaitPtr->peb_ref(1), gaitPtr->peb_ref(2)};
@@ -324,7 +327,7 @@ void Runner::Run() {
     // }
     // Plots::PlotMap2D(k_final, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
     // Plots::PlotMap3D(k_final, "3D Position vs Time", "p", p_vec, 0, 0);
-    // Plots::Plot2(k_final, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
+    Plots::Plot5(k_final, "Actuator Joint Angular Positions", "q", qa_vec, qa_ref_vec, 0);
     Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
     Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
     // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);

@@ -21,9 +21,9 @@ Gait::Gait(Model model_, double dt_, std::string bridge_, Eigen::Vector3d peb_re
   pf_ref.setZero();
 
   if (bridge_ == "mujoco") {
-    x_adj = 0.00996875;
+    x_adj = -0.004;
   } else if (bridge_ == "hardware") {
-    x_adj = 0.004;
+    x_adj = 0.0;
   } else {
     throw std::runtime_error("Invalid bridge");
   }
@@ -157,12 +157,22 @@ uVals Gait::CircleTest() {
   return uVals{u, qla_ref, ctrlMode};
 }
 
-uVals Gait::SpeedTest() {
+uVals Gait::VelTest() {
   // check reaction wheel speed polarity matches torque polarity
   Eigen::Vector2d qla_ref;
   qla_ref.setZero();
   std::string ctrlMode = "None";  // legs go limp
 
-  u.segment<3>(2) = rwaPtr->RotorSpeedCtrl();
+  u.segment<3>(2) = rwaPtr->RotorVelCtrl();
+  return uVals{u, qla_ref, ctrlMode};
+}
+
+uVals Gait::PosTest() {
+  // check reaction wheel pos polarity matches torque polarity
+  Eigen::Vector2d qla_ref;
+  qla_ref.setZero();
+  std::string ctrlMode = "None";  // legs go limp
+
+  u.segment<3>(2) = rwaPtr->RotorPosCtrl();
   return uVals{u, qla_ref, ctrlMode};
 }

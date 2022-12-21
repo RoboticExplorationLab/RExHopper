@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include "Eigen/Dense"
-#include "hopper_mpc/lowpass.h"
+// #include "hopper_mpc/lowpass.h"
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/pid.h"
 
@@ -16,7 +16,8 @@ class Rwa {                             // The class
   // void UpdateGains(Eigen::Vector3d kp, Eigen::Vector3d kd);
   Eigen::Vector3d AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref);
   Eigen::Vector3d TorqueCtrl(Eigen::Vector3d tau_ref);
-  Eigen::Vector3d RotorSpeedCtrl();
+  Eigen::Vector3d RotorVelCtrl();
+  Eigen::Vector3d RotorPosCtrl();
   Eigen::Vector3d theta;
   Eigen::Vector3d setp;
   Eigen::Vector3d dq_ref;
@@ -32,20 +33,17 @@ class Rwa {                             // The class
   Eigen::Vector3d ki_tau;
   Eigen::Vector3d kd_tau;
   // PID3 pid_tau;
-  Eigen::Vector3d kp_vel;
-  Eigen::Vector3d ki_vel;
-  Eigen::Vector3d kd_vel;
-  // PID3 pid_vel;
   std::unique_ptr<PID3> pid_tauPtr;
-  std::unique_ptr<PID3> pid_velPtr;
-  // filter
-  std::unique_ptr<LowPass3D> lowpassPtr1;
-  std::unique_ptr<LowPass3D> lowpassPtr2;
 
   Eigen::Vector3d kp_rs;
   Eigen::Vector3d ki_rs;
   Eigen::Vector3d kd_rs;
   std::unique_ptr<PID3> pid_rsPtr;
+
+  Eigen::Vector3d kp_pos;
+  Eigen::Vector3d ki_pos;
+  Eigen::Vector3d kd_pos;
+  std::unique_ptr<PID3> pid_posPtr;
 
   Eigen::DiagonalMatrix<double, 3> kp_diag;
   Eigen::DiagonalMatrix<double, 3> kd_diag;
