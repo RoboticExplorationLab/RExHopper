@@ -138,7 +138,7 @@ void Runner::Run() {
   int k_final = N_run - 1;  // the final number of steps used, defaults to N_run -1
 
   for (int k = 0; k < N_run; k++) {
-    auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
+    // auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
 
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
     if (k == 0) {

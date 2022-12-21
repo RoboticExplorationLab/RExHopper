@@ -1,8 +1,15 @@
+// #include <algorithm>
 #include <iostream>
 #include <string>
 #include "Eigen/Dense"
 #include "hopper_mpc/argparse.hpp"
 #include "hopper_mpc/runner.h"
+
+void checklist(std::vector<std::string> list_in, std::string input, std::string name) {
+  if (std::find(std::begin(list_in), std::end(list_in), input) == std::end(list_in)) {
+    throw std::runtime_error("Invalid " + name + ": " + input);
+  }
+}
 
 int main(int argc, char* argv[]) {
   argparse::ArgumentParser program("Hopper");
@@ -59,6 +66,15 @@ int main(int argc, char* argv[]) {
   }
 
   // basic checks
+  std::vector<std::string> bridge_list{"hardware", "mujoco"};
+  checklist(bridge_list, bridge, "bridge");
+
+  std::vector<std::string> start_list{"start_stand", "start_sit", "fixed"};
+  checklist(start_list, start, "start");
+
+  std::vector<std::string> ctrl_list{"mpc", "raibert", "stand", "idle", "rotorspeed", "circle"};
+  checklist(ctrl_list, ctrl, "ctrl");
+
   if (start != "fixed" && (ctrl == "circle" || ctrl == "rotorspeed")) {
     throw std::runtime_error("Invalid command combination: Cannot run this ctrl test unless robot is fixed in place");
   }

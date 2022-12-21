@@ -64,7 +64,7 @@ catkin clean
 ### Running the MuJoCo Simulation
 
 ```
-rosrun hopper_mpc hopper_mpc mpc raibert 5000 mujoco --plot
+rosrun hopper_mpc hopper_mpc mujoco start_stand stand 5000 --plot
 ```
 
 ## Running Hardware Control
@@ -105,14 +105,28 @@ roslaunch mocap_optitrack mocap.launch
 ```
 ### Hardware Control Initialization
 ```
-rosrun hopper_mpc hopper_mpc mpc raibert 5000 hardware --plot
+rosrun hopper_mpc hopper_mpc hardware start_stand stand 5000 --plot
 ```
 
 ## Argparse Arguments Explained
 
+   - bridge
+      - `hardware`
+         - Control the hardware
+      - `mujoco`  
+         - Run MuJoCo sim
+   
+   - start
+      - `start_stand`
+         - Start standing
+      - `start_sit`
+         - Start from a sitting position
+      - `fixed`
+         - The robot base is fixed to a jig
+
    - ctrl
       - `mpc`
-         - Convex MPC
+         - Convex MPC (WIP)
       - `raibert`
          - Raibert hopping
       - `stand`
@@ -121,21 +135,22 @@ rosrun hopper_mpc hopper_mpc mpc raibert 5000 hardware --plot
          - Do nothing
       - `circle`
          - A leg movement test, should be paired with `--fixed`
+      - `rotorspeed`
+         - A reaction wheel movement test, should be paired with `--fixed`
 
    - N_run
       - Specify the number of timesteps to run for
-
-   - bridge
-      - `hardware`
-         - Control the hardware
-      - `mujoco`  
-         - Run MuJoCo sim
-
    - `--plot`
       - Enable plotting
-   - `--fixed`
-      - Fix the body in place (in sim)
-   - `--home` 
-      - Home leg positions (on hardware)
+   - `--skip_homing` 
+      - Don't home leg positions (on hardware)
    - `--skip_kf`
       - Don't use the kalman filter
+
+## ODrive Setup
+
+See the [ODrive Setup doc](ODriveSetup.md).
+
+## Creating New MJCFs
+
+See the [Generating MJCFs doc](GeneratingMJCFs.md).
