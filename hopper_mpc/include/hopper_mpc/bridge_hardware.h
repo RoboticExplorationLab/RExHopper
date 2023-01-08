@@ -45,6 +45,7 @@ class HardwareBridge : public Bridge {  // The class
 
  private:
   void Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir, float cur_lim, float vel_lim);
+  void SetPosOffset(std::unique_ptr<ODriveCan>& ODrive, int node_id);
   void Startup(std::unique_ptr<ODriveCan>& ODrive, int node_id, float cur_lim, float vel_lim);
   void SetPosCtrlMode(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init);
   void SetTorCtrlMode(std::unique_ptr<ODriveCan>& ODrive, int node_id);

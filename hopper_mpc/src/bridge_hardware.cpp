@@ -104,6 +104,10 @@ void HardwareBridge::Init() {
   Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
   Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
   Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
+  // ensure reaction wheel positions are zeroed
+  SetPosOffset(ODriveCANright, node_id_rwr);
+  SetPosOffset(ODriveCANleft, node_id_rwl);
+  SetPosOffset(ODriveCANyaw, node_id_rwz);
 
   if (start == "start_stand") {
     SetPosCtrlMode(ODriveCANleft, node_id_q0, model.q_init(0));
@@ -140,6 +144,10 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
   ODrive->SetLimits(node_id, cur_lim, vel_lim);  // set limits back to normal
   // ODrive->SetPositionGain(node_id, position_gain);
   // ODrive->SetVelocityGains(node_id, velocity_gain, velocity_integrator_gain);
+}
+
+void HardwareBridge::SetPosOffset(std::unique_ptr<ODriveCan>& ODrive, int node_id) {
+  q_offset(node_id) = ODrive->GetPosition(node_id);  // read the RAW encoder position
 }
 
 void HardwareBridge::Startup(std::unique_ptr<ODriveCan>& ODrive, int node_id, float cur_lim, float vel_lim) {
