@@ -58,8 +58,8 @@ void HardwareBridge::Init() {
   float vel_lim_rmdx10 = 10;
   float cur_lim_rmdx10 = 60;  // 60;
 
-  float vel_lim_r100 = 60;  // max 4400 rpm = 73 rps = 461 rad/s
-  float cur_lim_r100 = 95;  // max 104
+  float vel_lim_r100 = 60;   // max 4400 rpm = 73 rps = 461 rad/s
+  float cur_lim_r100 = 104;  // max 104
 
   float vel_lim_r80 = 60;  // max 5250 rpm = 87.5 rps = 550 rad/s
   float cur_lim_r80 = 46;  // max 46
@@ -121,7 +121,7 @@ void HardwareBridge::Init() {
     std::cin.ignore();
   } else if (start == "fixed") {
   }
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir, float cur_lim, float vel_lim) {
@@ -179,6 +179,7 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   dqa = GetJointVel();
 
   CheckEndStops(qa);
+  CheckRotorSpeed(dqa);
   // std::cout << qa(0) * 180 / M_PI << ", " << qa(1) * 180 / M_PI << ", ref = " << qla_ref(0) << ", " << qla_ref(1) << "\n";
 
   // --- begin collecting sensor data --- //
@@ -308,6 +309,15 @@ void HardwareBridge::CheckEndStops(Eigen::Matrix<double, 5, 1> qa) {
     End();
     stop == true;
     std::cout << "CheckEndStops: Joints hitting endstops, engaging e-stop \n";
+  }
+}
+
+void HardwareBridge::CheckRotorSpeed(Eigen::Matrix<double, 5, 1> dqa) {
+  // safety check to see if rotor speed is saturated
+  if (abs(dqa(2)) >= model.dq_max(2) || abs(dqa(3)) >= model.dq_max(3) || abs(dqa(4)) >= model.dq_max(4)) {
+    End();
+    stop == true;
+    std::cout << "CheckRotorSpeed: Reaction wheel(s) saturated, engaging e-stop \n";
   }
 }
 

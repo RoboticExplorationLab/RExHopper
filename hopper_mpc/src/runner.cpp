@@ -230,9 +230,10 @@ void Runner::Run() {
     qla_ref = uvals.qla_ref;
     ctrlMode = uvals.ctrlMode;
 
-    // clip torques to max possible
+    // clip torque commands to max
     for (int i = 0; i < model.n_a; i++) {
-      u(i) = Utils::Clip(u(i), -model.a_tau_stall(i) * 1.5, model.a_tau_stall(i) * 1.5);
+      u(i) = Utils::Clip(u(i), -model.a_tau_lim(i), model.a_tau_lim(i));
+      // u(i) = Utils::Clip(u(i), -model.a_tau_stall(i) * 1.5, model.a_tau_stall(i) * 1.5);
     }
 
     // Eigen::Vector4d tau_dist = obPtr->TorqueEst(bridgePtr->tau.segment<2>(0));
@@ -461,7 +462,7 @@ bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   Q_no_yaw = (Utils::ExtractYawQuat(Q).conjugate() * Q).normalized();  // the base quaternion ignoring heading
   bool stop = false;
   double angle = Utils::AngleBetween(Q_frame, Q_no_yaw) * M_PI / 180;
-  if (angle > 20) {
+  if (angle > 7.0) {
     std::cout << "Fall likely; Deactivating at t = " << t << " s with angle = " << angle << " degrees \n";
     stop = true;
   }

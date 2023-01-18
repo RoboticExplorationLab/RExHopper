@@ -66,6 +66,7 @@ class HardwareBridge : public Bridge {  // The class
   void SetJointPos(Eigen::Vector2d qla_ref);  // only need pos control for leg actuators afaik
   void SetJointTorque(Eigen::Matrix<double, 5, 1> u);
   void CheckEndStops(Eigen::Matrix<double, 5, 1> qa);
+  void CheckRotorSpeed(Eigen::Matrix<double, 5, 1> dqa);
   // double TurnsToRadians(double turns);
 
   std::unique_ptr<MocapSub> mocapPtr;

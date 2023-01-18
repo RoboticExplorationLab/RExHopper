@@ -24,7 +24,9 @@ struct Model {
   Eigen::Vector4d I;                        // leg link moments of inertia
   Eigen::Matrix<double, 6, 1> leg_dim;      // leg dimensions
   Eigen::Matrix<double, 5, 1> a_kt;         // actuator KT ratings
+  Eigen::Matrix<double, 5, 1> a_tau_lim;    // user-specified torque limits
   Eigen::Matrix<double, 5, 1> a_tau_stall;  // actuator rated stall torques
+  Eigen::Matrix<double, 5, 1> dq_max;       // actuator rated max speeds
   Eigen::Vector3d rh;
   Eigen::Matrix3d inertia;        // total inertia matrix
   Eigen::Matrix<double, 7, 5> S;  // actuator selection matrix

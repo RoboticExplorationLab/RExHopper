@@ -18,20 +18,37 @@ odrv0.config.dc_bus_undervoltage_trip_level = 43.2
 
 Max Positive Current: Use the C rating on your batteries divided by the number of ODrives being used. This is the current on the power supply side, so it's not necessarily going to match the current demanded by the motors.
 
-150C * 1.2 Ah / 5 = 36
+With 1.2 Ah pack:
+150C * 1.2 Ah / 5 = 36A
 ```
 odrv0.config.dc_max_positive_current = 36
 ```
+
+With 5 Ah pack:
+150C * 5 Ah / 5 = 150A
+```
+odrv0.config.dc_max_positive_current = 150
+```
+
+
 Max Negative Current and Max Regen Current: -1  and 0 if you do not have regen braking. 
 
 If you do have regen braking, the highest value would be max charge rate * p count. Max charge rate should be found from the battery specifications, or you can use 1C to be safe...
 
-12S1P, Max Charge = 5C * 1.2Ah = 6A
+Remember to divide by the number of ODrives you apply this to. There are 5 ODrives. Currently we require only 3 (the reaction wheels) to have regen.
 
-But, remember to divide by the number of ODrives you apply this to. Since there are 5 ODrives, that's 1.2A regen per...
+12S1P, 5C, 1.2Ah, Max Charge = 5 * 1.2 / 3 = 2A
+
 ```
-odrv0.config.dc_max_negative_current = -1.2
-odrv0.config.max_regen_current = 1.2
+odrv0.config.dc_max_negative_current = -2
+odrv0.config.max_regen_current = 2
+```
+
+12S1P, 15C, 5Ah, Max Charge = 15 * 5 / 3 = 25A
+
+```
+odrv0.config.dc_max_negative_current = -25
+odrv0.config.max_regen_current = 25
 ```
 
 Use the onboard encoder:

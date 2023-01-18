@@ -111,9 +111,12 @@ int main(int argc, char* argv[]) {
   hopper.l_c3 << 0.101438164997463, -0.00250998180028712, -0.0148532863907363;
   hopper.I << 0.00083862, 0.00074326, 0.00280670, 0.00135609;
 
-  hopper.leg_dim << .1, .27, .27, .1, .17, .0205;
-  hopper.a_kt << 1.73, 1.73, 0.106, 0.106, 0.0868;
-  hopper.a_tau_stall << 50, 50, 12, 12, 4;                                                       // actuator rated stall torques
+  hopper.leg_dim << .1, .27, .27, .1, .17, .0205;   // leg dimensions
+  hopper.a_kt << 1.73, 1.73, 0.106, 0.106, 0.0868;  // motor constants
+  hopper.a_tau_lim << 50, 50, 4, 4, 2;              // user-specified torque limits
+  hopper.a_tau_stall << 50, 50, 12, 12, 4;          // actuator rated stall torques
+  hopper.dq_max << 20, 20, 461, 461, 550;           // actuator rated max speeds
+
   hopper.inertia << 0.07542817, 0.00016327, 0.00222099,  // clang-format off
                     0.00016327, 0.04599064, -0.00008321,
                     0.00222099, -0.00008321, 0.07709692;                  // clang-format on
