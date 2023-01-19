@@ -129,10 +129,11 @@ int main(int argc, char* argv[]) {
               0, 0, 0, 0, 1;  // clang-format on
   hopper.qla_home << 29 * M_PI / 180, -187 * M_PI / 180;                                         // homing hardstop locations
   hopper.qla_sit << 0 * M_PI / 180, -120 * M_PI / 180;                                           // sitting position
-  hopper.qla_stand << -0.886343, -2.13709;                                                       // standing position
-  hopper.k_kin << 45, 45 * 0.02;                                                                 // kinematic PD gains
-  hopper.N_getup = 500;  // number of timesteps taken to stand up from sitting
-  double dt = 0.001;     // 1 kHz
+  hopper.qla_pre_stand << -47.53 * M_PI / 180, -141.74 * M_PI / 180;                             // leg position just before standing up
+  hopper.qla_stand << -52.03 * M_PI / 180, -146.26 * M_PI / 180;                                 // standing position
+  hopper.k_kin << 45.0, 45.0 * 0.02;                                                             // kinematic PD gains
+  hopper.N_getup = 500;                                                                          // no. of timesteps to stand from sitting
+  double dt = 0.001;                                                                             // 1 kHz
 
   Runner runner(hopper, dt, bridge, start, ctrl, N_run, plot, skip_homing, skip_kf);
   runner.Run();  // Call the method

@@ -32,6 +32,7 @@ struct Model {
   Eigen::Matrix<double, 7, 5> S;  // actuator selection matrix
   Eigen::Vector2d qla_home;       // home positions for leg homing
   Eigen::Vector2d qla_sit;        // position for default standing
+  Eigen::Vector2d qla_pre_stand;  // leg position just before standing up
   Eigen::Vector2d qla_stand;      // position for default standing
   Eigen::Vector2d k_kin;          // inv kin control gains kp and kd
   int N_getup;                    // number of timesteps to get up from sitting position

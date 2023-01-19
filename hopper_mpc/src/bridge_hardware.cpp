@@ -55,15 +55,6 @@ void HardwareBridge::Init() {
   ODriveCANright->initialize(mapCANright);
   ODriveCANyaw->initialize(mapCANyaw);
 
-  float vel_lim_rmdx10 = 10;
-  float cur_lim_rmdx10 = 60;  // 60;
-
-  float vel_lim_r100 = 60;   // max 4400 rpm = 73 rps = 461 rad/s
-  float cur_lim_r100 = 104;  // max 104
-
-  float vel_lim_r80 = 60;  // max 5250 rpm = 87.5 rps = 550 rad/s
-  float cur_lim_r80 = 46;  // max 46
-
   // NOTE: Always turn the power distribution on with the leg in the tight seated crouch position. EVEN WHEN HOMING WITH ROBOT FIXED IN
   // MIDAIR! Otherwise saved homing will be wrong. Because the ODrive # rotations is based on the pos you were at when it turned on
   if (skip_homing == false) {
@@ -110,8 +101,8 @@ void HardwareBridge::Init() {
   SetPosOffset(ODriveCANyaw, node_id_rwz);
 
   if (start == "start_stand") {
-    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.q_init(0));
-    SetPosCtrlMode(ODriveCANright, node_id_q2, model.q_init(2));
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_pre_stand(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_pre_stand(1));
     std::cout << "Controller ready to begin. Press any key to continue. \n";
     std::cin.ignore();
   } else if (start == "start_sit") {
@@ -121,7 +112,7 @@ void HardwareBridge::Init() {
     std::cin.ignore();
   } else if (start == "fixed") {
   }
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir, float cur_lim, float vel_lim) {
@@ -314,7 +305,9 @@ void HardwareBridge::CheckEndStops(Eigen::Matrix<double, 5, 1> qa) {
 
 void HardwareBridge::CheckRotorSpeed(Eigen::Matrix<double, 5, 1> dqa) {
   // safety check to see if rotor speed is saturated
-  if (abs(dqa(2)) >= model.dq_max(2) || abs(dqa(3)) >= model.dq_max(3) || abs(dqa(4)) >= model.dq_max(4)) {
+  // if (abs(dqa(2)) >= model.dq_max(2) * 0.9 || abs(dqa(3)) >= model.dq_max(3) * 0.9 || abs(dqa(4)) >= model.dq_max(4) * 0.9) {
+  if (abs(dqa(2)) >= 0.9 * vel_lim_r100 / (2 * M_PI) || abs(dqa(3)) >= 0.9 * vel_lim_r100 / (2 * M_PI) ||
+      abs(dqa(4)) >= 0.9 * vel_lim_r80 / (2 * M_PI)) {
     End();
     stop == true;
     std::cout << "CheckRotorSpeed: Reaction wheel(s) saturated, engaging e-stop \n";

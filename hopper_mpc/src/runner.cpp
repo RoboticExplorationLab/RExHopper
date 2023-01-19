@@ -462,8 +462,8 @@ bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   Q_no_yaw = (Utils::ExtractYawQuat(Q).conjugate() * Q).normalized();  // the base quaternion ignoring heading
   bool stop = false;
   double angle = Utils::AngleBetween(Q_frame, Q_no_yaw) * M_PI / 180;
-  if (angle > 7.0) {
-    std::cout << "Fall likely; Deactivating at t = " << t << " s with angle = " << angle << " degrees \n";
+  if (angle > 5.0) {
+    std::cout << "FallCheck: Fall likely; Deactivating at t = " << t << " s with angle = " << angle << " degrees \n";
     stop = true;
   }
   return stop;

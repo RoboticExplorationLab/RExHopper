@@ -82,4 +82,13 @@ class HardwareBridge : public Bridge {  // The class
 
   std::shared_ptr<saved_offsets> saved;
   std::shared_ptr<saved_offsets> saved_get;
+
+  float vel_lim_rmdx10 = 10;
+  float cur_lim_rmdx10 = 60;  // 60;
+
+  float vel_lim_r100 = 60;   // max 4400 rpm = 73 rps = 461 rad/s
+  float cur_lim_r100 = 104;  // max 104
+
+  float vel_lim_r80 = 60;  // max 5250 rpm = 87.5 rps = 550 rad/s
+  float cur_lim_r80 = 46;  // max 46
 };
