@@ -78,9 +78,10 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
   mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
 }
 
-MujocoBridge::MujocoBridge(Model model_, double dt_, std::string start_, bool skip_homing_) : Base(model_, dt_, start_, skip_homing_) {}
+MujocoBridge::MujocoBridge(Model model_, double dt_, std::shared_ptr<Leg>* legPtr_, std::string start_, bool skip_homing_)
+    : Base(model_, dt_, legPtr_, start_, skip_homing_) {}
 
-void MujocoBridge::Init() {
+void MujocoBridge::Init(double x_adj_) {
   char error[ERROR_SIZE] = "Could not load binary model";
 
   std::string path_mjcf;

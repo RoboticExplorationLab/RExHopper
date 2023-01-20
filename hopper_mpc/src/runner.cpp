@@ -41,15 +41,20 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   N_c = t_stance / dt;               // number of timesteps spent in contact
   N_stop = 100;                      // number of timesteps spent stopped at the goal
 
+  legPtr = std::make_shared<Leg>(model, dt);
+  rwaPtr = std::make_shared<Rwa>(bridge, dt);
+
   // class definitions
   if (bridge_ == "hardware") {
-    bridgePtr.reset(new HardwareBridge(model, dt, start, skip_homing));
+    bridgePtr.reset(new HardwareBridge(model, dt, &legPtr, start, skip_homing));
     N_sit = 0;  // number of timesteps spent sitting
+    x_adj = 0.005;
   } else if (bridge_ == "mujoco") {
-    bridgePtr.reset(new MujocoBridge(model, dt, start, skip_homing));
+    bridgePtr.reset(new MujocoBridge(model, dt, &legPtr, start, skip_homing));
     N_sit = 1500;  // number of timesteps spent sitting
+    x_adj = -0.004;
     // } else if (bridge_ == "raisim") {
-    // bridgePtr.reset(new RaisimBridge(model, dt, start, skip_homing));
+    // bridgePtr.reset(new RaisimBridge(model, dt, legPtr, start, skip_homing));
   } else {
     throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
@@ -87,10 +92,8 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   veb_ref.setZero();                                                 // desired operational space leg velocity
   fb_ref.setZero();                                                  // desired operational space leg force
   u.setZero();                                                       // ctrl Torques
-  legPtr = std::make_shared<Leg>(model, dt);
-  rwaPtr = std::make_shared<Rwa>(bridge, dt);
 
-  gaitPtr.reset(new Gait(model, dt, bridge, peb_ref, &legPtr, &rwaPtr));  // gait controller class
+  gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr, x_adj));  // gait controller class
   kfPtr.reset(new Kf(dt));
   obPtr.reset(new Observer(dt, &legPtr));
 
@@ -99,7 +102,7 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
 }
 
 void Runner::Run() {
-  bridgePtr->Init();
+  bridgePtr->Init(x_adj);
   kfPtr->InitState(p, v, p + Q.matrix() * peb_ref, v + Q.matrix() * veb_ref);
   double t = 0.0;
 
@@ -461,8 +464,9 @@ bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   Eigen::Quaterniond Q_no_yaw;
   Q_no_yaw = (Utils::ExtractYawQuat(Q).conjugate() * Q).normalized();  // the base quaternion ignoring heading
   bool stop = false;
-  double angle = Utils::AngleBetween(Q_frame, Q_no_yaw) * M_PI / 180;
-  if (angle > 5.0) {
+  double angle = Utils::AngleBetween(Q_frame, Q_no_yaw) * 180 / M_PI;
+  // angle max = arcsin(tau_max/(m * g * l)) -> to degrees
+  if (angle > 4.875) {
     std::cout << "FallCheck: Fall likely; Deactivating at t = " << t << " s with angle = " << angle << " degrees \n";
     stop = true;
   }

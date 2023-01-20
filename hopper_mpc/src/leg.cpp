@@ -72,7 +72,7 @@ Eigen::Matrix<double, 2, 1> Leg::KinInv(Eigen::Vector3d p_ref) {
   double q0 = atan2(zm, xm) + sigma;
   qa_out << q0, q2;
   return qa_out;
-};
+}
 
 Eigen::Vector3d Leg::GetPos() {
   // solve based on leg's current state

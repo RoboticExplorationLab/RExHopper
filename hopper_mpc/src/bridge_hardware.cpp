@@ -5,9 +5,10 @@
 #include <iostream>
 #include "hopper_mpc/utils.hpp"
 
-HardwareBridge::HardwareBridge(Model model_, double dt_, std::string start_, bool skip_homing_) : Base(model_, dt_, start_, skip_homing_) {}
+HardwareBridge::HardwareBridge(Model model_, double dt_, std::shared_ptr<Leg>* legPtr_, std::string start_, bool skip_homing_)
+    : Base(model_, dt_, legPtr_, start_, skip_homing_) {}
 
-void HardwareBridge::Init() {
+void HardwareBridge::Init(double x_adj_) {
   // ROS subscribers
   int argcr = 0;
   char** argvr = NULL;
@@ -92,17 +93,22 @@ void HardwareBridge::Init() {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
-  Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
-  Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
+  // Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
+  // Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
+  // Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
   // ensure reaction wheel positions are zeroed
-  SetPosOffset(ODriveCANright, node_id_rwr);
-  SetPosOffset(ODriveCANleft, node_id_rwl);
-  SetPosOffset(ODriveCANyaw, node_id_rwz);
+  // SetPosOffset(ODriveCANright, node_id_rwr);
+  // SetPosOffset(ODriveCANleft, node_id_rwl);
+  // SetPosOffset(ODriveCANyaw, node_id_rwz);
 
   if (start == "start_stand") {
-    SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_pre_stand(0));
-    SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_pre_stand(1));
+    Eigen::Vector3d pb_ref(x_adj_, 0.0, -0.425);
+    Eigen::Vector2d qa_ref;
+    qa_ref = legPtr->KinInv(pb_ref);
+    // SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_pre_stand(0));
+    // SetPosCtrlMode(ODriveCANright, node_id_q2, model.qla_pre_stand(1));
+    SetPosCtrlMode(ODriveCANleft, node_id_q0, qa_ref(0));
+    SetPosCtrlMode(ODriveCANright, node_id_q2, qa_ref(1));
     std::cout << "Controller ready to begin. Press any key to continue. \n";
     std::cin.ignore();
   } else if (start == "start_sit") {

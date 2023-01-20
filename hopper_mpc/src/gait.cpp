@@ -3,8 +3,8 @@
 #include <iostream>
 #include "hopper_mpc/utils.hpp"
 
-Gait::Gait(Model model_, double dt_, std::string bridge_, Eigen::Vector3d peb_ref_, std::shared_ptr<Leg>* legPtr_,
-           std::shared_ptr<Rwa>* rwaPtr_) {
+Gait::Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<Leg>* legPtr_, std::shared_ptr<Rwa>* rwaPtr_,
+           double x_adj_) {
   model = model_;
   dt = dt_;
   Eigen::Vector3d kp;
@@ -20,13 +20,7 @@ Gait::Gait(Model model_, double dt_, std::string bridge_, Eigen::Vector3d peb_re
   peb_ref = peb_ref_;
   pf_ref.setZero();
 
-  if (bridge_ == "mujoco") {
-    x_adj = -0.004;
-  } else if (bridge_ == "hardware") {
-    x_adj = 0.0;
-  } else {
-    throw std::runtime_error("Invalid bridge");
-  }
+  x_adj = x_adj_;
 
   peb_ref << x_adj, 0, -model.h0 * 1.5;
   u.setZero();
@@ -34,7 +28,7 @@ Gait::Gait(Model model_, double dt_, std::string bridge_, Eigen::Vector3d peb_re
   // standup
   N_getup = model.N_getup;
   peb_ref_init = legPtr->KinFwd(model.qla_sit(0), model.qla_sit(1));
-  peb_ref_final << 0, 0, -model.h0 * 5 / 3;
+  peb_ref_final << x_adj, 0, -model.h0 * 5 / 3;
   peb_ref_trajx = Eigen::VectorXd::LinSpaced(N_getup, peb_ref_init(0), peb_ref_final(0));
   peb_ref_trajz = Eigen::VectorXd::LinSpaced(N_getup, peb_ref_init(2), peb_ref_final(2));
 }

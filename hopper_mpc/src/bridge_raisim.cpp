@@ -2,10 +2,10 @@
 #include <filesystem>
 #include <iostream>
 
-RaisimBridge::RaisimBridge(Model model_, double dt_, std::string start_, bool skip_homing_)
-    : Base(model_, dt_, start_, skip_homing_), server(&world) {}
+RaisimBridge::RaisimBridge(Model model_, double dt_, std::shared_ptr<Leg>* legPtr_, std::string start_, bool skip_homing_)
+    : Base(model_, dt_, legPtr_, start_, skip_homing_), server(&world) {}
 
-void RaisimBridge::Init() {
+void RaisimBridge::Init(double x_adj_) {
   // char tmp[256];
   // getcwd(tmp, 256);
   // std::cout << "Current working directory: " << tmp << std::endl;

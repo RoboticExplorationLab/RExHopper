@@ -34,10 +34,10 @@ class saved_offsets {
 
 class HardwareBridge : public Bridge {  // The class
  public:
-  using Base = Bridge;                                                              // Access specifier
-  HardwareBridge(Model model_, double dt_, std::string start_, bool skip_homing_);  // constructor
+  using Base = Bridge;                                                                                             // Access specifier
+  HardwareBridge(Model model_, double dt_, std::shared_ptr<Leg>* legPtr_, std::string start_, bool skip_homing_);  // constructor
   // --- virtual function overrides --- //
-  void Init() override;
+  void Init(double x_adj_) override;
   retVals SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) override;
   void End() override;
   // --- //
@@ -65,6 +65,7 @@ class HardwareBridge : public Bridge {  // The class
   Eigen::Vector2d ConvertToODriveVel(Eigen::Vector2d dqa);
   void SetJointPos(Eigen::Vector2d qla_ref);  // only need pos control for leg actuators afaik
   void SetJointTorque(Eigen::Matrix<double, 5, 1> u);
+
   void CheckEndStops(Eigen::Matrix<double, 5, 1> qa);
   void CheckRotorSpeed(Eigen::Matrix<double, 5, 1> dqa);
   // double TurnsToRadians(double turns);

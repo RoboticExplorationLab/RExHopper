@@ -1,5 +1,6 @@
 #pragma once
 
+#include "hopper_mpc/leg.h"
 #include "hopper_mpc/model.h"
 
 struct retVals {  // Declare a local structure
@@ -13,10 +14,10 @@ struct retVals {  // Declare a local structure
   Eigen::Matrix<double, 5, 1> dqa;  // actuated joint velocities
 };
 
-class Bridge {                                                              // The class
- public:                                                                    // Access specifier
-  Bridge(Model model_, double dt_, std::string start_, bool skip_homing_);  // constructor
-  virtual void Init() = 0;
+class Bridge {                                                                                             // The class
+ public:                                                                                                   // Access specifier
+  Bridge(Model model_, double dt_, std::shared_ptr<Leg>* legPtr_, std::string start_, bool skip_homing_);  // constructor
+  virtual void Init(double x_adj_) = 0;
   virtual retVals SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) = 0;
   virtual void End() = 0;
   Eigen::Matrix<double, 5, 1> tau;      // measured torque
@@ -47,4 +48,6 @@ class Bridge {                                                              // T
 
   Eigen::Matrix<double, 5, 1> qa;
   Eigen::Matrix<double, 5, 1> dqa;
+
+  std::shared_ptr<Leg> legPtr;
 };

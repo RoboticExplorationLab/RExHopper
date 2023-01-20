@@ -94,6 +94,8 @@ class Runner {  // The class
   bool skip_kf;
   double g;  // gravitational constant
 
+  double x_adj;
+
   Eigen::VectorXd L;
   double h0;
   Eigen::Matrix3d J;
