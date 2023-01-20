@@ -149,8 +149,12 @@ rosrun hopper_mpc hopper_mpc hardware start_stand stand 5000 --plot
 
 ## ODrive Setup
 
-See the [ODrive Setup doc](ODriveSetup.md).
+See the [ODrive Setup doc](docs/ODriveSetup.md).
 
 ## Creating New MJCFs
 
-See the [Generating MJCFs doc](GeneratingMJCFs.md).
+See the [Generating MJCFs doc](docs/GeneratingMJCFs.md).
+
+## Testing Protocol
+
+See the [Testing Protocol doc](docs/TestingProtocol.md).
