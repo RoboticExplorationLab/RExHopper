@@ -18,7 +18,7 @@ void HardwareBridge::Init(double x_adj_) {
 
   cx5Ptr.reset(new Cx5());
   // i2c
-  wt901Ptr.reset(new Wt901());
+  // wt901Ptr.reset(new Wt901());
 
   // init variables
   qa.setZero();
@@ -93,16 +93,16 @@ void HardwareBridge::Init(double x_adj_) {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  // Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
-  // Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
-  // Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
+  Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
+  Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
+  Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
   // ensure reaction wheel positions are zeroed
-  // SetPosOffset(ODriveCANright, node_id_rwr);
-  // SetPosOffset(ODriveCANleft, node_id_rwl);
-  // SetPosOffset(ODriveCANyaw, node_id_rwz);
+  SetPosOffset(ODriveCANright, node_id_rwr);
+  SetPosOffset(ODriveCANleft, node_id_rwl);
+  SetPosOffset(ODriveCANyaw, node_id_rwz);
 
   if (start == "start_stand") {
-    Eigen::Vector3d pb_ref(x_adj_, 0.0, -0.425);
+    Eigen::Vector3d pb_ref(x_adj_, 0.0, -0.380);  // just enough to touch the floor
     Eigen::Vector2d qa_ref;
     qa_ref = legPtr->KinInv(pb_ref);
     // SetPosCtrlMode(ODriveCANleft, node_id_q0, model.qla_pre_stand(0));
@@ -225,15 +225,19 @@ Eigen::Matrix<double, 5, 1> HardwareBridge::GetJointPos() {
   // gear ratio is 1/7, magnet is on motor which spins 7 times for every one output spin
   qa(0) = ODriveCANleft->GetPosition(node_id_q0);  // hardware joint facing opposite direction!!
   qa(1) = ODriveCANright->GetPosition(node_id_q2);
+  qa(2) = ODriveCANright->GetPosition(node_id_rwr);
+  qa(3) = ODriveCANleft->GetPosition(node_id_rwl);
+  qa(4) = ODriveCANyaw->GetPosition(node_id_rwz);
+
   qa += -q_offset;  // q0 and q2 should read 0 here if just homed
 
   // Conversion
   qa(0) *= -2 * M_PI / 7;
   //       ^ Negative sign is important!
   qa(1) *= 2 * M_PI / 7;
-  qa(2) = ODriveCANright->GetPosition(node_id_rwr) * 2 * M_PI;
-  qa(3) = ODriveCANleft->GetPosition(node_id_rwl) * 2 * M_PI;
-  qa(4) = ODriveCANyaw->GetPosition(node_id_rwz) * 2 * M_PI;
+  qa(2) *= 2 * M_PI;
+  qa(3) *= 2 * M_PI;
+  qa(4) *= 2 * M_PI;
 
   // correct homing position
   qa(0) += qla_home(0);
@@ -312,8 +316,9 @@ void HardwareBridge::CheckEndStops(Eigen::Matrix<double, 5, 1> qa) {
 void HardwareBridge::CheckRotorSpeed(Eigen::Matrix<double, 5, 1> dqa) {
   // safety check to see if rotor speed is saturated
   // if (abs(dqa(2)) >= model.dq_max(2) * 0.9 || abs(dqa(3)) >= model.dq_max(3) * 0.9 || abs(dqa(4)) >= model.dq_max(4) * 0.9) {
-  if (abs(dqa(2)) >= 0.9 * vel_lim_r100 / (2 * M_PI) || abs(dqa(3)) >= 0.9 * vel_lim_r100 / (2 * M_PI) ||
-      abs(dqa(4)) >= 0.9 * vel_lim_r80 / (2 * M_PI)) {
+  // std::cout << "vel_lim_r100 = " << 0.9 * vel_lim_r100 << "\n";
+  if (abs(dqa(2)) >= model.dq_max(2) * 0.9 || abs(dqa(3)) >= model.dq_max(3) * 0.9 || abs(dqa(4)) >= model.dq_max(4) * 0.9) {
+    // if (abs(dqa(2)) >= 0.9 * vel_lim_r100 || abs(dqa(3)) >= 0.9 * vel_lim_r100 || abs(dqa(4)) >= 0.9 * vel_lim_r80) {
     End();
     stop == true;
     std::cout << "CheckRotorSpeed: Reaction wheel(s) saturated, engaging e-stop \n";

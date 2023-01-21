@@ -84,6 +84,7 @@ class HardwareBridge : public Bridge {  // The class
   std::shared_ptr<saved_offsets> saved;
   std::shared_ptr<saved_offsets> saved_get;
 
+  // note: vel limits are in turns/s, not rad/s
   float vel_lim_rmdx10 = 10;
   float cur_lim_rmdx10 = 60;  // 60;
 

@@ -48,7 +48,7 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   if (bridge_ == "hardware") {
     bridgePtr.reset(new HardwareBridge(model, dt, &legPtr, start, skip_homing));
     N_sit = 0;  // number of timesteps spent sitting
-    x_adj = 0.005;
+    x_adj = -0.002;
   } else if (bridge_ == "mujoco") {
     bridgePtr.reset(new MujocoBridge(model, dt, &legPtr, start, skip_homing));
     N_sit = 1500;  // number of timesteps spent sitting
@@ -303,7 +303,7 @@ void Runner::Run() {
       auto t_after = std::chrono::high_resolution_clock::now();       // current time
       std::chrono::duration<double> tk_chrono = t_after - t0_chrono;  // measured time w.r.t. the initialization of loop
       if (tk_chrono.count() >= t) {
-        // std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
+        std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
         // throw(std::runtime_error("Missed 'real time' deadline"));
       } else {
         int remainder = (t - tk_chrono.count()) * 1000;
@@ -466,7 +466,7 @@ bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   bool stop = false;
   double angle = Utils::AngleBetween(Q_frame, Q_no_yaw) * 180 / M_PI;
   // angle max = arcsin(tau_max/(m * g * l)) -> to degrees
-  if (angle > 4.875) {
+  if (angle > 10) {
     std::cout << "FallCheck: Fall likely; Deactivating at t = " << t << " s with angle = " << angle << " degrees \n";
     stop = true;
   }

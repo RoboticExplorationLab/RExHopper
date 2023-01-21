@@ -20,17 +20,23 @@ Rwa::Rwa(std::string bridge, double dt_) {
   double kd;  // 0.1875;
   double kp;
   double ki;
+  double kpos;
 
   if (bridge == "mujoco") {
     ku = 300;  // 800
     kp = 0.6;
     ki = 0.0;  // an integral term would fight the cascaded velocity term
     kd = 0.04;
+
+    kpos = 0.0001;  // 0.0001
+
   } else {
-    ku = 300;
+    ku = 0;
     kp = 0.6;
     ki = 0.0;
     kd = 0.04;  // 0.1875;
+
+    kpos = 0.0001;  // 0.0001
   }
   kp_tau << kp, kp, kp * 0.5;
   ki_tau << ki, ki, ki * 0.5;  // ki_tau << 0.1, 0.1, 0.01;
@@ -46,10 +52,9 @@ Rwa::Rwa(std::string bridge, double dt_) {
   kd_rs << krd, krd, krd;
   pid_rsPtr.reset(new PID3(dt, kp_rs * kr, ki_rs * kr, kd_rs * kr));
 
-  double kpos = 0.0001;  // 0.0001
-  double kpp = 1.0;      // flywheel position gain
-  double kpi = 0.0;      // gain on integral of position
-  double kpd = 0.0;      // roughly equivalent to velocity proportional term
+  double kpp = 1.0;  // flywheel position gain
+  double kpi = 0.0;  // gain on integral of position
+  double kpd = 0.0;  // roughly equivalent to velocity proportional term
   kp_pos << kpp, kpp, kpp;
   ki_pos << kpi, kpi, kpi;
   kd_pos << kpd, kpd, kpd;
