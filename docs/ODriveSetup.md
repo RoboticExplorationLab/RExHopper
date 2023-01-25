@@ -19,13 +19,16 @@ odrv0.config.dc_bus_undervoltage_trip_level = 43.2
 Max Positive Current: Use the C rating on your batteries divided by the number of ODrives being used. This is the current on the power supply side, so it's not necessarily going to match the current demanded by the motors.
 
 With 1.2 Ah pack:
-150C * 1.2 Ah / 5 = 36A
+
+$ \text{Max Positive Current} = 150C * 1.2Ah / 5 = 36 A $
 ```
 odrv0.config.dc_max_positive_current = 36
 ```
 
 With 5 Ah pack:
-150C * 5 Ah / 5 = 150A
+
+$ \text{Max Positive Current} = 150C * 5Ah / 5 = 150 A $
+
 ```
 odrv0.config.dc_max_positive_current = 150
 ```
@@ -37,14 +40,19 @@ If you do have regen braking, the highest value would be max charge rate * p cou
 
 Remember to divide by the number of ODrives you apply this to. There are 5 ODrives. Currently we require only 3 (the reaction wheels) to have regen.
 
-12S1P, 5C, 1.2Ah, Max Charge = 5 * 1.2 / 3 = 2A
+12S1P, 5C, 1.2Ah:
+
+$ \text{Max Charge} = 5C * 1.2Ah / 3 = 2 A $
 
 ```
 odrv0.config.dc_max_negative_current = -2
 odrv0.config.max_regen_current = 2
 ```
 
-12S1P, 15C, 5Ah, Max Charge = 15 * 5 / 3 = 25A
+12S1P, 15C, 5Ah:
+
+$ \text{Max Charge} = 15C * 5Ah / 3 = 25 A $
+
 
 ```
 odrv0.config.dc_max_negative_current = -25
@@ -93,12 +101,31 @@ The `current_hard_max` setting is a safety limit. If the motor surpasses this li
 
 Note that some of these are higher than the "peak" rated current. That's okay for us as long as the robot is only running for a few seconds at a time.
 
-Also note that ODrive Pro max current output is 120 A.
+Also note that ODrive Pro peak current output is 120 A. 
 
 ```
 odrv0.axis0.config.motor.current_hard_max = 120
 ```
 
+## Torque Constant
+Set the torque constant of each ODrive based on the motor specs. Torque constant can be converted from velocity constant (Kv) as follows:
+
+$ \text{Torque Constant} = \frac{8.27}{\text{Kv}} $
+
+For the RMD-X10 Actuator:
+```
+odrv0.axis0.config.motor.torque_constant = 0.32
+```
+
+For the R100kv90:
+```
+odrv0.axis0.config.motor.torque_constant = 8.27/90
+```
+
+For the R80kv110:
+```
+odrv0.axis0.config.motor.torque_constant = 8.27/110
+```
 
 ## Calibration
 

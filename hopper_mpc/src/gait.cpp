@@ -89,7 +89,7 @@ uVals Gait::KinInvStand(Eigen::Quaterniond Q) {
   Q_ref.setIdentity();
   z_ref = 0;
   // z_ref = 15 * M_PI / 180;
-  peb_ref(2) = -model.h0 * 5 / 3;
+  peb_ref(2) = -model.h0 * 5.0 / 3.0;
   // double kp = model.k_kin(0) * 2;
   // double kd = model.k_kin(1) * 2;
   // u.block<2, 1>(0, 0) = legPtr->KinInvPosCtrl(peb_ref, kp, kd);
