@@ -19,7 +19,6 @@ odrv0.axis0.controller.config.spinout_mechanical_power_threshold = -1000
 odrv0.axis0.controller.config.spinout_electrical_power_threshold = 1000
 odrv0.axis0.config.startup_encoder_offset_calibration = False
 odrv0.axis0.config.motor.resistance_calib_max_voltage = 20
-odrv0.axis0.config.motor.current_hard_max = 120
 odrv0.can.config.baud_rate = 100000
 ```
 
@@ -70,6 +69,13 @@ Also note that ODrive Pro peak current output is 120 A.
 odrv0.axis0.config.motor.current_hard_max = 80  # for RMDX10
 # odrv0.axis0.config.motor.current_hard_max = 120  # for R100kv90
 # odrv0.axis0.config.motor.current_hard_max = 60  # for R80kv110
+```
+
+### Save Configuration
+Don't forget to save after entering these settings.
+
+```
+odrv0.save_configuration()
 ```
 
 ## Explanation
@@ -152,13 +158,6 @@ Note that `resistance_calib_max_voltage` can't be more than half your bus voltag
 
 ```
 odrv0.axis0.config.motor.resistance_calib_max_voltage = 20
-```
-
-### Save Configuration
-Don't forget to save after entering these settings.
-
-```
-odrv0.save_configuration()
 ```
 
 ## Calibration
