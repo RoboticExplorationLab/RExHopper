@@ -172,9 +172,8 @@ For whatever reason, the reaction wheel actuators tend to calibrate with the wro
 
 For your own sake and the robot's sake, run encoder direction finding right after the calibration sequence.
 ```
-odrv0.axis0.requested_state = AxisState.ENCODER_DIR_FIND.error
+odrv0.axis0.requested_state = AxisState.ENCODER_DIR_FIND
 ```
-- should return 0.
 
 To test position control:
 ```
