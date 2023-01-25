@@ -18,7 +18,6 @@ odrv0.axis0.config.encoder_bandwidth = 1500
 odrv0.axis0.controller.config.spinout_mechanical_power_threshold = -1000
 odrv0.axis0.controller.config.spinout_electrical_power_threshold = 1000
 odrv0.axis0.config.startup_encoder_offset_calibration = False
-odrv0.axis0.config.startup_closed_loop_control = True
 odrv0.axis0.config.motor.resistance_calib_max_voltage = 20
 odrv0.axis0.config.motor.current_hard_max = 120
 odrv0.can.config.baud_rate = 100000
@@ -195,12 +194,16 @@ odrv0.axis0.requested_state = AxisState.IDLE
 odrv0.save_configuration()
 ```
 
-## Optional Watchdog Timer
+## Optional
 
-This may force you to restart during testing, though.
+The watchdog timer may be useful for safety, but may force you to restart during testing.
+
+Starting up in closed loop control mode is probably unnecessary because the CAN bus can set up closed loop control when it's needed.
+
 ```
 odrv0.axis0.config.enable_watchdog = True
 odrv0.axis0.config.watchdog_timeout = 5 * 60  # 5 minutes
+odrv0.axis0.config.startup_closed_loop_control = True
 ```
 
 ## Useful functions
