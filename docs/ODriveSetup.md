@@ -19,7 +19,7 @@ odrv0.axis0.controller.config.spinout_mechanical_power_threshold = -1000
 odrv0.axis0.controller.config.spinout_electrical_power_threshold = 1000
 odrv0.axis0.config.startup_encoder_offset_calibration = False
 odrv0.axis0.config.motor.resistance_calib_max_voltage = 20
-odrv0.can.config.baud_rate = 100000
+odrv0.can.config.baud_rate = 1000000  # should match the baud rate used in hardwarebridge
 ```
 
 ### Negative and Regen Current
