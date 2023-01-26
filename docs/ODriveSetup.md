@@ -4,8 +4,8 @@
 
 This assumes you are using the 5Ah Turnigy Nano-Tech battery pack.
 ```
-odrv0.config.dc_bus_overvoltage_trip_level = 12 * 4.2
-odrv0.config.dc_bus_undervoltage_trip_level = 12 * 3.2
+odrv0.config.dc_bus_overvoltage_trip_level = 12 * 4.2 + 2
+odrv0.config.dc_bus_undervoltage_trip_level = 12 * 3.6
 odrv0.config.dc_max_positive_current = 150
 odrv0.axis0.config.load_encoder = EncoderId.ONBOARD_ENCODER0
 odrv0.axis0.config.commutation_encoder = EncoderId.ONBOARD_ENCODER0
@@ -188,8 +188,12 @@ odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
 odrv0.axis0.controller.input_vel = 1
 ```
 To disable, change the state to IDLE. This is necessary for saving the configuration.
+
 ```
 odrv0.axis0.requested_state = AxisState.IDLE
+```
+
+```
 odrv0.save_configuration()
 ```
 
