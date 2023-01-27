@@ -31,7 +31,7 @@ Rwa::Rwa(std::string bridge, double dt_) {
     kpos = 0.0001;  // 0.0001
 
   } else {
-    ku = 300;
+    ku = 200;
     kp = 0.6;
     ki = 0.0;
     kd = 0.04;  // 0.1875;
@@ -104,7 +104,8 @@ Eigen::Vector3d Rwa::AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q
   setp = AttitudeSetp(Q_ref, z_ref);
 
   // setp += pid_velPtr->PIDControl(dq, dq_ref);  // velocity compensation
-  setp += pid_posPtr->PIDControl(q, q_ref);           // position compensation
+  setp += pid_posPtr->PIDControl(q, q_ref);  // position compensation
+
   return pid_tauPtr->PIDControlWrapped(theta, setp);  // Cascaded PID Loop
 }
 

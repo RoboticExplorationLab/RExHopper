@@ -28,6 +28,7 @@ void HardwareBridge::Init(double x_adj_) {
   v.setZero();
   wb.setZero();
   p_prev.setZero();
+  ctrlMode_prev = "Pos";
 
   qla_home = model.qla_home;
 
@@ -106,8 +107,12 @@ void HardwareBridge::Init(double x_adj_) {
   SetPosOffset(ODriveCANleft, node_id_rwl);
   SetPosOffset(ODriveCANyaw, node_id_rwz);
 
+  // reset limits
+  ODriveCANleft->SetLimits(node_id_q0, vel_lim_rmdx10, cur_lim_rmdx10);
+  ODriveCANright->SetLimits(node_id_q2, vel_lim_rmdx10, cur_lim_rmdx10);
+
   if (start == "start_stand") {
-    Eigen::Vector3d pb_ref(x_adj_, 0.0, -0.385);  // -0.38 just enough to touch the floor
+    Eigen::Vector3d pb_ref(x_adj_, 0.0, -0.380);  // -0.38 just enough to touch the floor
     Eigen::Vector2d qa_ref;
     qa_ref = legPtr->KinInv(pb_ref);
     // std::cout << "qla_ref = " << qa_ref.transpose() << "\n";
@@ -116,6 +121,11 @@ void HardwareBridge::Init(double x_adj_) {
     SetJointPosTrapTraj(ODriveCANright, node_id_q2, qa_ref(1));
     std::cout << "Controller ready to begin. Press any key to continue. \n";
     std::cin.ignore();
+    pb_ref(2) = -model.h0 * 5.0 / 3.0;  // -0.450;
+    qa_ref = legPtr->KinInv(pb_ref);
+    SetJointPos(qa_ref);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
   } else if (start == "start_sit") {
     SetJointPosTrapTraj(ODriveCANleft, node_id_q0, model.qla_sit(0));
     SetJointPosTrapTraj(ODriveCANright, node_id_q2, model.qla_sit(1));
@@ -123,18 +133,13 @@ void HardwareBridge::Init(double x_adj_) {
     std::cin.ignore();
   } else if (start == "fixed") {
   }
-
-  // reset limits
-  ODriveCANleft->SetLimits(node_id_q0, vel_lim_rmdx10, cur_lim_rmdx10);
-  ODriveCANright->SetLimits(node_id_q2, vel_lim_rmdx10, cur_lim_rmdx10);
-  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir, float cur_lim, float vel_lim) {
   ODrive->SetLimits(node_id, 5, 10);  // prevent motors from burning out when reaching end stops by reducing max current
   // Tell ODrive to find the leg position
   const double vel = 0.5;                         // this is actually 1/14th of a turn/sec due to the gear ratio
-  ODrive->SetPositionGain(node_id, 20);           // ODrive->SetPositionGain(node_id, position_gain);
+  ODrive->SetPositionGain(node_id, 150);          // ODrive->SetPositionGain(node_id, position_gain);
   ODrive->SetVelocityGains(node_id, 2.57, 12.5);  // ODrive->SetVelocityGains(node_id, velocity_gain, velocity_integrator_gain);
   ODrive->RunState(node_id, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
   ODrive->SetControllerModes(node_id, ODriveCan::VELOCITY_CONTROL);
@@ -147,9 +152,9 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
     dq = ODrive->GetVelocity(node_id);
     // std::cout << "dq_measured = " << dq << "\n";
   }
-  ODrive->SetVelocity(node_id, 0);                                                         // stop the motor so you can read position
-  q_offset(node_id) = ODrive->GetPosition(node_id);                                        // read the RAW encoder position at home
-  ODrive->SetControllerModes(node_id, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);  // switch to torque control so it is pliable!
+  ODrive->SetVelocity(node_id, 0);                                 // stop the motor so you can read position
+  q_offset(node_id) = ODrive->GetPosition(node_id);                // read the RAW encoder position at home
+  ODrive->SetControllerModes(node_id, ODriveCan::TORQUE_CONTROL);  // switch to torque control so it is pliable!
   // ^ DON'T REMOVE THIS OR LEG WILL BLOCK ITSELF FROM FINISHING HOMING
   ODrive->SetLimits(node_id, cur_lim, vel_lim);  // set limits back to normal
 }
@@ -161,8 +166,8 @@ void HardwareBridge::SetPosOffset(std::unique_ptr<ODriveCan>& ODrive, int node_i
 void HardwareBridge::Startup(std::unique_ptr<ODriveCan>& ODrive, int node_id, float cur_lim, float vel_lim) {
   ODrive->SetLimits(node_id, vel_lim, cur_lim);
   ODrive->RunState(node_id, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
-  ODrive->SetControllerModes(node_id, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);
-  // ODrive->SetControllerModes(node_id, ODriveCan::TORQUE_CONTROL);
+  // ODrive->SetControllerModes(node_id, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);
+  ODrive->SetControllerModes(node_id, ODriveCan::TORQUE_CONTROL);
   std::this_thread::sleep_for(std::chrono::milliseconds(5));  // avoid race condition w/ can bus comm
 }
 
@@ -170,18 +175,18 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
   // Torque vs Position Control for Legs, to change mode in midst of control loop
   if (ctrlMode == "Pos") {
     if (ctrlMode_prev != "Pos") {
+      std::cout << "Changing to Position Control Mode \n";
       ODriveCANleft->SetControllerModes(node_id_q0, ODriveCan::POSITION_CONTROL);
       ODriveCANright->SetControllerModes(node_id_q2, ODriveCan::POSITION_CONTROL);
-      std::this_thread::sleep_for(std::chrono::milliseconds(5));  // microseconds! avoid race condition w/ can bus comm
     }
     SetJointPos(qla_ref);
   } else if (ctrlMode == "Torque") {
     if (ctrlMode_prev != "Torque") {
-      // ODriveCANleft->SetControllerModes(node_id_q0, ODriveCan::TORQUE_CONTROL);
-      // ODriveCANright->SetControllerModes(node_id_q2, ODriveCan::TORQUE_CONTROL);
-      ODriveCANleft->SetControllerModes(node_id_q0, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);
-      ODriveCANright->SetControllerModes(node_id_q2, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);
-      std::this_thread::sleep_for(std::chrono::milliseconds(5));  // microseconds! avoid race condition w/ can bus comm
+      std::cout << "Changing to Torque Control Mode \n";
+      ODriveCANleft->SetControllerModes(node_id_q0, ODriveCan::TORQUE_CONTROL);
+      ODriveCANright->SetControllerModes(node_id_q2, ODriveCan::TORQUE_CONTROL);
+      // ODriveCANleft->SetControllerModes(node_id_q0, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);
+      // ODriveCANright->SetControllerModes(node_id_q2, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);
     }
   }
 
@@ -222,10 +227,10 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
 void HardwareBridge::SetJointPosTrapTraj(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {
   // Trap Traj control mode: Move to position setpoint slowly and carefully
   ODrive->SetControllerModes(node_id, ODriveCan::POSITION_CONTROL, ODriveCan::TRAP_TRAJ);
-  ODrive->SetTrajVelLimit(node_id, 0.5);  // low velocity
-  ODrive->SetTrajAccelLimits(node_id, 0.1, 0.1);
+  ODrive->SetTrajVelLimit(node_id, 1);  // low velocity
+  ODrive->SetTrajAccelLimits(node_id, 0.2, 0.2);
   ODrive->SetTrajInertia(node_id, 0);
-  ODrive->SetLimits(node_id, 1.5, 60);  // low velocity
+  ODrive->SetLimits(node_id, 2, 60);  // low velocity
 
   Eigen::Vector2d qla_ref_init;
   qla_ref_init.setZero();
@@ -331,7 +336,7 @@ void HardwareBridge::CheckRotorSpeed(Eigen::Matrix<double, 5, 1> dqa) {
   // safety check to see if rotor speed is saturated
   // if (abs(dqa(2)) >= model.dq_max(2) * 0.9 || abs(dqa(3)) >= model.dq_max(3) * 0.9 || abs(dqa(4)) >= model.dq_max(4) * 0.9) {
   // std::cout << "vel_lim_r100 = " << 0.9 * vel_lim_r100 << "\n";
-  if (abs(dqa(2)) >= model.dq_max(2) * 0.9 || abs(dqa(3)) >= model.dq_max(3) * 0.9 || abs(dqa(4)) >= model.dq_max(4) * 0.9) {
+  if (abs(dqa(2)) >= model.dq_max(2) * 0.5 || abs(dqa(3)) >= model.dq_max(3) * 0.5 || abs(dqa(4)) >= model.dq_max(4) * 0.9) {
     // if (abs(dqa(2)) >= 0.9 * vel_lim_r100 || abs(dqa(3)) >= 0.9 * vel_lim_r100 || abs(dqa(4)) >= 0.9 * vel_lim_r80) {
     End();
     stop == true;

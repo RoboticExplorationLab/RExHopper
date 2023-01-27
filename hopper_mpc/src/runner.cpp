@@ -86,7 +86,7 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   ts = 0.875 * t_p;  // pretend you're starting halfway through 'fall'
   gc_state_prev = gc_state;
 
-  ctrlMode = "Torque";                                               // "Torque&Pos"
+  ctrlMode = "Pos";                                                  // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
   peb_ref << 0, 0, -model.h0;                                        // desired operational space leg position in body frame
   veb_ref.setZero();                                                 // desired operational space leg velocity
@@ -96,6 +96,7 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr, x_adj));  // gait controller class
   kfPtr.reset(new Kf(dt));
   obPtr.reset(new Observer(dt, &legPtr));
+  lowpassPtr.reset(new LowPass3D(dt, 50));
 
   k_changed = 0;
   sh_saved = 0;
@@ -146,8 +147,8 @@ void Runner::Run() {
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
     if (k == 0) {
       // TODO: rotate mocap position as well based on mocap yaw
-      // Q_offset = Utils::ExtractYawQuat(retvals.Q).conjugate();
-      Q_offset = retvals.Q.conjugate();  // required for fixed tests
+      Q_offset = Utils::ExtractYawQuat(retvals.Q).conjugate();
+      // Q_offset = retvals.Q.conjugate();  // required for fixed tests
     }
     Q = (Q_offset * retvals.Q).normalized();  // adjust yaw
     // Q = retvals.Q;
@@ -230,6 +231,8 @@ void Runner::Run() {
     }
 
     u = uvals.u;
+    u.segment<3>(2) = lowpassPtr->Filter(u.segment<3>(2));
+
     qla_ref = uvals.qla_ref;
     ctrlMode = uvals.ctrlMode;
 
@@ -305,9 +308,10 @@ void Runner::Run() {
       if (tk_chrono.count() >= t) {
         std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
         // throw(std::runtime_error("Missed 'real time' deadline"));
-      } else {
-        int remainder = (t - tk_chrono.count()) * 1000;
-        std::this_thread::sleep_for(std::chrono::milliseconds(std::max(0, remainder - 2)));
+      } else if (tk_chrono.count() <= (t - dt)) {       // if time is lagging by more than one timestep
+        int remainder = (t - tk_chrono.count()) * 1e6;  // remainder in microseconds
+        // std::this_thread::sleep_for(std::chrono::microseconds(std::max(0, remainder - 1500)));
+        std::this_thread::sleep_for(std::chrono::microseconds(remainder / 2));  // Zeno's achilles paradox
       }
       // std::chrono::duration<double> elapsed = t_after - t_before;
       // std::cout << "Elapsed time: " << elapsed.count() << " s\n";
