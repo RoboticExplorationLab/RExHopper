@@ -31,7 +31,7 @@ Rwa::Rwa(std::string bridge, double dt_) {
     kpos = 0.0001;  // 0.0001
 
   } else {
-    ku = 0;
+    ku = 300;
     kp = 0.6;
     ki = 0.0;
     kd = 0.04;  // 0.1875;

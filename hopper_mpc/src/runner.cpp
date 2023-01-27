@@ -48,7 +48,7 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   if (bridge_ == "hardware") {
     bridgePtr.reset(new HardwareBridge(model, dt, &legPtr, start, skip_homing));
     N_sit = 0;  // number of timesteps spent sitting
-    x_adj = -0.002;
+    x_adj = 0.0002;
   } else if (bridge_ == "mujoco") {
     bridgePtr.reset(new MujocoBridge(model, dt, &legPtr, start, skip_homing));
     N_sit = 1500;  // number of timesteps spent sitting
@@ -307,7 +307,7 @@ void Runner::Run() {
         // throw(std::runtime_error("Missed 'real time' deadline"));
       } else {
         int remainder = (t - tk_chrono.count()) * 1000;
-        std::this_thread::sleep_for(std::chrono::milliseconds(std::max(0, remainder - 1)));
+        std::this_thread::sleep_for(std::chrono::milliseconds(std::max(0, remainder - 2)));
       }
       // std::chrono::duration<double> elapsed = t_after - t_before;
       // std::cout << "Elapsed time: " << elapsed.count() << " s\n";

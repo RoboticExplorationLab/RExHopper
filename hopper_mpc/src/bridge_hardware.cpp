@@ -68,6 +68,8 @@ void HardwareBridge::Init(double x_adj_) {
     Home(ODriveCANright, node_id_q2, -1, cur_lim_rmdx10, vel_lim_rmdx10);
     std::cout << "Finished homing procedure. \n";
     std::cout << "Saved homing offsets: q_offset = " << q_offset(0) << ", " << q_offset(1) << " \n";
+    ODriveCANleft->SetControllerModes(node_id_q0, ODriveCan::POSITION_CONTROL);
+    ODriveCANright->SetControllerModes(node_id_q2, ODriveCan::POSITION_CONTROL);
     std::cout << "Press any key to continue. \n ";
     std::cin.ignore();
     std::ofstream ofs("offsets.txt");  // create and open a character archive for output
@@ -96,16 +98,16 @@ void HardwareBridge::Init(double x_adj_) {
   }
   // initialize reaction wheels in torque control mode
   // DANGER!! disable while fiddling with IMU settings!!!
-  // Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
-  // Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
-  // Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
-  // // ensure reaction wheel positions are zeroed
-  // SetPosOffset(ODriveCANright, node_id_rwr);
-  // SetPosOffset(ODriveCANleft, node_id_rwl);
-  // SetPosOffset(ODriveCANyaw, node_id_rwz);
+  Startup(ODriveCANright, node_id_rwr, cur_lim_r100, vel_lim_r100);
+  Startup(ODriveCANleft, node_id_rwl, cur_lim_r100, vel_lim_r100);
+  Startup(ODriveCANyaw, node_id_rwz, cur_lim_r80, vel_lim_r80);
+  // ensure reaction wheel positions are zeroed
+  SetPosOffset(ODriveCANright, node_id_rwr);
+  SetPosOffset(ODriveCANleft, node_id_rwl);
+  SetPosOffset(ODriveCANyaw, node_id_rwz);
 
   if (start == "start_stand") {
-    Eigen::Vector3d pb_ref(x_adj_, 0.0, -0.380);  // -0.38 just enough to touch the floor
+    Eigen::Vector3d pb_ref(x_adj_, 0.0, -0.385);  // -0.38 just enough to touch the floor
     Eigen::Vector2d qa_ref;
     qa_ref = legPtr->KinInv(pb_ref);
     // std::cout << "qla_ref = " << qa_ref.transpose() << "\n";
@@ -136,12 +138,14 @@ void HardwareBridge::Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int d
   ODrive->SetVelocityGains(node_id, 2.57, 12.5);  // ODrive->SetVelocityGains(node_id, velocity_gain, velocity_integrator_gain);
   ODrive->RunState(node_id, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
   ODrive->SetControllerModes(node_id, ODriveCan::VELOCITY_CONTROL);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));  // avoid race condition w/ can bus comm
   ODrive->SetVelocity(node_id, vel * dir);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   float dq = vel;
   while (abs(dq) > 0.1) {
-    std::cout << "dq_measured = " << dq << "\n";
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     dq = ODrive->GetVelocity(node_id);
+    // std::cout << "dq_measured = " << dq << "\n";
   }
   ODrive->SetVelocity(node_id, 0);                                                         // stop the motor so you can read position
   q_offset(node_id) = ODrive->GetPosition(node_id);                                        // read the RAW encoder position at home
@@ -158,26 +162,29 @@ void HardwareBridge::Startup(std::unique_ptr<ODriveCan>& ODrive, int node_id, fl
   ODrive->SetLimits(node_id, vel_lim, cur_lim);
   ODrive->RunState(node_id, ODriveCan::AXIS_STATE_CLOSED_LOOP_CONTROL);
   ODrive->SetControllerModes(node_id, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);
+  // ODrive->SetControllerModes(node_id, ODriveCan::TORQUE_CONTROL);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));  // avoid race condition w/ can bus comm
 }
 
 retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double, 2, 1> qla_ref, std::string ctrlMode) {
-  // Torque vs Position Control for Legs
-  // these would be set in constructor except that we may want to change mode in midst of control
+  // Torque vs Position Control for Legs, to change mode in midst of control loop
   if (ctrlMode == "Pos") {
     if (ctrlMode_prev != "Pos") {
       ODriveCANleft->SetControllerModes(node_id_q0, ODriveCan::POSITION_CONTROL);
       ODriveCANright->SetControllerModes(node_id_q2, ODriveCan::POSITION_CONTROL);
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));  // microseconds! avoid race condition w/ can bus comm
     }
     SetJointPos(qla_ref);
   } else if (ctrlMode == "Torque") {
     if (ctrlMode_prev != "Torque") {
+      // ODriveCANleft->SetControllerModes(node_id_q0, ODriveCan::TORQUE_CONTROL);
+      // ODriveCANright->SetControllerModes(node_id_q2, ODriveCan::TORQUE_CONTROL);
       ODriveCANleft->SetControllerModes(node_id_q0, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);
       ODriveCANright->SetControllerModes(node_id_q2, ODriveCan::TORQUE_CONTROL, ODriveCan::TORQUE_RAMP);
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));  // microseconds! avoid race condition w/ can bus comm
     }
   }
-  u(0) *= -1;
-  u(2) *= -1;
-  // u(4) *= -1;
+
   SetJointTorque(-u);  // needs to be outside the "if else" for reaction wheels
 
   qa = GetJointPos();
@@ -215,8 +222,8 @@ retVals HardwareBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<doub
 void HardwareBridge::SetJointPosTrapTraj(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init) {
   // Trap Traj control mode: Move to position setpoint slowly and carefully
   ODrive->SetControllerModes(node_id, ODriveCan::POSITION_CONTROL, ODriveCan::TRAP_TRAJ);
-  ODrive->SetTrajVelLimit(node_id, 0.1);  // low velocity
-  ODrive->SetTrajAccelLimits(node_id, 0.05, 0.05);
+  ODrive->SetTrajVelLimit(node_id, 0.5);  // low velocity
+  ODrive->SetTrajAccelLimits(node_id, 0.1, 0.1);
   ODrive->SetTrajInertia(node_id, 0);
   ODrive->SetLimits(node_id, 1.5, 60);  // low velocity
 
@@ -294,7 +301,7 @@ void HardwareBridge::SetJointTorque(Eigen::Matrix<double, 5, 1> u) {
   ODriveCANleft->SetTorque(node_id_q0, -u(0) / 7.0);  // hardware joint facing opposite direction!!
   //                                   ^ Note the negative sign here.
   ODriveCANright->SetTorque(node_id_q2, u(1) / 7.0);
-  ODriveCANright->SetTorque(node_id_rwr, u(2));
+  ODriveCANright->SetTorque(node_id_rwr, -u(2));
   ODriveCANleft->SetTorque(node_id_rwl, u(3));
   ODriveCANyaw->SetTorque(node_id_rwz, u(4));
 }
