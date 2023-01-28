@@ -308,18 +308,23 @@ void Runner::Run() {
       if (tk_chrono.count() >= t) {
         std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
         // throw(std::runtime_error("Missed 'real time' deadline"));
-      } else if (tk_chrono.count() <= (t - dt)) {       // if time is lagging by more than one timestep
-        int remainder = (t - tk_chrono.count()) * 1e6;  // remainder in microseconds
-        // std::this_thread::sleep_for(std::chrono::microseconds(std::max(0, remainder - 1500)));
-        std::this_thread::sleep_for(std::chrono::microseconds(remainder / 2));  // Zeno's achilles paradox
+      } else {
+        while (tk_chrono.count() <= (t - dt)) {  // while control time is more than one timestep ahead of real time
+          // need to make control loop wait for real time to catch up
+          tk_chrono = std::chrono::high_resolution_clock::now() - t0_chrono;  // measured time w.r.t. the initialization of loop
+          int remainder = (t - tk_chrono.count()) * 1e6;                      // remainder in microseconds
+          // std::cout << "Lagging by " << remainder << "us at tk_chrono = " << tk_chrono.count() << ", t = " << t << "\n ";
+          // std::this_thread::sleep_for(std::chrono::microseconds(std::max(0, remainder - 1500)));
+          std::this_thread::sleep_for(std::chrono::microseconds(remainder / 2));  // Zeno's achilles paradox
+        }
+        // std::chrono::duration<double> elapsed = t_after - t_before;
+        // std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+        // if (elapsed.count() > max_elapsed){
+        //   max_elapsed = elapsed.count();
+        // }
       }
-      // std::chrono::duration<double> elapsed = t_after - t_before;
-      // std::cout << "Elapsed time: " << elapsed.count() << " s\n";
-      // if (elapsed.count() > max_elapsed){
-      //   max_elapsed = elapsed.count();
-      // }
+      // --- end fake real-time --- //
     }
-    // --- end fake real-time --- //
   }
   std::cout << "End Control. \n";
   bridgePtr->End();
@@ -335,6 +340,7 @@ void Runner::Run() {
     // }
     // Plots::PlotMap2D(k_final, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
     // Plots::PlotMap3D(k_final, "3D Position vs Time", "p", p_vec, 0, 0);
+    Plots::Plot3(k_final, "Position of End-Effector in Body Frame vs Time", "peb", peb_vec, peb_ref_vec, 0);
     Plots::Plot5(k_final, "Actuator Joint Angular Positions", "q", qa_vec, qa_ref_vec, 0);
     Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
     Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);

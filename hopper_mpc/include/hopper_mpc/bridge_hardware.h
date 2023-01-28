@@ -47,7 +47,7 @@ class HardwareBridge : public Bridge {  // The class
   void Home(std::unique_ptr<ODriveCan>& ODrive, int node_id, int dir, float cur_lim, float vel_lim);
   void SetPosOffset(std::unique_ptr<ODriveCan>& ODrive, int node_id);
   void Startup(std::unique_ptr<ODriveCan>& ODrive, int node_id, float cur_lim, float vel_lim);
-  void SetJointPosTrapTraj(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init);
+  void SetJointPosTrapTraj(std::unique_ptr<ODriveCan>& ODrive, int node_id, double q_init, float cur_lim, float vel_lim);
   std::unique_ptr<ODriveCan> ODriveCANleft;
   std::unique_ptr<ODriveCan> ODriveCANright;
   std::unique_ptr<ODriveCan> ODriveCANyaw;
