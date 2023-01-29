@@ -117,10 +117,10 @@ void HardwareBridge::Init(double x_adj_) {
     SetJointPosTrapTraj(ODriveCANright, node_id_q2, qa_ref(1), cur_lim_r100, vel_lim_r100);
     std::cout << "Controller ready to begin. Press any key to continue. \n";
     std::cin.ignore();
-    pb_ref(2) = -model.h0 * 5.0 / 3.0;  // -0.450;
-    qa_ref = legPtr->KinInv(pb_ref);
-    SetJointPos(qa_ref);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    // pb_ref(2) = -model.h0 * 5.0 / 3.0;  // -0.450;
+    // qa_ref = legPtr->KinInv(pb_ref);
+    // SetJointPos(qa_ref);
+    // std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
   } else if (start == "start_sit") {
     SetJointPosTrapTraj(ODriveCANleft, node_id_q0, model.qla_sit(0), cur_lim_r100, vel_lim_r100);
@@ -128,6 +128,10 @@ void HardwareBridge::Init(double x_adj_) {
     std::cout << "Once robot is in a stable sitting position, press any key to continue. \n";
     std::cin.ignore();
   } else if (start == "fixed") {
+    // needed to avoid CheckJointLimits()
+    SetJointPosTrapTraj(ODriveCANleft, node_id_q0, model.qla_home(0), cur_lim_r100, vel_lim_r100);
+    SetJointPosTrapTraj(ODriveCANright, node_id_q2, model.qla_home(1), cur_lim_r100, vel_lim_r100);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
   // reset limits
   // ODriveCANleft->SetLimits(node_id_q0, vel_lim_rmdx10, cur_lim_rmdx10);
@@ -308,7 +312,7 @@ void HardwareBridge::SetJointTorque(Eigen::Matrix<double, 5, 1> u) {
   ODriveCANleft->SetTorque(node_id_q0, -u(0) / 7.0);  // hardware joint facing opposite direction!!
   //                                   ^ Note the negative sign here.
   ODriveCANright->SetTorque(node_id_q2, u(1) / 7.0);
-  ODriveCANright->SetTorque(node_id_rwr, -u(2));
+  ODriveCANright->SetTorque(node_id_rwr, u(2));
   ODriveCANleft->SetTorque(node_id_rwl, u(3));
   ODriveCANyaw->SetTorque(node_id_rwz, u(4));
 }
@@ -330,7 +334,7 @@ void HardwareBridge::CheckEndStops(Eigen::Matrix<double, 5, 1> qa) {
   if (qa(0) >= 28 * M_PI / 180 || qa(1) <= -185 * M_PI / 180) {
     End();
     stop == true;
-    std::cout << "CheckEndStops: Joints hitting endstops, engaging e-stop \n";
+    std::cout << "CheckEndStops: Joints hitting endstops at " << qa.segment<2>(0).transpose() << ", engaging e-stop \n";
   }
 }
 
@@ -338,7 +342,7 @@ void HardwareBridge::CheckRotorSpeed(Eigen::Matrix<double, 5, 1> dqa) {
   // safety check to see if rotor speed is saturated
   // if (abs(dqa(2)) >= model.dq_max(2) * 0.9 || abs(dqa(3)) >= model.dq_max(3) * 0.9 || abs(dqa(4)) >= model.dq_max(4) * 0.9) {
   // std::cout << "vel_lim_r100 = " << 0.9 * vel_lim_r100 << "\n";
-  if (abs(dqa(2)) >= model.dq_max(2) * 0.5 || abs(dqa(3)) >= model.dq_max(3) * 0.5 || abs(dqa(4)) >= model.dq_max(4) * 0.9) {
+  if (abs(dqa(2)) >= model.dq_max(2) * 0.6 || abs(dqa(3)) >= model.dq_max(3) * 0.6 || abs(dqa(4)) >= model.dq_max(4) * 0.9) {
     // if (abs(dqa(2)) >= 0.9 * vel_lim_r100 || abs(dqa(3)) >= 0.9 * vel_lim_r100 || abs(dqa(4)) >= 0.9 * vel_lim_r80) {
     End();
     stop == true;

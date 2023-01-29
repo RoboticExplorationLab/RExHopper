@@ -31,10 +31,10 @@ Rwa::Rwa(std::string bridge, double dt_) {
     kpos = 0.0001;  // 0.0001
 
   } else {
-    ku = 200;
+    ku = 100;  // 180
     kp = 0.6;
-    ki = 0.0;
-    kd = 0.04;  // 0.1875;
+    ki = 0.0;   // 0.56;
+    kd = 0.02;  // 0.1875;
 
     kpos = 0.0001;  // 0.0001
   }
@@ -43,18 +43,18 @@ Rwa::Rwa(std::string bridge, double dt_) {
   kd_tau << kd, kd, kd * 0.5;  // 0.04, 0.04, 0.005;
   pid_tauPtr.reset(new PID3(dt, kp_tau * ku, ki_tau * ku, kd_tau * ku));
 
-  double kr = 0.1;  // 0.04
+  double kr = 0.05;  // 0.04
   double krp = 1.0;
-  double kri = 0.1;  // 0.1
-  double krd = 0.5;  // 0.03
+  double kri = 0.1;   // 0.1
+  double krd = 0.03;  // 0.03
   kp_rs << krp, krp, krp;
   ki_rs << kri, kri, kri;
   kd_rs << krd, krd, krd;
   pid_rsPtr.reset(new PID3(dt, kp_rs * kr, ki_rs * kr, kd_rs * kr));
 
-  double kpp = 1.0;  // flywheel position gain
-  double kpi = 0.0;  // gain on integral of position
-  double kpd = 0.0;  // roughly equivalent to velocity proportional term
+  double kpp = 1.0;   // flywheel position gain
+  double kpi = 0.02;  // gain on integral of position
+  double kpd = 0.01;  // roughly equivalent to velocity proportional term
   kp_pos << kpp, kpp, kpp;
   ki_pos << kpi, kpi, kpi;
   kd_pos << kpd, kpd, kpd;

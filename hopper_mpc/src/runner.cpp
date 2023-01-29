@@ -48,7 +48,7 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   if (bridge_ == "hardware") {
     bridgePtr.reset(new HardwareBridge(model, dt, &legPtr, start, skip_homing));
     N_sit = 0;  // number of timesteps spent sitting
-    x_adj = 0.0002;
+    x_adj = 0.006;
   } else if (bridge_ == "mujoco") {
     bridgePtr.reset(new MujocoBridge(model, dt, &legPtr, start, skip_homing));
     N_sit = 1500;  // number of timesteps spent sitting
@@ -96,7 +96,7 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr, x_adj));  // gait controller class
   kfPtr.reset(new Kf(dt));
   obPtr.reset(new Observer(dt, &legPtr));
-  lowpassPtr.reset(new LowPass3D(dt, 50));
+  lowpassPtr.reset(new LowPass3D(dt, 160));
 
   k_changed = 0;
   sh_saved = 0;
@@ -147,15 +147,13 @@ void Runner::Run() {
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
     if (k == 0) {
       // TODO: rotate mocap position as well based on mocap yaw
-      Q_offset = Utils::ExtractYawQuat(retvals.Q).conjugate();
-      // Q_offset = retvals.Q.conjugate();  // required for fixed tests
+      // Q_offset = Utils::ExtractYawQuat(retvals.Q).conjugate();
+      Q_offset = retvals.Q.conjugate();  // required for fixed tests
     }
     Q = (Q_offset * retvals.Q).normalized();  // adjust yaw
     // Q = retvals.Q;
 
-    bool stop = FallCheck(Q, t) + bridgePtr->stop;
-    // bool stop = bridgePtr->stop;
-    if (stop == true) {
+    if (FallCheck(Q, t) == true || bridgePtr->stop == true) {
       std::cout << "Stopping control loop \n";
       k_final = k;
       break;
