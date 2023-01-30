@@ -96,7 +96,7 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr, x_adj));  // gait controller class
   kfPtr.reset(new Kf(dt));
   obPtr.reset(new Observer(dt, &legPtr));
-  lowpassPtr.reset(new LowPass3D(dt, 160));
+  lowpassPtr.reset(new LowPass3D(dt, 500));
 
   k_changed = 0;
   sh_saved = 0;

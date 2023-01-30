@@ -31,12 +31,12 @@ Rwa::Rwa(std::string bridge, double dt_) {
     kpos = 0.0001;  // 0.0001
 
   } else {
-    ku = 100;  // 180
+    ku = 150;  // 180
     kp = 0.6;
-    ki = 0.0;   // 0.56;
+    ki = 0.1;   // 0.56;
     kd = 0.02;  // 0.1875;
 
-    kpos = 0.0001;  // 0.0001
+    kpos = 0.0002;  // 0.0001
   }
   kp_tau << kp, kp, kp * 0.5;
   ki_tau << ki, ki, ki * 0.5;  // ki_tau << 0.1, 0.1, 0.01;
