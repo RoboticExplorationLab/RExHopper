@@ -17,24 +17,28 @@
 10. You may now run the code.
 
 # Running the code
-E.g.
-1. Start the AHRS node.
-```
-sudo docker run -it --rm --net=host --device=/dev/ttyACM0 -v "/home/hopper/Documents/git_workspace/RosDockerWorkspace/src/RExHopper/params.yml:/tmp/params.yml" microstrain/ros-microstrain_inertial_driver:ros params_file:=/tmp/params.yml
-```
-2. In a separate terminal, start the mocap node (if you are doing mocap).
+1. Open up VS Code on your laptop. Make sure the Remote-SSH plugins are installed.
+2. `ctrl+shift+p -> remote_ssh: Add New SSH Host`
+3. Enter the host name and password, and .ssh. After doing this once, you can skip steps 2 and 3.
+4. `ctrl+shift+p -> remote_ssh: Connect to SSH Host`
+5. Type in the password.
+6. File->Open Folder->Documents/git_workspace/RosDockerWorkspace
+7. Start the AHRS node.
+    ```
+    sudo docker run -it --rm --net=host --device=/dev/ttyACM0 -v "/home/hopper/Documents/git_workspace/RosDockerWorkspace/src/RExHopper/params.yml:/tmp/params.yml" microstrain/ros-microstrain_inertial_driver:ros params_file:=/tmp/params.yml
+    ```
+8. In a separate terminal, start the mocap node (if you are doing mocap).
+    ```
+    wssetup
+    roslaunch mocap_optitrack mocap.launch
+    ```
+    Note: You shouldn't need to start the ROS nodes more than once per testing session. As long as the computer isn't turned off.
 
-```
-wssetup
-roslaunch mocap_optitrack mocap.launch
-```
-Note: You shouldn't need to start the ROS nodes more than once per testing session. As long as the computer isn't turned off.
-
-3. In another separate terminal, run the control code.
-```
-wssetup
-rosrun hopper_mpc hopper_mpc hardware start_stand stand 5000 --plot
-```
+9. In another separate terminal, run the control code.
+    ```
+    wssetup
+    rosrun hopper_mpc hopper_mpc hardware start_stand stand 5000 --plot
+    ```
 Note: Movement during the startup and homing sequence may cause the jig to release early. Watch for this and reset the robot if this happens, before pressing any key to continue. Use the bubble level to ensure the robot is still well-oriented.
 
 # During Testing

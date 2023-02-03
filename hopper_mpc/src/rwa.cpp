@@ -36,7 +36,7 @@ Rwa::Rwa(std::string bridge, double dt_) {
     ki = 0.1;   // 0.56;
     kd = 0.02;  // 0.1875;
 
-    kpos = 0.0002;  // 0.0001
+    kpos = 0.0001;  // 0.0001
   }
   kp_tau << kp, kp, kp * 0.5;
   ki_tau << ki, ki, ki * 0.5;  // ki_tau << 0.1, 0.1, 0.01;
@@ -100,6 +100,7 @@ Eigen::Vector3d Rwa::AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref) {
 
 Eigen::Vector3d Rwa::AttitudeCtrl(Eigen::Quaterniond Q_ref, Eigen::Quaterniond Q_base, double z_ref) {
   // simple reaction wheel attitude control w/ derivative on measurement pid
+  // theta = lowpassPtrRW->Filter(AttitudeIn(Q_base));
   theta = AttitudeIn(Q_base);
   setp = AttitudeSetp(Q_ref, z_ref);
 

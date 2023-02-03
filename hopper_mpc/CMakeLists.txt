@@ -86,7 +86,7 @@ add_executable(${PROJECT_NAME}
   src/sub_mocap.cpp
   src/wt901.cpp
   src/observer.cpp
-  src/lowpass.cpp
+  src/filter.cpp
   src/rot_conv.cpp
   src/rot_conv_extras.cpp
   ../hopper_can_interface/src/ODriveCan.cpp

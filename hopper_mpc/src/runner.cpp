@@ -230,7 +230,9 @@ void Runner::Run() {
 
     u = uvals.u;
     u.segment<3>(2) = lowpassPtr->Filter(u.segment<3>(2));
-
+    if (k < 100) {
+      u.segment<3>(2) << 0., 0., 0.;
+    }
     qla_ref = uvals.qla_ref;
     ctrlMode = uvals.ctrlMode;
 
