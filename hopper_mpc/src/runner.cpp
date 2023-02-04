@@ -47,8 +47,8 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   // class definitions
   if (bridge_ == "hardware") {
     bridgePtr.reset(new HardwareBridge(model, dt, &legPtr, start, skip_homing));
-    N_sit = 0;  // number of timesteps spent sitting
-    x_adj = 0.006;
+    N_sit = 0;      // number of timesteps spent sitting
+    x_adj = 0.006;  // 0.006
   } else if (bridge_ == "mujoco") {
     bridgePtr.reset(new MujocoBridge(model, dt, &legPtr, start, skip_homing));
     N_sit = 1500;  // number of timesteps spent sitting
@@ -96,7 +96,7 @@ Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_
   gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr, x_adj));  // gait controller class
   kfPtr.reset(new Kf(dt));
   obPtr.reset(new Observer(dt, &legPtr));
-  lowpassPtr.reset(new LowPass3D(dt, 500));
+  lowpassPtr.reset(new LowPass3D(dt, 160));  // 500
 
   k_changed = 0;
   sh_saved = 0;
@@ -230,9 +230,9 @@ void Runner::Run() {
 
     u = uvals.u;
     u.segment<3>(2) = lowpassPtr->Filter(u.segment<3>(2));
-    if (k < 100) {
-      u.segment<3>(2) << 0., 0., 0.;
-    }
+    // if (k < 100) {
+    //   u.segment<3>(2) << 0., 0., 0.;
+    // }
     qla_ref = uvals.qla_ref;
     ctrlMode = uvals.ctrlMode;
 
@@ -476,7 +476,7 @@ bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
   bool stop = false;
   double angle = Utils::AngleBetween(Q_frame, Q_no_yaw) * 180 / M_PI;
   // angle max = arcsin(tau_max/(m * g * l)) -> to degrees
-  if (angle > 10) {
+  if (angle > 12) {
     std::cout << "FallCheck: Fall likely; Deactivating at t = " << t << " s with angle = " << angle << " degrees \n";
     stop = true;
   }
