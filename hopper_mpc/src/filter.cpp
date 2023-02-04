@@ -59,6 +59,7 @@ double Notch::Filter(double x0) {
   x1 = x0;
   y2 = y1;
   y1 = y0;
+
   return y1;
 }
 

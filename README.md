@@ -105,6 +105,7 @@ roslaunch mocap_optitrack mocap.launch
 ```
 ### Hardware Control Initialization
 ```
+wssetup
 rosrun hopper_mpc hopper_mpc hardware start_stand stand 5000 --plot
 ```
 

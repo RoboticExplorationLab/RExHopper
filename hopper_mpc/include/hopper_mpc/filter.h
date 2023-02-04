@@ -37,8 +37,4 @@ class Notch {
   double x1;
   double y2;
   double y1;
-  // static double x2;  // delayed x, y samples
-  // static double x1;
-  // static double y2;
-  // static double y1;
 };
