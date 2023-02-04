@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "hopper_mpc/lowpass.h"
+#include "hopper_mpc/filter.h"
 #include "hopper_mpc/model.h"
 
 struct ActuatorModel {

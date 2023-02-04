@@ -23,8 +23,8 @@ class LowPass3D {
 
 class Notch {
  public:
-  Notch(double dt_, double bandwidth_);
-  double Filter(double input);
+  Notch(double dt_, double f_, double BW_);
+  double Filter(double x0);
 
  private:
   double a0;
@@ -32,8 +32,13 @@ class Notch {
   double a2;
   double b1;
   double b2;
-  static double x2;  // delayed x, y samples
-  static double x1;
-  static double y2;
-  static double y1;
+  // delayed x, y samples
+  double x2;
+  double x1;
+  double y2;
+  double y1;
+  // static double x2;  // delayed x, y samples
+  // static double x1;
+  // static double y2;
+  // static double y1;
 };

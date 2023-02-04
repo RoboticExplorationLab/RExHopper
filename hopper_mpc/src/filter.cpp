@@ -1,5 +1,5 @@
 #include "hopper_mpc/filter.h"
-
+#include <iostream>
 LowPass::LowPass(double dt_, double bandwidth_) {
   // smoothing bandwidth
   input_smoothed = 0;
@@ -26,14 +26,17 @@ Eigen::Vector3d LowPass3D::Filter(Eigen::Vector3d input) {
   return input_smoothed;
 }
 
-Notch::Notch(double dt_, double bandwidth_) {
+Notch::Notch(double dt_, double f_, double BW_) {
   // https://dsp.stackexchange.com/a/11291
   // http://dspguide.com/ch19/3.htm
-  double f = 0.0;   // center frequency
-  double BW = 0.0;  // bandwidth
-  double costerm = cos(2 * M_PI * f);
+  // f_   // center frequency as a fraction of the sampling frequency, must be between 0 and 0.5.
+  // BW_  // bandwidth as a fraction of the sampling frequency, must be between 0 and 0.5.
+  assert(f_ > 0 && f_ < 0.5);
+  assert(BW_ > 0 && BW_ < 0.5);
+
+  double costerm = cos(2 * M_PI * f_);
   // intermediate variables
-  double R = 1 - 3 * BW;
+  double R = 1 - 3 * BW_;
   double K = (1 - 2 * R * costerm + pow(R, 2)) / (2 - 2 * costerm);
   // recursion coeffs
   a0 = 1 - K;
@@ -49,13 +52,13 @@ Notch::Notch(double dt_, double bandwidth_) {
   y2 = 0.0;
 }
 
-double Notch::Filter(double input) {
-  y[i] = a0 * x[i] + a1 * x1 + a2 * x2  // IIR difference equation
-         + b1 * y1 + b2 * y2;
+double Notch::Filter(double x0) {
+  double y0 = a0 * x0 + a1 * x1 + a2 * x2  // IIR difference equation
+              + b1 * y1 + b2 * y2;
   x2 = x1;  // shift delayed x, y samples
-  x1 = x[i];
+  x1 = x0;
   y2 = y1;
-  y1 = y[i];
+  y1 = y0;
   return y1;
 }
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include "Eigen/Dense"
-#include "hopper_mpc/lowpass.h"
+#include "hopper_mpc/filter.h"
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/pid.h"
 
@@ -52,5 +52,7 @@ class Rwa {                             // The class
   Eigen::Vector3d AttitudeSetp(Eigen::Quaterniond Q_ref, double z_ref);
   double GetXRotatedAboutZ(Eigen::Quaterniond Q_in, double z);
 
-  std::unique_ptr<LowPass3D> lowpassPtrRW;
+  std::unique_ptr<Notch> notchPtr0;
+  std::unique_ptr<Notch> notchPtr1;
+  std::unique_ptr<Notch> notchPtr2;
 };
