@@ -67,6 +67,19 @@ include_directories(
 #   src/sub_cx5.cpp  # for quaternion_test
 # )
 
+include(FetchContent)
+
+# Also requires one of: libbfd (gnu binutils), libdwarf, libdw (elfutils)
+FetchContent_Declare(backward
+        GIT_REPOSITORY https://github.com/bombela/backward-cpp
+        GIT_TAG v1.6)
+FetchContent_MakeAvailable(backward)
+
+# file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
+# add_executable(example ${SOURCES} ${BACKWARD_ENABLE}) # Notice the "BACKWARD_ENABLE" here
+# add_backward(example)
+
+
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/runner.cpp
@@ -92,7 +105,11 @@ add_executable(${PROJECT_NAME}
   ../hopper_can_interface/src/ODriveCan.cpp
   ../hopper_can_interface/src/CanInterface.cpp
   ../hopper_can_interface/src/BufferedCanMsg.cpp
+  ${SOURCES} ${BACKWARD_ENABLE}
 )
+
+add_backward(${PROJECT_NAME})
+
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   mujoco::mujoco
@@ -107,7 +124,6 @@ target_link_libraries(${PROJECT_NAME}
   ${PYTHON_LIBRARIES}
   # python3.8
 )
-
 
 #########################
 ###   CLANG TOOLING   ###

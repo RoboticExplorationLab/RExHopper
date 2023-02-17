@@ -2,7 +2,9 @@
 
 The REx Hopper is a monopodal hopping robot with reaction wheels. This repository contains C++ code for control of the robot, both on hardware and in simulation.
 
-## UP Xtreme Setup Instructions
+## UP Xtreme First Time Setup Instructions
+
+*This is only for setting up a new computer to control the hardware! If you're using the computer that has already been set up, you can skip this section.*
 
 The following are instructions for setting up the REx Hopper computer such that it is compatible with the RosDockerWorkspace environment.
 
@@ -15,36 +17,35 @@ The following are instructions for setting up the REx Hopper computer such that 
 
 4. Install Docker. But do NOT build the RosDockerWorkspace container. It will take up too much filespace and is incompatible with the PCAN drivers.
 
-## Repository Setup Instructions
+5. Pull the microstrain-inertial ROS Docker image for the [3DM AHRS](https://hub.docker.com/r/microstrain/ros-microstrain_inertial_driver).
 
-[RosDockerWorkspace](https://github.com/RoboticExplorationLab/RosDockerWorkspace) serves as the environment for REx Hopper. However, we do not recommend building it as a docker container on the robot's computer due to both a lack of space and driver incompatibilities.
+   ```
+   sudo docker pull microstrain/ros-microstrain_inertial_driver:ros
+   ```
 
-```
-git clone git@github.com:RoboticExplorationLab/RosDockerWorkspace.git
-cd RosDockerWorkspace
-mkdir src
-cd src
-git clone git@github.com:RoboticExplorationLab/RExHopper.git
-```
+6. [RosDockerWorkspace](https://github.com/RoboticExplorationLab/RosDockerWorkspace) serves as the environment for REx Hopper. However, we do not recommend building it as a docker container on the robot's computer due to both a lack of space and driver incompatibilities.
+   ```
+   git clone git@github.com:RoboticExplorationLab/RosDockerWorkspace.git
+   cd RosDockerWorkspace
+   mkdir src
+   cd src
+   git clone git@github.com:RoboticExplorationLab/RExHopper.git
+   ```
 
-## Using the Container
-Currently, the docker container is not usable for code execution. As previously stated, we do not recommend building the docker container on the robot's computer due to both a lack of storage space and driver incompatibilities. It can only be used to build on another computer for remote work.
+## Using the Docker Container
+As previously stated, we do not recommend building the docker container on the robot's computer due to both a lack of storage space and driver incompatibilities. 
 
-In VScode:
-Click on green button in lower left -> reopen in container
-Whenever you change Dockerfile and want to rebuild the env ->  Ctrl+shift+p -> rebuild container
+**WARNING: Only build on a remote computer for remote work (e.g. simulation).**
 
+**DO NOT BUILD ON THE HARDWARE COMPUTER.**
 
-<!-- ## First Time Setup of the 3DMCX5  (This is wrong)
-1. Install [SensorConnect](https://www.microstrain.com/software/sensorconnect) on a Windows computer. Connect the 3DMCX5 by USB.
-2. In SensorConnect, set the sensor ranges:
-   - Accelerometer: 20g
-   - Gyroscope: 500 deg/s
-3. Set UART Baud Rate to 921600.
-4. In Configuration > Mounting, set the following transformation in Euler Angles:
-   [-0.5236, 0, 1.571]  (-30, 0, 90 deg)  <- cv7 actually this needs to  be set in the params.yml...
-   [0, 0.5236, -1.571]  <- cx5
-5. Save to startup configuration and disconnect. Connect to the Hopper computer via USB. -->
+To build the container in VScode:
+
+   * Click on the green button in the lower left -> Reopen in Container
+
+If you change the Dockerfile or devcontainer.json and want to rebuild the env:
+
+   * Ctrl+shift+p -> rebuild container
 
 
 ## Code Execution Setup
@@ -70,11 +71,7 @@ rosrun hopper_mpc hopper_mpc mujoco start_stand stand 5000 --plot
 ## Running Hardware Control
 
 ### Starting the IMU Publisher
-Before the hardware controller can be started, the IMU docker image must be started. If you haven't already, pull the microstrain-inertial ROS Docker image for the [3DM AHRS](https://hub.docker.com/r/microstrain/ros-microstrain_inertial_driver).
-
-```
-sudo docker pull microstrain/ros-microstrain_inertial_driver:ros
-```
+Before the hardware controller can be started, the IMU docker image must be started. 
 
 Find the device id with 
 
@@ -159,3 +156,4 @@ See the [Generating MJCFs doc](docs/GeneratingMJCFs.md).
 ## Testing Protocol
 
 See the [Testing Protocol doc](docs/TestingProtocol.md).
+
