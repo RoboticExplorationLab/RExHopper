@@ -112,11 +112,13 @@ void Runner::Run() {
   std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
   std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qa_vec(N_run), qa_ref_vec(N_run);
   std::vector<std::vector<double>> dqa_vec(N_run), dqa_ref_vec(N_run);
-  std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), reactf_vec(N_run);
+  std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run);
+  std::vector<std::vector<double>> tau_vec(N_run), tau_ref_vec(N_run);
+  std::vector<std::vector<double>> reactf_vec(N_run), reactt_vec(N_run);
   std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ab_vec(N_run), ae_vec(N_run), grf_vec(N_run);
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
-  int joint_id = 1;  // joint to check reaction forces at
+  int joint_id = 3;  // joint to check reaction forces at
   std::string rf_name = "Reaction Force on Joint " + std::to_string(joint_id) + " vs Timesteps";
 
   std::vector<bool> C(N_run);
@@ -153,11 +155,11 @@ void Runner::Run() {
     Q = (Q_offset * retvals.Q).normalized();  // adjust yaw
     // Q = retvals.Q;
 
-    if (FallCheck(Q, t) == true || bridgePtr->stop == true) {
-      std::cout << "Stopping control loop \n";
-      k_final = k;
-      break;
-    }
+    // if (FallCheck(Q, t) == true || bridgePtr->stop == true) {
+    //   std::cout << "Stopping control loop \n";
+    //   k_final = k;
+    //   break;
+    // }
 
     wb = retvals.wb;
     w = Q.matrix() * wb;  // angular vel in the world frame
@@ -284,6 +286,7 @@ void Runner::Run() {
       dqa_ref_vec.at(k) = {0.0, 0.0, rwaPtr->dq_ref(0), rwaPtr->dq_ref(1), rwaPtr->dq_ref(2)};
 
       reactf_vec.at(k) = {bridgePtr->rf_x(joint_id), bridgePtr->rf_y(joint_id), bridgePtr->rf_z(joint_id)};
+      reactt_vec.at(k) = {bridgePtr->rt_x(joint_id), bridgePtr->rt_y(joint_id), bridgePtr->rt_z(joint_id)};
 
       grf_vec.at(k) = {grf(0), grf(1), grf(2)};
 
@@ -344,7 +347,8 @@ void Runner::Run() {
     Plots::Plot5(k_final, "Actuator Joint Angular Positions", "q", qa_vec, qa_ref_vec, 0);
     Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
     Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
-    // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
+    Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), reactf_vec, reactf_vec, 0);
+    Plots::Plot3(k_final, "Reaction Torque vs Time", "joint " + std::to_string(joint_id), reactt_vec, reactt_vec, 0);
     Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
     Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_ref_vec, 0);
     // Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);

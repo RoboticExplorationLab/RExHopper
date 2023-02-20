@@ -23,9 +23,14 @@ class Bridge {                                                                  
   Eigen::Matrix<double, 5, 1> tau;      // measured torque
   Eigen::Matrix<double, 5, 1> tau_ref;  // ref torque before gear ratios
   double grf_normal;
-  Eigen::Matrix<double, 5, 1> rf_x;  // measured force on joints
-  Eigen::Matrix<double, 5, 1> rf_y;  // measured force on joints
-  Eigen::Matrix<double, 5, 1> rf_z;  // measured force on joints
+  Eigen::Matrix<double, 5, 1> rf_x;  // measured reaction force on joints
+  Eigen::Matrix<double, 5, 1> rf_y;  // measured reaction force on joints
+  Eigen::Matrix<double, 5, 1> rf_z;  // measured reaction force on joints
+
+  Eigen::Matrix<double, 5, 1> rt_x;  // measured reaction torque on joints
+  Eigen::Matrix<double, 5, 1> rt_y;  // measured reaction torque on joints
+  Eigen::Matrix<double, 5, 1> rt_z;  // measured reaction torque on joints
+
   bool sh;
   bool stop = false;
 

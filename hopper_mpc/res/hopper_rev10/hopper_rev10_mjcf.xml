@@ -140,6 +140,11 @@
     <force name='force4' site='tau4'/>
     <accelerometer  name='base-accelerometer' site='imu'/>
     <accelerometer  name='foot-accelerometer' site='foot imu'/>
+    <torque name='torque0' site='tau0'/>
+    <torque name='torque1' site='tau1'/>
+    <torque name='torque2' site='tau2'/>
+    <torque name='torque3' site='tau3'/>
+    <torque name='torque4' site='tau4'/>
   </sensor>
 
 </mujoco>

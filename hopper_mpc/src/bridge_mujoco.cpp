@@ -280,6 +280,10 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     ab << d->sensordata[34], d->sensordata[35], d->sensordata[36];   // base accelerometer
     aef << d->sensordata[37], d->sensordata[38], d->sensordata[39];  // foot accelerometer
 
+    rt_x << d->sensordata[40], d->sensordata[43], d->sensordata[46], d->sensordata[49], d->sensordata[52];
+    rt_y << d->sensordata[41], d->sensordata[44], d->sensordata[47], d->sensordata[50], d->sensordata[53];
+    rt_z << d->sensordata[42], d->sensordata[45], d->sensordata[48], d->sensordata[51], d->sensordata[54];
+
     t_refresh += 1;
     if (t_refresh > refresh_rate) {
       // visualization

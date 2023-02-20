@@ -23,7 +23,7 @@ Rwa::Rwa(std::string bridge, double dt_) {
   double kpos;
 
   if (bridge == "mujoco") {
-    ku = 300;  // 800
+    ku = 800;  // 300
     kp = 0.6;
     ki = 0.0;  // an integral term would fight the cascaded velocity term
     kd = 0.04;
