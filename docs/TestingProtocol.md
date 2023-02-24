@@ -11,9 +11,8 @@
 7. Turn the computer on. Check that it is in working order.
     1. Hit the computer power button and wait for it to boot up.
     2. **From now on, while the computer is on, ALWAYS ground yourself before making contact with the robot--even if you only stepped away for a few seconds. Static charge builds up fast on carpet, and the computer is highly vulnerable to static shock. Any sparking will cause it to reboot.**
-    2. Use Windows Remote Desktop to remote into hopper-UP-WHL01, or use the HDMI port and a wireless mouse+keyboard.
 8. Insert the E-stop key and turn it to the "on" position.
-9. Insert the power distribution key and turn it to the "on" position. The board LED should light up, as well as the ODrives.
+9. Insert the power distribution key past the limit switch, and set it in the hex hole. The LED should light up. After 3 seconds, turn it to the "on" position. The board LED should light up even brighter, as well as the ODrives.
 10. You may now run the code.
 
 # Running the code
