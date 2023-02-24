@@ -343,15 +343,15 @@ void Runner::Run() {
     // }
     // Plots::PlotMap2D(k_final, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
     // Plots::PlotMap3D(k_final, "3D Position vs Time", "p", p_vec, 0, 0);
-    Plots::Plot3(k_final, "Position of End-Effector in Body Frame vs Time", "peb", peb_vec, peb_ref_vec, 0);
-    Plots::Plot5(k_final, "Actuator Joint Angular Positions", "q", qa_vec, qa_ref_vec, 0);
-    Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
-    Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
-    Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), reactf_vec, reactf_vec, 0);
-    Plots::Plot3(k_final, "Reaction Torque vs Time", "joint " + std::to_string(joint_id), reactt_vec, reactt_vec, 0);
-    Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
-    Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_ref_vec, 0);
-    // Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
+    // Plots::Plot3(k_final, "Position of End-Effector in Body Frame vs Time", "peb", peb_vec, peb_ref_vec, 0);
+    // Plots::Plot5(k_final, "Actuator Joint Angular Positions", "q", qa_vec, qa_ref_vec, 0);
+    // Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
+    // Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
+    // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), reactf_vec, reactf_vec, 0);
+    // Plots::Plot3(k_final, "Reaction Torque vs Time", "joint " + std::to_string(joint_id), reactt_vec, reactt_vec, 0);
+    // Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
+    // Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_ref_vec, 0);
+    Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
 
     // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
     // gc_state_hist); Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);

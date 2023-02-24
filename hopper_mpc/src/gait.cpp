@@ -49,17 +49,17 @@ uVals Gait::Raibert(std::string state, std::string state_prev, Eigen::Vector3d p
   //   z_ref = atan2((p_ref - p)(1), (p_ref - p)(0));
   // }
   z_ref = atan2((p_ref - p)(1), (p_ref - p)(0));
-  // double k_b = (Utils::Clip(dist, 0.5, 1) + 2) / 3;  // "braking" gain based on distance
-  double h = model.h0;         // * k_b;                         // make jumps scale with distance to target
-  double h_extend = h * 1.75;  // extension height
-  double h_cmprss = h * 1.5;   // compression height
+  double k_b = (Utils::Clip(dist, 0.5, 1.0) + 2) / 3;  // "braking" gain based on distance
+  double h = model.h0;                                 // * k_b;                         // make jumps scale with distance to target
+  double h_extend = h * 1.75;                          // extension height
+  double h_cmprss = h * 1.5;                           // compression height
 
   if (state == "Rise") {                                               // in first timestep after liftoff,
     if (state_prev == "Push") {                                        // find new footstep position based on des and current speed
       double zeta = 2 * h_extend * sin(Utils::AngleBetween(Q, Q_up));  // add distance for leg location
-      double kt = abs(2 * v(2) / model.g);                             // leap period gain
-      // double kr = 0.2 / k_b;                                           // desired acceleration constant
-      double kr = 0.3;
+      double kt = abs(2 * v(2) / model.g) * 0.5;                       // leap period gain
+      double kr = 0.2 / k_b;                                           // desired acceleration constant
+      // double kr = 0.3;                                                 // 0.3;
       pf_ref = p + v * kt + kr * (v - v_ref) + v.normalized() * zeta;  // footstep in world frame for neutral motion + des acc + leg travel
       pf_ref(2) = 0;                                                   // enforce footstep is on ground plane
     }
