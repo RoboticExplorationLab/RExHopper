@@ -47,10 +47,14 @@ Note: Movement during the startup and homing sequence may cause the jig to relea
     - When ready to test again, always turn the E-stop on first and then the power distribution.
 
 # Deactivation Protocol
-1. Insert the power distribution key and turn it to the "off" position. The board LED and ODrive LEDs should go out.
-2. Turn the E-stop to the "off" position and pull the key out. Place the cap back on.
-3. Disconnect the 48V power connector(s).
-4. Disconnect the computer power jack.
-5. Take the robot down from the harness. Do NOT do this until you are sure that all power connectors have been removed.
+0. Turn the computer off.
+    ``` 
+    sudo shutdown -h now 
+    ```
+2. Insert the power distribution key and turn it to the "off" position. The board LED and ODrive LEDs should go out.
+3. Turn the E-stop to the "off" position and pull the key out. Place the cap back on.
+4. Disconnect the 48V power connector(s).
+5. Disconnect the computer power jack.
+6. Take the robot down from the harness. Do NOT do this until you are sure that all power connectors have been removed.
 
 
