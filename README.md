@@ -2,152 +2,25 @@
 
 The REx Hopper is a monopodal hopping robot with reaction wheels. This repository contains C++ code for control of the robot, both on hardware and in simulation.
 
-## UP Xtreme First Time Setup Instructions
+## Hardware First-Time Setup
 
-*This is only for setting up a new computer to control the hardware! If you're using the computer that has already been set up, you can skip this section.*
+See the [Hardware Computer Setup doc](docs/HWComputerSetup.md).
 
-The following are instructions for setting up the REx Hopper computer such that it is compatible with the RosDockerWorkspace environment.
+## Docker Container Setup
 
-1. Update the UEFI BIOS using [these instructions](https://downloads.up-community.org/download/up-xtreme-uefi-bios-v1-9/).
-   - Use `GO.nsh` rather than `GO_Entire.nsh`.
+See the [Docker Container doc](docs/Container.md).
 
-2. Update the [kernel](https://github.com/up-board/up-community/wiki/Ubuntu_20.04).
+## C++ Build Environment Setup
 
-3. Setup user GPIO/SPI/I2C [Permissions](https://github.com/up-board/up-community/wiki/Ubuntu_20.04#enable-the-hat-functionality-from-userspace).
-
-4. Install Docker. But do NOT build the RosDockerWorkspace container. It will take up too much filespace and is incompatible with the PCAN drivers.
-
-5. Pull the microstrain-inertial ROS Docker image for the [3DM AHRS](https://hub.docker.com/r/microstrain/ros-microstrain_inertial_driver).
-
-   ```
-   sudo docker pull microstrain/ros-microstrain_inertial_driver:ros
-   ```
-
-6. [RosDockerWorkspace](https://github.com/RoboticExplorationLab/RosDockerWorkspace) serves as the environment for REx Hopper. However, we do not recommend building it as a docker container on the robot's computer due to both a lack of space and driver incompatibilities.
-   ```
-   git clone git@github.com:RoboticExplorationLab/RosDockerWorkspace.git
-   cd RosDockerWorkspace
-   mkdir src
-   cd src
-   git clone git@github.com:RoboticExplorationLab/RExHopper.git
-   ```
-
-## Using the Docker Container
-As previously stated, we do not recommend building the docker container on the robot's computer due to both a lack of storage space and driver incompatibilities. 
-
-**WARNING: Only build on a remote computer for remote work (e.g. simulation).**
-
-**DO NOT BUILD ON THE HARDWARE COMPUTER.**
-
-To build the container in VScode:
-
-   * Click on the green button in the lower left -> Reopen in Container
-
-If you change the Dockerfile or devcontainer.json and want to rebuild the env:
-
-   * Ctrl+shift+p -> rebuild container
-
-
-## Code Execution Setup
-In RosDockerWorkspace git:(main):
-
-```
-catkin build 
-wssetup
-```
-
-whenever you add/remove header files, or if you see clang errors:
-
-```
-catkin clean
-```
-
-### Running the MuJoCo Simulation
-
-```
-rosrun hopper_mpc hopper_mpc mujoco start_stand stand 5000 --plot
-```
-
-## Running Hardware Control
-
-### Starting the IMU Publisher
-Before the hardware controller can be started, the IMU docker image must be started. 
-
-Find the device id with 
-
-```
-dmesg | grep tty
-```
-
-In RosDockerWorkspace, assuming the device id is the default `/dev/ttyACM0`, run:
-
-```
-sudo docker run -it --rm --net=host --device=/dev/ttyACM0 -v "/home/hopper/Documents/git_workspace/RosDockerWorkspace/src/RExHopper/params.yml:/tmp/params.yml" microstrain/ros-microstrain_inertial_driver:ros params_file:=/tmp/params.yml
-```
-Otherwise, as an example:
-```
-sudo docker run -it --rm --net=host --device=/dev/ttyACM1 -v "/home/hopper/Documents/git_workspace/RosDockerWorkspace/src/RExHopper/params.yml:/tmp/params.yml" microstrain/ros-microstrain_inertial_driver:ros params_file:=/tmp/params.yml port:=/dev/ttyACM1
-```
-
-You can check what it's publishing with 
-```
-rostopic list
-```
-
-### Mocap Node
-In a separate terminal:
-```
-wssetup
-roslaunch mocap_optitrack mocap.launch
-```
-### Hardware Control Initialization
-```
-wssetup
-rosrun hopper_mpc hopper_mpc hardware start_stand stand 5000 --plot
-```
-
-## Argparse Arguments Explained
-
-   - bridge
-      - `hardware`
-         - Control the hardware
-      - `mujoco`  
-         - Run MuJoCo sim
-   
-   - start
-      - `start_stand`
-         - Start standing
-      - `start_sit`
-         - Start from a sitting position
-      - `fixed`
-         - The robot base is fixed to a jig
-
-   - ctrl
-      - `mpc`
-         - Convex MPC (WIP)
-      - `raibert`
-         - Raibert hopping
-      - `stand`
-         - Balance while standing
-      - `idle`
-         - Do nothing
-      - `circle`
-         - A leg movement test, should be paired with `fixed`
-      - `rotorvel` and `rotorpos`
-         - Reaction wheel movement tests, should be paired with `fixed` start
-
-   - N_run
-      - Specify the number of timesteps to run for
-   - `--plot`
-      - Enable plotting
-   - `--skip_homing` 
-      - Don't home leg positions (on hardware)
-   - `--skip_kf`
-      - Don't use the kalman filter
+See the [Environment Setup doc](docs/EnvSetup.md).
 
 ## ODrive Setup
 
 See the [ODrive Setup doc](docs/ODriveSetup.md).
+
+## Code Execution
+
+See the [Code Execution doc](docs/CodeExecution.md).
 
 ## Creating New MJCFs
 
