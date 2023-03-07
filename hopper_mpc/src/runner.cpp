@@ -5,17 +5,19 @@
 #include "Eigen/Dense"
 #include "hopper_mpc/plots.hpp"
 
-Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool home_,
-               bool skip_kf_) {
+Runner::Runner(Model model_, double dt_, std::string bridge_, std::string start_, std::string ctrl_, int N_run_, bool plot_,
+               bool skip_homing_, bool skip_kf_) {
   model = model_;
-  N_run = N_run_;
+
   dt = dt_;
-  ctrl = ctrl_;
+
   bridge = bridge_;
+  start = start_;
+  ctrl = ctrl_;
+  N_run = N_run_;
+
   plot = plot_;
-  fixed = fixed_;
-  spr = spr_;
-  home = home_;
+  skip_homing = skip_homing_;
   skip_kf = skip_kf_;
 
   g = model.g;  // should g be defined here?
@@ -38,19 +40,27 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   t_stance = t_p * phi_switch;       // time spent in stance
   N_c = t_stance / dt;               // number of timesteps spent in contact
   N_stop = 100;                      // number of timesteps spent stopped at the goal
-  N_sit = 1500;                      // number of timesteps spent sitting
+
+  legPtr = std::make_shared<Leg>(model, dt);
+  rwaPtr = std::make_shared<Rwa>(bridge, dt);
+
   // class definitions
   if (bridge_ == "hardware") {
-    bridgePtr.reset(new HardwareBridge(model, dt, fixed, home));
+    bridgePtr.reset(new HardwareBridge(model, dt, &legPtr, start, skip_homing));
+    N_sit = 0;      // number of timesteps spent sitting
+    x_adj = 0.006;  // 0.006
   } else if (bridge_ == "mujoco") {
-    bridgePtr.reset(new MujocoBridge(model, dt, fixed, home));
+    bridgePtr.reset(new MujocoBridge(model, dt, &legPtr, start, skip_homing));
+    N_sit = 1500;  // number of timesteps spent sitting
+    x_adj = -0.004;
     // } else if (bridge_ == "raisim") {
-    // bridgePtr.reset(new RaisimBridge(model, dt, fixed, home));
+    // bridgePtr.reset(new RaisimBridge(model, dt, legPtr, start, skip_homing));
   } else {
     throw "Invalid bridge name! Use 'hardware' or 'mujoco'";
   }
+  // TODO: This needs to be tied to sitting, not homing
   // initialize state
-  if (home == true) {
+  if (skip_homing == false) {
     p = model.p0;
   } else {
     p = model.p0_sit;
@@ -76,38 +86,39 @@ Runner::Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::str
   ts = 0.875 * t_p;  // pretend you're starting halfway through 'fall'
   gc_state_prev = gc_state;
 
-  ctrlMode = "Torque";                                               // "Torque&Pos"
+  ctrlMode = "Pos";                                                  // "Torque&Pos"
   qla_ref = (model.S.transpose() * model.q_init).block<2, 1>(0, 0);  // convert from full joint space to actuated joint space
   peb_ref << 0, 0, -model.h0;                                        // desired operational space leg position in body frame
   veb_ref.setZero();                                                 // desired operational space leg velocity
   fb_ref.setZero();                                                  // desired operational space leg force
   u.setZero();                                                       // ctrl Torques
-  legPtr = std::make_shared<Leg>(model, dt);
-  rwaPtr = std::make_shared<Rwa>(bridge, dt);
 
-  gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr));  // gait controller class
+  gaitPtr.reset(new Gait(model, dt, peb_ref, &legPtr, &rwaPtr, x_adj));  // gait controller class
   kfPtr.reset(new Kf(dt));
   obPtr.reset(new Observer(dt, &legPtr));
+  lowpassPtr.reset(new LowPass3D(dt, 160));  // 500
 
   k_changed = 0;
   sh_saved = 0;
 }
 
 void Runner::Run() {
-  bridgePtr->Init();
-
+  bridgePtr->Init(x_adj);
   kfPtr->InitState(p, v, p + Q.matrix() * peb_ref, v + Q.matrix() * veb_ref);
   double t = 0.0;
 
   // initialize vectors of state history for plotting
   std::vector<std::vector<double>> p_raw_vec(N_run), v_raw_vec(N_run), pe_raw_vec(N_run), ve_raw_vec(N_run);
   std::vector<std::vector<double>> p_vec(N_run), v_vec(N_run), pe_vec(N_run), ve_vec(N_run);
-  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qla_vec(N_run), qla_ref_vec(N_run), dqa_vec(N_run);
-  std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run), tau_vec(N_run), tau_ref_vec(N_run), reactf_vec(N_run);
-  std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ae_vec(N_run), grf_vec(N_run);
+  std::vector<std::vector<double>> theta_vec(N_run), theta_ref_vec(N_run), qa_vec(N_run), qa_ref_vec(N_run);
+  std::vector<std::vector<double>> dqa_vec(N_run), dqa_ref_vec(N_run);
+  std::vector<std::vector<double>> peb_vec(N_run), peb_ref_vec(N_run);
+  std::vector<std::vector<double>> tau_vec(N_run), tau_ref_vec(N_run);
+  std::vector<std::vector<double>> reactf_vec(N_run), reactt_vec(N_run);
+  std::vector<std::vector<double>> euler_vec(N_run), a_vec(N_run), ab_vec(N_run), ae_vec(N_run), grf_vec(N_run);
   std::vector<double> sh_hist(N_run), s_hist(N_run), gc_state_hist(N_run), gc_state_ref(N_run), grf_normal(N_run);
 
-  int joint_id = 1;  // joint to check reaction forces at
+  int joint_id = 3;  // joint to check reaction forces at
   std::string rf_name = "Reaction Force on Joint " + std::to_string(joint_id) + " vs Timesteps";
 
   std::vector<bool> C(N_run);
@@ -133,21 +144,22 @@ void Runner::Run() {
   int k_final = N_run - 1;  // the final number of steps used, defaults to N_run -1
 
   for (int k = 0; k < N_run; k++) {
-    auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
+    // auto t_before = std::chrono::high_resolution_clock::now();  // time at beginning of loop
 
     retvals = bridgePtr->SimRun(u, qla_ref, ctrlMode);
     if (k == 0) {
       // TODO: rotate mocap position as well based on mocap yaw
-      Q_offset = Utils::ExtractYawQuat(retvals.Q);
+      // Q_offset = Utils::ExtractYawQuat(retvals.Q).conjugate();
+      Q_offset = retvals.Q.conjugate();  // required for fixed tests
     }
-    Q = (retvals.Q * (Q_offset.inverse())).normalized();  // adjust yaw
+    Q = (Q_offset * retvals.Q).normalized();  // adjust yaw
+    // Q = retvals.Q;
 
-    bool stop = FallCheck(Q, t) + bridgePtr->stop;  // bool stop = bridgePtr->stop;
-    if (stop == true) {
-      std::cout << "Stopping control loop \n";
-      k_final = k;
-      break;
-    }
+    // if (FallCheck(Q, t) == true || bridgePtr->stop == true) {
+    //   std::cout << "Stopping control loop \n";
+    //   k_final = k;
+    //   break;
+    // }
 
     wb = retvals.wb;
     w = Q.matrix() * wb;  // angular vel in the world frame
@@ -159,10 +171,10 @@ void Runner::Run() {
 
     sh = ContactCheck(bridgePtr->sh, sh_prev, k);  // TODO: stop using exclusively bridgeptr for this
 
-    legPtr->UpdateState(qa.segment<2>(0), Q);  // grab first two actuator pos values
-    rwaPtr->UpdateState(dqa.segment<3>(2));    // grab last three actuator vel values
-    Eigen::Vector3d peb = legPtr->GetPos();    // pos of end-effector in body frame (P.E.B.)
-    Eigen::Vector3d veb = legPtr->GetVel();    // vel of end-effector in body frame (V.E.B.)
+    legPtr->UpdateState(qa.segment<2>(0), Q);                  // grab first two actuator pos values
+    rwaPtr->UpdateState(qa.segment<3>(2), dqa.segment<3>(2));  // grab last three actuator pos and vel values
+    Eigen::Vector3d peb = legPtr->GetPos();                    // pos of end-effector in body frame (P.E.B.)
+    Eigen::Vector3d veb = legPtr->GetVel();                    // vel of end-effector in body frame (V.E.B.)
 
     Eigen::Matrix3d R2 = Utils::EulerToQuat(0.0, legPtr->q(2), 0.0).matrix();  // check to make sure this stuff works
     Eigen::Matrix3d R3 = Utils::EulerToQuat(0.0, legPtr->q(3), 0.0).matrix();
@@ -195,21 +207,23 @@ void Runner::Run() {
     s = C.at(k);  // bool s = ContactSchedule(t, 0);
     UpdateGaitCycle(s, sh, v(2));
 
-    if (home == false && k <= N_sit) {
+    if (ctrl == "idle") {
+      uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
+    } else if (ctrl == "circle") {
+      uvals = gaitPtr->CircleTest();
+    } else if (ctrl == "rotorvel") {
+      uvals = gaitPtr->VelTest();
+    } else if (ctrl == "rotorpos") {
+      uvals = gaitPtr->PosTest();
+    } else if (ctrl == "sit" || (start == "start_sit" && k <= N_sit)) {
       uvals = gaitPtr->Sit();
-    } else if (home == false && N_sit < k <= (N_sit + model.N_getup)) {
+    } else if (start == "start_sit" && N_sit < k <= (N_sit + model.N_getup)) {
       uvals = gaitPtr->GetUp(Q);
     } else {
       if (ctrl == "raibert") {
         uvals = gaitPtr->Raibert(gc_state, gc_state_prev, p, Q, v, w, p_refv.at(k), Q_ref, v_refv.at(k), w_ref);
       } else if (ctrl == "stand") {
         uvals = gaitPtr->KinInvStand(Q);
-      } else if (ctrl == "sit") {
-        uvals = gaitPtr->Sit();
-      } else if (ctrl == "idle") {
-        uvals = gaitPtr->Idle();  // warning: theta, etc. will not be plotted correctly with this
-      } else if (ctrl == "circle") {
-        uvals = gaitPtr->CircleTest();
       } else {
         throw "Invalid ctrl name! Use 'raibert', 'stand', 'sit', 'idle', or 'circle'";
         break;
@@ -217,12 +231,17 @@ void Runner::Run() {
     }
 
     u = uvals.u;
+    u.segment<3>(2) = lowpassPtr->Filter(u.segment<3>(2));
+    // if (k < 100) {
+    //   u.segment<3>(2) << 0., 0., 0.;
+    // }
     qla_ref = uvals.qla_ref;
     ctrlMode = uvals.ctrlMode;
 
-    // clip torques to max possible
+    // clip torque commands to max
     for (int i = 0; i < model.n_a; i++) {
-      u(i) = Utils::Clip(u(i), -model.a_tau_stall(i) * 1.5, model.a_tau_stall(i) * 1.5);
+      u(i) = Utils::Clip(u(i), -model.a_tau_lim(i), model.a_tau_lim(i));
+      // u(i) = Utils::Clip(u(i), -model.a_tau_stall(i) * 1.5, model.a_tau_stall(i) * 1.5);
     }
 
     // Eigen::Vector4d tau_dist = obPtr->TorqueEst(bridgePtr->tau.segment<2>(0));
@@ -251,8 +270,9 @@ void Runner::Run() {
       theta_vec.at(k) = {rwaPtr->theta(0) * 180 / M_PI, rwaPtr->theta(1) * 180 / M_PI, rwaPtr->theta(2) * 180 / M_PI};
       theta_ref_vec.at(k) = {rwaPtr->setp(0) * 180 / M_PI, rwaPtr->setp(1) * 180 / M_PI, rwaPtr->setp(2) * 180 / M_PI};
 
-      qla_vec.at(k) = {qa(0) * 180 / M_PI, qa(1) * 180 / M_PI};
-      qla_ref_vec.at(k) = {qla_ref(0) * 180 / M_PI, qla_ref(1) * 180 / M_PI};
+      qa_vec.at(k) = {qa(0) * 180 / M_PI, qa(1) * 180 / M_PI, qa(2) * 180 / M_PI, qa(3) * 180 / M_PI, qa(4) * 180 / M_PI};
+      qa_ref_vec.at(k) = {qla_ref(0) * 180 / M_PI, qla_ref(1) * 180 / M_PI, rwaPtr->q_ref(0) * 180 / M_PI, rwaPtr->q_ref(1) * 180 / M_PI,
+                          rwaPtr->q_ref(2) * 180 / M_PI};
 
       peb_vec.at(k) = {peb(0), peb(1), peb(2)};
       peb_ref_vec.at(k) = {gaitPtr->peb_ref(0), gaitPtr->peb_ref(1), gaitPtr->peb_ref(2)};
@@ -261,14 +281,17 @@ void Runner::Run() {
       // NOTE: magnitude of tau_ref depends on whether gr is being handled by actuator.cpp or simulator/hardware
       tau_ref_vec.at(k) = {bridgePtr->tau_ref(0), bridgePtr->tau_ref(1), bridgePtr->tau_ref(2), bridgePtr->tau_ref(3),
                            bridgePtr->tau_ref(4)};
-
+      // std::cout << dqa.transpose() << "\n";
       dqa_vec.at(k) = {dqa(0), dqa(1), dqa(2), dqa(3), dqa(4)};
+      dqa_ref_vec.at(k) = {0.0, 0.0, rwaPtr->dq_ref(0), rwaPtr->dq_ref(1), rwaPtr->dq_ref(2)};
 
       reactf_vec.at(k) = {bridgePtr->rf_x(joint_id), bridgePtr->rf_y(joint_id), bridgePtr->rf_z(joint_id)};
+      reactt_vec.at(k) = {bridgePtr->rt_x(joint_id), bridgePtr->rt_y(joint_id), bridgePtr->rt_z(joint_id)};
 
       grf_vec.at(k) = {grf(0), grf(1), grf(2)};
 
       a_vec.at(k) = {a(0), a(1), a(2)};
+      ab_vec.at(k) = {ab(0), ab(1), ab(2)};
       ae_vec.at(k) = {ae(0), ae(1), ae(2)};
 
       sh_hist.at(k) = sh;
@@ -286,19 +309,25 @@ void Runner::Run() {
       auto t_after = std::chrono::high_resolution_clock::now();       // current time
       std::chrono::duration<double> tk_chrono = t_after - t0_chrono;  // measured time w.r.t. the initialization of loop
       if (tk_chrono.count() >= t) {
-        // std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
+        std::cout << "Missed 'real time' deadline at tk_chrono = " << tk_chrono.count() << ", t = " << t << " \n";
         // throw(std::runtime_error("Missed 'real time' deadline"));
       } else {
-        int remainder = (t - tk_chrono.count()) * 1000;
-        std::this_thread::sleep_for(std::chrono::milliseconds(std::max(0, remainder - 1)));
+        while (tk_chrono.count() <= (t - dt)) {  // while control time is more than one timestep ahead of real time
+          // need to make control loop wait for real time to catch up
+          tk_chrono = std::chrono::high_resolution_clock::now() - t0_chrono;  // measured time w.r.t. the initialization of loop
+          int remainder = (t - tk_chrono.count()) * 1e6;                      // remainder in microseconds
+          // std::cout << "Lagging by " << remainder << "us at tk_chrono = " << tk_chrono.count() << ", t = " << t << "\n ";
+          // std::this_thread::sleep_for(std::chrono::microseconds(std::max(0, remainder - 1500)));
+          std::this_thread::sleep_for(std::chrono::microseconds(remainder / 2));  // Zeno's achilles paradox
+        }
+        // std::chrono::duration<double> elapsed = t_after - t_before;
+        // std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+        // if (elapsed.count() > max_elapsed){
+        //   max_elapsed = elapsed.count();
+        // }
       }
-      // std::chrono::duration<double> elapsed = t_after - t_before;
-      // std::cout << "Elapsed time: " << elapsed.count() << " s\n";
-      // if (elapsed.count() > max_elapsed){
-      //   max_elapsed = elapsed.count();
-      // }
+      // --- end fake real-time --- //
     }
-    // --- end fake real-time --- //
   }
   std::cout << "End Control. \n";
   bridgePtr->End();
@@ -314,17 +343,20 @@ void Runner::Run() {
     // }
     // Plots::PlotMap2D(k_final, "2D Position vs Time", "p", p_vec, p_refv, 0, 0);
     // Plots::PlotMap3D(k_final, "3D Position vs Time", "p", p_vec, 0, 0);
-    Plots::Plot2(k_final, "Actuator Joint Angular Positions", "q", qla_vec, qla_ref_vec, 0);
-    Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
-    Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
-    // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), theta_vec, theta_ref_vec, 0);
+    // Plots::Plot3(k_final, "Position of End-Effector in Body Frame vs Time", "peb", peb_vec, peb_ref_vec, 0);
+    // Plots::Plot5(k_final, "Actuator Joint Angular Positions", "q", qa_vec, qa_ref_vec, 0);
+    // Plots::Plot3(k_final, "Euler vs Time", "euler", euler_vec, euler_vec, 0);
+    // Plots::Plot3(k_final, "Theta vs Time", "theta", theta_vec, theta_ref_vec, 0);
+    // Plots::Plot3(k_final, "Reaction Force vs Time", "joint " + std::to_string(joint_id), reactf_vec, reactf_vec, 0);
+    // Plots::Plot3(k_final, "Reaction Torque vs Time", "joint " + std::to_string(joint_id), reactt_vec, reactt_vec, 0);
     // Plots::Plot5(k_final, "Tau vs Time", "tau", tau_vec, tau_ref_vec, 0);
-    Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_vec, 0);
+    // Plots::Plot5(k_final, "Dq vs Time", "dq", dqa_vec, dqa_ref_vec, 0);
     Plots::Plot3(k_final, "Ground Reaction Force vs Time", "GRF", grf_vec, grf_vec, 0);
+
     // Plots::PlotMulti3(k_final, "Contact Timing", "Scheduled Contact", s_hist, "Sensed Contact", sh_hist, "Gait Cycle State",
-    // gc_state_hist);
-    // Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
-    // Plots::Plot3(k_final, "Measured Base Acceleration", "acc", a_vec, a_vec, 0);
+    // gc_state_hist); Plots::PlotSingle(k_final, "Ground Reaction Force Normal", grf_normal);
+    Plots::Plot3(k_final, "Measured Base Acceleration in World Frame", "acc", a_vec, a_vec, 0);
+    Plots::Plot3(k_final, "Measured Base Acceleration in Body Frame", "acc", ab_vec, ab_vec, 0);
     // Plots::Plot3(k_final, "Measured Foot Acceleration", "acc", ae_vec, ae_vec, 0);
   }
 }
@@ -441,15 +473,15 @@ trajVals Runner::GenRefTraj(Eigen::Vector3d p_0, Eigen::Vector3d v_0, Eigen::Vec
 }
 
 bool Runner::FallCheck(Eigen::Quaterniond Q, double t) {
-  Eigen::Quaterniond Q0;
-  Q0.setIdentity();
-  Eigen::Quaterniond Q_z, Q_no_yaw;
-  Q_z = Utils::ExtractYawQuat(Q);
-  Q_no_yaw = (Q * (Q_z.inverse())).normalized();  // the base quaternion ignoring heading
+  Eigen::Quaterniond Q_frame;
+  Q_frame.setIdentity();
+  Eigen::Quaterniond Q_no_yaw;
+  Q_no_yaw = (Utils::ExtractYawQuat(Q).conjugate() * Q).normalized();  // the base quaternion ignoring heading
   bool stop = false;
-  // std::cout << "angle = " << Utils::AngleBetween(Q0, Q_no_yaw) << "\n";
-  if (Utils::AngleBetween(Q0, Q_no_yaw) > (45 * M_PI / 180)) {
-    std::cout << "Fall likely; engaging emergency actuator deactivation at t = " << t << " s\n";
+  double angle = Utils::AngleBetween(Q_frame, Q_no_yaw) * 180 / M_PI;
+  // angle max = arcsin(tau_max/(m * g * l)) -> to degrees
+  if (angle > 12) {
+    std::cout << "FallCheck: Fall likely; Deactivating at t = " << t << " s with angle = " << angle << " degrees \n";
     stop = true;
   }
   return stop;

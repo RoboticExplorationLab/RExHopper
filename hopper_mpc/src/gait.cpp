@@ -3,7 +3,8 @@
 #include <iostream>
 #include "hopper_mpc/utils.hpp"
 
-Gait::Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<Leg>* legPtr_, std::shared_ptr<Rwa>* rwaPtr_) {
+Gait::Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<Leg>* legPtr_, std::shared_ptr<Rwa>* rwaPtr_,
+           double x_adj_) {
   model = model_;
   dt = dt_;
   Eigen::Vector3d kp;
@@ -18,15 +19,16 @@ Gait::Gait(Model model_, double dt_, Eigen::Vector3d peb_ref_, std::shared_ptr<L
   z_ref = 0;
   peb_ref = peb_ref_;
   pf_ref.setZero();
-  // x_adj = -0.002938125;  //-0.002938125 falls forward;  //-0.0029346875 falls backward;  works for rev08;
-  x_adj = 0.00996875;  // this can be improved
+
+  x_adj = x_adj_;
+
   peb_ref << x_adj, 0, -model.h0 * 1.5;
   u.setZero();
 
   // standup
   N_getup = model.N_getup;
   peb_ref_init = legPtr->KinFwd(model.qla_sit(0), model.qla_sit(1));
-  peb_ref_final << 0, 0, -model.h0 * 5 / 3;
+  peb_ref_final << x_adj, 0, -model.h0 * 5 / 3;
   peb_ref_trajx = Eigen::VectorXd::LinSpaced(N_getup, peb_ref_init(0), peb_ref_final(0));
   peb_ref_trajz = Eigen::VectorXd::LinSpaced(N_getup, peb_ref_init(2), peb_ref_final(2));
 }
@@ -40,24 +42,24 @@ uVals Gait::Raibert(std::string state, std::string state_prev, Eigen::Vector3d p
   Q_up.y() = sin(1 / 2);
   Q_up.z() = 0;
   Q_z = Utils::ExtractYawQuat(Q);
-  R_z = (Q_z.inverse()).matrix();                                        // rotation matrix for body->world z turn
+  R_z = (Q_z.conjugate()).matrix();                                      // rotation matrix for body->world z turn
   v_ref = Q_z.matrix() * (-pid_vPtr->PIDControl(R_z * p, R_z * p_ref));  // adjust for yaw, rotate back world->body
   double dist = (p_ref.block<2, 1>(0, 0) - p.block<2, 1>(0, 0)).norm();
   // if (dist >= 0.2) {
   //   z_ref = atan2((p_ref - p)(1), (p_ref - p)(0));
   // }
   z_ref = atan2((p_ref - p)(1), (p_ref - p)(0));
-  // double k_b = (Utils::Clip(dist, 0.5, 1) + 2) / 3;  // "braking" gain based on distance
-  double h = model.h0;         // * k_b;                         // make jumps scale with distance to target
-  double h_extend = h * 1.75;  // extension height
-  double h_cmprss = h * 1.5;   // compression height
+  double k_b = (Utils::Clip(dist, 0.5, 1.0) + 2) / 3;  // "braking" gain based on distance
+  double h = model.h0;                                 // * k_b;                         // make jumps scale with distance to target
+  double h_extend = h * 1.75;                          // extension height
+  double h_cmprss = h * 1.5;                           // compression height
 
   if (state == "Rise") {                                               // in first timestep after liftoff,
     if (state_prev == "Push") {                                        // find new footstep position based on des and current speed
       double zeta = 2 * h_extend * sin(Utils::AngleBetween(Q, Q_up));  // add distance for leg location
-      double kt = abs(2 * v(2) / model.g);                             // leap period gain
-      // double kr = 0.2 / k_b;                                           // desired acceleration constant
-      double kr = 0.3;
+      double kt = abs(2 * v(2) / model.g) * 0.5;                       // leap period gain
+      double kr = 0.2 / k_b;                                           // desired acceleration constant
+      // double kr = 0.3;                                                 // 0.3;
       pf_ref = p + v * kt + kr * (v - v_ref) + v.normalized() * zeta;  // footstep in world frame for neutral motion + des acc + leg travel
       pf_ref(2) = 0;                                                   // enforce footstep is on ground plane
     }
@@ -82,36 +84,12 @@ uVals Gait::Raibert(std::string state, std::string state_prev, Eigen::Vector3d p
   return uVals{u, qla_ref, ctrlMode};
 }
 
-uVals Gait::KinInvVert(std::string state, std::string state_prev, Eigen::Vector3d p, Eigen::Quaterniond Q, Eigen::Vector3d v,
-                       Eigen::Vector3d w, Eigen::Vector3d p_ref, Eigen::Quaterniond Q_ref, Eigen::Vector3d v_ref, Eigen::Vector3d w_ref) {
-  Q_ref.setIdentity();
-  z_ref = 0;
-  if (state == "Rise") {
-    peb_ref(2) = -model.h0;  // pull leg up to prevent stubbing
-  } else if (state == "Fall") {
-    peb_ref(2) = -model.h0 * 2;  // brace for impact
-  } else if (state == "Cmpr") {
-    peb_ref(2) = -model.h0 * 1.5;  // TODO: Try reducing gains for compression instead of changing position setpoint
-  } else if (state == "Push") {
-    peb_ref(2) = -model.h0 * 2;  // pushoff
-  }
-  std::string ctrlMode = "Torque";
-  Eigen::Vector3d veb_ref;
-  veb_ref.setZero();
-  u.block<2, 1>(0, 0) = legPtr->OpSpacePosCtrl(peb_ref, veb_ref);
-  Eigen::Vector2d qla_ref;
-  qla_ref.setZero();
-  // Eigen::Vector2d qla_ref = legPtr->KinInv(peb_ref);
-  // std::string ctrlMode = "Pos";
-  u.segment<3>(2) = rwaPtr->AttitudeCtrl(Q_ref, Q, z_ref);
-  return uVals{u, qla_ref, ctrlMode};
-}
-
 uVals Gait::KinInvStand(Eigen::Quaterniond Q) {
   Eigen::Quaterniond Q_ref;
   Q_ref.setIdentity();
   z_ref = 0;
-  peb_ref(2) = -model.h0 * 5 / 3;
+  // z_ref = 15 * M_PI / 180;
+  peb_ref(2) = -model.h0 * 5.0 / 3.0;
   // double kp = model.k_kin(0) * 2;
   // double kd = model.k_kin(1) * 2;
   // u.block<2, 1>(0, 0) = legPtr->KinInvPosCtrl(peb_ref, kp, kd);
@@ -125,7 +103,6 @@ uVals Gait::GetUp(Eigen::Quaterniond Q) {
   Eigen::Quaterniond Q_ref;
   Q_ref.setIdentity();
   z_ref = 0;
-
   peb_ref << peb_ref_trajx(i), 0.0, peb_ref_trajz(i);
   Eigen::Vector2d qla_ref = legPtr->KinInv(peb_ref);
   std::string ctrlMode = "Pos";
@@ -171,5 +148,25 @@ uVals Gait::CircleTest() {
   qla_ref = legPtr->KinInv(peb_ref);
   std::string ctrlMode = "Pos";
   // std::cout << "peb_ref = " << peb_ref(0) << ", " << peb_ref(1) << ", " << peb_ref(2) << "\n";
+  return uVals{u, qla_ref, ctrlMode};
+}
+
+uVals Gait::VelTest() {
+  // check reaction wheel speed polarity matches torque polarity
+  Eigen::Vector2d qla_ref;
+  qla_ref.setZero();
+  std::string ctrlMode = "None";  // legs go limp
+
+  u.segment<3>(2) = rwaPtr->RotorVelCtrl();
+  return uVals{u, qla_ref, ctrlMode};
+}
+
+uVals Gait::PosTest() {
+  // check reaction wheel pos polarity matches torque polarity
+  Eigen::Vector2d qla_ref;
+  qla_ref.setZero();
+  std::string ctrlMode = "None";  // legs go limp
+
+  u.segment<3>(2) = rwaPtr->RotorPosCtrl();
   return uVals{u, qla_ref, ctrlMode};
 }

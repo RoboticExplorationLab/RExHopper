@@ -1,0 +1,150 @@
+<mujoco model="hopper_rev10">
+  <compiler inertiafromgeom='false' angle="radian"/>
+  <option integrator="Euler" timestep="0.001"/>
+  <size njmax="500" nconmax="100"/>
+  <!-- <default/> -->
+  <asset>
+    <mesh name="base_link" file="base_link.stl"/>
+    <mesh name="Link 0" file="Link 0.stl"/>
+    <mesh name="Link 1" file="Link 1.stl"/>
+    <mesh name="Link 2" file="Link 2.stl"/>
+    <mesh name="Link 3" file="Link 3.stl"/>
+    <mesh name="rw0" file="rw0.stl"/>
+    <mesh name="rw1" file="rw1.stl"/>
+    <mesh name="rwz" file="rwz.stl"/>
+
+    <texture builtin="gradient" height="100" rgb1="1 1 1" rgb2="0 0 0" type="skybox" width="100"/>
+    <texture builtin="flat" height="1278" mark="cross" markrgb="1 1 1" name="texgeom" random="0.01" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" type="cube" width="127"/>
+    <texture builtin="checker" height="100" name="texplane" rgb1="0 0 0" rgb2="0.8 0.8 0.8" type="2d" width="100"/>
+    <material name="MatPlane" reflectance="0.5" shininess="1" specular="1" texrepeat="60 60" texture="texplane"/>
+    <material name="geom" texture="texgeom" texuniform="true"/>
+
+  </asset>
+  <worldbody>
+    <light cutoff="100" diffuse="1 1 1" dir="-0 0 -1.3" directional="true" exponent="1" pos="0 0 1.3" specular=".1 .1 .1"/>
+    <!-- <geom conaffinity="1" condim="3" material="MatPlane" name="floor" pos="0 0 0" rgba="0.8 0.9 0.8 1" size="40 40 40" type="plane"/> -->
+    <geom conaffinity="1" condim="3" material="MatPlane" name="floor" pos="0 0 0" rgba="0.8 0.9 0.8 1" size="40 40 40" type="plane" friction="4 0.01 0.01" solimp="8 10 0.001 0.5 2" solref="0.01 0.25"/>
+
+    <body name="base_link" pos="0 0 0.5" quat="1 0 0 0">
+      <site name='imu' size='0.01' pos='0 0 0'/>
+      <inertial pos="-0.00418136 0.00001975 0.01669539" quat="1 0 0 0" mass="4.74662308" diaginertia="0.03772045 0.01927139 0.03899715"/>
+      <joint type="free" stiffness="0" damping="0" frictionloss="0" armature="0"/>
+      <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="base_link"/>
+      <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="base_link"/>
+      <body name="Link 0" pos="0 0 0" quat="0.965926 0 0.258819 0">
+        <site name="tau0"/>
+        <inertial pos="0.00533299 0.0313631 0.000493209" quat="0.530362 0.492963 0.467911 0.506717" mass="0.585808" diaginertia="0.00042296 0.00083894 0.00063126"/>
+        <joint name="Joint 0" pos="0 0 0" axis="0 -1 0" limited="true" range="-3.14 3.14"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="Link 0"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link 0"/>
+        <body name="Link 1" pos="0.1 0 0" quat="0.5 0 0.866025 0">
+          <inertial pos="0.135392 0.0069372 5.37952e-09" quat="0.5 0.5 0.5 0.5" mass="0.0809766" diaginertia="0.00000391 0.00068989 0.00068741"/>
+          <joint name="Joint 1" pos="0 0 0" axis="0 -1 0" limited="true" range="-0.7597 1.8295"/>
+          <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="Link 1"/>
+          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link 1"/>
+        </body>
+      </body>
+      <body name="Link 2" pos="0 0 0" quat="0.258819 0 0.965926 0">
+        <site name="tau1"/>
+        <inertial pos="0.0385294 -0.0274403 -7.28007e-05" quat="0.493035 0.506138 0.50707 0.49358" mass="0.734902" diaginertia="0.00048837 0.00511568 0.0049324"/>
+        <joint name="Joint 2" pos="0 0 0" axis="0 -1 0" limited="true" range="-3.14 3.14"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="Link 2"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link 2"/>
+        <body name="Link 3" pos="0.27 0 0" quat="0.5 0 -0.866025 0">
+          <site name='foot imu' size='0.01' pos='0.25 0 0'/>
+          <site name='contact_sensor' size='0.02' pos='.27 0 -.0205'/>
+          <inertial pos="0.125791 8.30702e-06 -0.0172728" quat="0.00267744 0.722948 -0.00161976 0.690896" mass="0.155003" diaginertia="0.00019365 0.00158853 0.00173031"/>
+          <joint name="Joint 3" pos="0 0 0" axis="0 -1 0" limited="true" range="-1.8295 0.7597"/>
+          <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="Link 3"/>
+          <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Link 3"/>
+        </body>
+      </body>
+      <body name="rw0" pos="0.056569 -0.1372 0" quat="0.923879 0 0 -0.382684">
+        <site name="tau2"/>
+        <inertial pos="-0.0112089 0 0" quat="0.617191 0.786813 0 0" mass="0.78203" diaginertia="0.00660959 0.0033873 0.0033873"/>
+        <joint name="joint_rw0" pos="0 0 0" axis="-1 0 0" limited="false"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="rw0"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="rw0"/>
+      </body>
+      <body name="rw1" pos="0.056569 0.1372 0" quat="0.923879 0 0 0.382684">
+        <site name="tau3"/>
+        <inertial pos="-0.0112089 0 0" quat="0.616123 0.78765 0 0" mass="0.78203" diaginertia="0.00660959 0.0033873 0.0033873"/>
+        <joint name="joint_rw1" pos="0 0 0" axis="-1 0 0" limited="false"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="rw1"/>
+        <geom type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="rw1"/>
+      </body>
+      <body name="rwz" pos="-0.076 0 0.086" quat="-2.59734e-06 0.707105 2.59735e-06 0.707108">
+        <site name="tau4"/>
+        <inertial pos="-0.0085979 0 0" mass="0.329528" diaginertia="0.00082888 0.00043238 0.00043238"/>
+        <joint name="joint_rwz" pos="0 0 0" axis="-1 0 0" limited="false"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.75294 0.75294 0.75294 1" mesh="rwz"/>
+        <geom type="mesh" rgba="0.75294 0.75294 0.75294 1" mesh="rwz"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <equality>
+		<connect anchor="0.27 0 0" body1="Link 1" body2="Link 3" name="equality_constraint" solimp="10 1 0.001 0.5 2"/>
+	</equality>
+
+  <actuator>
+    <motor joint='Joint 0' name='q0' gear="1 0 0 0 0 0" forcelimited="false" ctrllimited="false"/>
+	</actuator>
+  <actuator>
+    <motor joint='Joint 2' name='q2' gear="1 0 0 0 0 0" forcelimited="false" ctrllimited="false"/>
+	</actuator>
+  <actuator>
+    <motor joint='joint_rw0' name='rw0' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
+	</actuator>
+  <actuator>
+    <motor joint='joint_rw1' name='rw1' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-11.24 11.24" ctrllimited="false"/>
+	</actuator>
+  <actuator>
+    <motor joint='joint_rwz' name='rwz' gear="1 0 0 0 0 0" forcelimited="true" forcerange="-4 4" ctrllimited="false"/>
+	</actuator>
+
+  <contact>
+    <exclude name="exclude_base_0" body1="base_link" body2="Link 0"/>
+    <exclude name="exclude_base_1" body1="base_link" body2="Link 1"/>
+    <exclude name="exclude_base_2" body1="base_link" body2="Link 2"/>
+    <exclude name="exclude_base_3" body1="base_link" body2="Link 3"/>
+    <exclude name="exclude_0_1" body1="Link 0" body2="Link 1"/>
+    <exclude name="exclude_0_2" body1="Link 0" body2="Link 2"/>
+    <exclude name="exclude_0_3" body1="Link 0" body2="Link 3"/>
+    <exclude name="exclude_1_2" body1="Link 1" body2="Link 2"/>
+    <exclude name="exclude_1_3" body1="Link 1" body2="Link 3"/>
+    <exclude name="exclude_2_3" body1="Link 2" body2="Link 3"/>
+
+    <exclude name="exclude_base_rw0" body1="base_link" body2="rw0"/>
+    <exclude name="exclude_base_rw1" body1="base_link" body2="rw1"/>
+    <exclude name="exclude_base_rwz" body1="base_link" body2="rwz"/>
+    <exclude name="exclude_2_rwz" body1="Link 2" body2="rwz"/>
+  </contact>
+
+  <sensor>
+    <!-- User parameter is the number of absolute encoder bits -->
+    <framepos     name='base-pos' objtype='site' objname='imu'/>
+    <framequat    name='base-attitude' objtype='site' objname='imu'/>
+    <velocimeter  name='base-linear-velocity' site='imu'/>
+    <gyro  name='base-angular-velocity' site='imu'/>
+    <touch  name='contact sensor' site='contact_sensor'/>
+    <actuatorfrc name='tau0' actuator='q0'/>
+    <actuatorfrc name='tau1' actuator='q2'/>
+    <actuatorfrc name='tau2' actuator='rw0'/>
+    <actuatorfrc name='tau3' actuator='rw1'/>
+    <actuatorfrc name='tau4' actuator='rwz'/>
+    <force name='force0' site='tau0'/>
+    <force name='force1' site='tau1'/>
+    <force name='force2' site='tau2'/>
+    <force name='force3' site='tau3'/>
+    <force name='force4' site='tau4'/>
+    <accelerometer  name='base-accelerometer' site='imu'/>
+    <accelerometer  name='foot-accelerometer' site='foot imu'/>
+    <torque name='torque0' site='tau0'/>
+    <torque name='torque1' site='tau1'/>
+    <torque name='torque2' site='tau2'/>
+    <torque name='torque3' site='tau3'/>
+    <torque name='torque4' site='tau4'/>
+  </sensor>
+
+</mujoco>

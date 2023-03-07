@@ -1,11 +1,12 @@
 #include "hopper_mpc/bridge.h"
 
-Bridge::Bridge(Model model_, double dt_, bool fixed_, bool home_) {
+Bridge::Bridge(Model model_, double dt_, std::shared_ptr<Leg>* legPtr_, std::string start_, bool skip_homing_) {
   // constructor
   model = model_;
   dt = dt_;
   g = model.g;
   mu = model.mu;
-  fixed = fixed_;
-  home = home_;
+  legPtr = *legPtr_;
+  start = start_;
+  skip_homing = skip_homing_;
 }

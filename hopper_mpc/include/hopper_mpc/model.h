@@ -24,12 +24,15 @@ struct Model {
   Eigen::Vector4d I;                        // leg link moments of inertia
   Eigen::Matrix<double, 6, 1> leg_dim;      // leg dimensions
   Eigen::Matrix<double, 5, 1> a_kt;         // actuator KT ratings
+  Eigen::Matrix<double, 5, 1> a_tau_lim;    // user-specified torque limits
   Eigen::Matrix<double, 5, 1> a_tau_stall;  // actuator rated stall torques
+  Eigen::Matrix<double, 5, 1> dq_max;       // actuator rated max speeds
   Eigen::Vector3d rh;
   Eigen::Matrix3d inertia;        // total inertia matrix
   Eigen::Matrix<double, 7, 5> S;  // actuator selection matrix
   Eigen::Vector2d qla_home;       // home positions for leg homing
   Eigen::Vector2d qla_sit;        // position for default standing
+  Eigen::Vector2d qla_pre_stand;  // leg position just before standing up
   Eigen::Vector2d qla_stand;      // position for default standing
   Eigen::Vector2d k_kin;          // inv kin control gains kp and kd
   int N_getup;                    // number of timesteps to get up from sitting position

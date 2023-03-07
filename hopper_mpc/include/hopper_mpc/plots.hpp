@@ -23,5 +23,6 @@ class Plots {
   static std::vector<double> StartSubPlot(int N, std::string title);
   static void SubPlot(std::string name, std::vector<double> timesteps, std::vector<double> vec, std::vector<double> ref, double ylim);
   static std::vector<double> ExtractVectorCol(int N, std::vector<std::vector<double>> vec, int col);
+  static std::vector<double> ResizeVector(int N, std::vector<double> vec);
   static std::vector<double> GenRange(int N);
 };

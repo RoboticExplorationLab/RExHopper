@@ -5,6 +5,7 @@
 #include "hopper_mpc/bridge_hardware.h"
 #include "hopper_mpc/bridge_mujoco.h"
 // #include "hopper_mpc/bridge_raisim.h"
+#include "hopper_mpc/filter.h"
 #include "hopper_mpc/gait.h"
 #include "hopper_mpc/kf.h"
 #include "hopper_mpc/leg.h"
@@ -20,7 +21,7 @@ struct trajVals {
 class Runner {  // The class
 
  public:  // Access specifier
-  Runner(Model model_, int N_run_, double dt_, std::string ctrl_, std::string bridge_, bool plot_, bool fixed_, bool spr_, bool home_,
+  Runner(Model model_, double dt_, std::string bridge_, std::string start_, std::string ctrl_, int N_run_, bool plot_, bool skip_homing_,
          bool skip_kf_);  // constructor
 
   void Run();
@@ -84,16 +85,17 @@ class Runner {  // The class
   bool sh_prev;
 
   Model model;
-  int N_run;           // number of timesteps in sim
   double dt;           // timestep size
   std::string ctrl;    // controller
   std::string bridge;  // bridge (interface)
+  std::string start;
+  int N_run;  // number of timesteps in sim
   bool plot;
-  bool fixed;
-  bool spr;
-  bool home;
+  bool skip_homing;
   bool skip_kf;
   double g;  // gravitational constant
+
+  double x_adj;
 
   Eigen::VectorXd L;
   double h0;
@@ -104,6 +106,7 @@ class Runner {  // The class
   std::unique_ptr<Gait> gaitPtr;
   std::unique_ptr<Kf> kfPtr;
   std::unique_ptr<Observer> obPtr;
+  std::unique_ptr<LowPass3D> lowpassPtr;
 
   std::shared_ptr<Leg> legPtr;
   std::shared_ptr<Rwa> rwaPtr;
