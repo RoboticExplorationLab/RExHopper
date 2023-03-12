@@ -102,3 +102,69 @@ rosrun hopper_mpc hopper_mpc hardware start_stand stand 5000 --plot
       - Don't home leg positions (on hardware)
    - `--skip_kf`
       - Don't use the kalman filter
+
+
+# Debugging
+
+Create a file named `launch.json` inside of the `.vscode` directory in RosDockerWorkspace. Copy + paste the following code into it. This is the  debugging config file.
+
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb",
+            "program": "${workspaceFolder}/devel/lib/hopper_mpc/hopper_mpc",
+            "args": [
+                "mujoco",
+                "start_stand",
+                "stand",
+                "5000",
+                "--plot"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}
+```
+
+You will need gdb. If it is not already installed:
+
+```
+sudo apt update
+sudo apt install gdb
+```
+
+Build the workspace with debugging enabled (make sure to clean first)...
+
+```
+catkin clean
+catkin build --cmake-args -DCMAKE_BUILD_TYPE=Debug
+```
+
+Then, simply go to Run & Debug (CTRL+SHIFT+D) and hit the Start Debugging button (or F5).
+
+### Debugging with MuJoCo
+
+To do this, you will have to uninstall MuJoCo and then rebuild it with debugging enabled.
+
+```
+cd ~/mujoco/build_dir
+sudo make uninstall
+sudo cmake .. -DCMAKE_INSTALL_PREFIX=/opt/mujoco -DCMAKE_BUILD_TYPE=Debug
+sudo cmake --build . && sudo make install
+```

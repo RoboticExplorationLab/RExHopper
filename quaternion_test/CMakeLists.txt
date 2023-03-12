@@ -9,12 +9,7 @@ add_compile_options(
   -Wfatal-errors
   -Wl,--no-as-needed  
 )
-# set(CATKIN_PACKAGE_DEPENDENCIES
-#   hopper_mpc
-# )
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
@@ -22,15 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if your package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS 
     include
@@ -81,13 +67,19 @@ target_link_libraries(${PROJECT_NAME}_node
 #########################
 ###   CLANG TOOLING   ###
 #########################
-find_package(cmake_clang_tools QUIET)
-if (cmake_clang_tools_FOUND)
-  message(STATUS "Run clang tooling")
-  add_clang_tooling(
-    TARGETS ${PROJECT_NAME}
-    SOURCE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include
-    DISABLE_CLANG_TIDY
-    CF_WERROR
-  )
-endif (cmake_clang_tools_FOUND)
+
+# this causes a warning for some reason
+
+# "[cmake_clang_tools] Target quaternion_test does not exists.  Not adding
+#  dependency."
+
+# find_package(cmake_clang_tools QUIET)
+# if (cmake_clang_tools_FOUND)
+#   message(STATUS "Run clang tooling")
+#   add_clang_tooling(
+#     TARGETS ${PROJECT_NAME}
+#     SOURCE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include
+#     DISABLE_CLANG_TIDY
+#     CF_WERROR
+#   )
+# endif (cmake_clang_tools_FOUND)
