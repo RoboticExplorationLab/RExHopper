@@ -9,6 +9,10 @@
 #include "mujoco/mujoco.h"
 #include "string"
 
+#ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
+extern "C" {
+#endif
+
 #define ERROR_SIZE 1000
 
 class MujocoBridge : public Bridge {  // The class
@@ -21,12 +25,7 @@ class MujocoBridge : public Bridge {  // The class
 
  private:
   std::string str;
-  GLFWwindow* window;
-  mjtNum timezero;
-  double_t update_rate;
-  mjrRect viewport;
-  double t_refresh;
-  double refresh_rate;
+
   std::unique_ptr<PID1> pid_q0Ptr;
   std::unique_ptr<PID1> pid_q2Ptr;
   std::unique_ptr<Actuator> a0;
@@ -35,3 +34,7 @@ class MujocoBridge : public Bridge {  // The class
   std::unique_ptr<Actuator> a3;
   std::unique_ptr<Actuator> a4;
 };
+
+#ifdef __cplusplus /* If this is a C++ compiler, end C linkage */
+}
+#endif
