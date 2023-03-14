@@ -33,6 +33,8 @@ class MujocoBridge : public Bridge {  // The class
   std::unique_ptr<Actuator> a2;
   std::unique_ptr<Actuator> a3;
   std::unique_ptr<Actuator> a4;
+
+  GLFWwindow* window;
 };
 
 #ifdef __cplusplus /* If this is a C++ compiler, end C linkage */

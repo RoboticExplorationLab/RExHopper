@@ -85,7 +85,7 @@ add_executable(${PROJECT_NAME}
   src/runner.cpp
   src/bridge.cpp
   # src/bridge_raisim.cpp
-  src/bridge_mujoco_wrapper.cpp
+  src/bridge_mujoco_wrapper.c
   src/bridge_mujoco.cpp
   src/bridge_hardware.cpp
   src/plots.cpp

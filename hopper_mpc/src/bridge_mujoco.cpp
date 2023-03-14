@@ -28,7 +28,7 @@ void MujocoBridge::Init(double x_adj_) {
   strcpy(directory_, str.c_str());            // converting back to char... probably wasteful but whatevs
 
   // initialize mujoco
-  mujoco_init(directory_);
+  window = mujoco_init(directory_);
 
   // initialize variables
 
@@ -109,7 +109,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
   auto [tau3, i3, v3] = a3->Actuate(u(3), dqa_struct.q3);
   auto [tau4, i4, v4] = a4->Actuate(u(4), dqa_struct.q4);
 
-  mujoco_update(tau0, tau1, tau2, tau3, tau4);
+  mujoco_update(window, tau0, tau1, tau2, tau3, tau4);
 
   // std::cout << "u before =  " << u.transpose() << "\n";
 
