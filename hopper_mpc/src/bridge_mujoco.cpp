@@ -8,13 +8,13 @@
 #include <thread>
 // for getcwd()
 #include <unistd.h>
-mjModel* m;      // MuJoCo model
-mjData* d;       // MuJoCo data
-mjvCamera cam;   // abstract camera
-mjvOption opt;   // visualization options
-mjvScene scn;    // abstract scene
-mjrContext con;  // custom GPU context
-                 // mouse interaction
+mjModel* m = NULL;        // MuJoCo model
+mjData* d_global = NULL;  // MuJoCo data
+mjvCamera cam;            // abstract camera
+mjvOption opt;            // visualization options
+mjvScene scn;             // abstract scene
+mjrContext con;           // custom GPU context
+                          // mouse interaction
 bool button_left;
 bool button_middle;
 bool button_right;
@@ -25,8 +25,8 @@ double lasty;
 void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods) {
   // backspace: reset simulation
   if (act == GLFW_PRESS && key == GLFW_KEY_BACKSPACE) {
-    mj_resetData(m, d);
-    mj_forward(m, d);
+    mj_resetData(m, d_global);
+    mj_forward(m, d_global);
   }
 }
 
@@ -96,18 +96,20 @@ void MujocoBridge::Init(double x_adj_) {
   std::string path_cwd = cwd;
   str = path_cwd + path_mjcf;  // combine current directory with relative path for mjcf
 
-  char* dir = new char[PATH_MAX + 1];  // just needs to be larger than the actual string
-  strcpy(dir, str.c_str());            // converting back to char... probably wasteful but whatevs
-  if (std::strlen(dir) > 4 && !std::strcmp(dir + std::strlen(dir) - 4, ".mjb")) {
-    m = mj_loadModel(dir, 0);
+  char* directory_ = new char[PATH_MAX + 1];  // just needs to be larger than the actual string
+  strcpy(directory_, str.c_str());            // converting back to char... probably wasteful but whatevs
+  if (std::strlen(directory_) > 4 && !std::strcmp(directory_ + std::strlen(directory_) - 4, ".mjb")) {
+    m = mj_loadModel(directory_, 0);
   } else {
-    m = mj_loadXML(dir, 0, error, 1000);
+    m = mj_loadXML(directory_, 0, error, 1000);
   }
   if (!m) {
     mju_error_s("Load model error: %s", error);
   }
   // m = mj_loadXML(mjcf, 0, error, ERROR_SIZE);  // MuJoCo model
-  d = mj_makeData(m);  // MuJoCo data
+
+  std::cout << "size of d_global = " << sizeof(*d_global) << "\n";
+  d_global = mj_makeData(m);  // MuJoCo data
 
   button_left = false;
   button_middle = false;
@@ -119,7 +121,9 @@ void MujocoBridge::Init(double x_adj_) {
 
   // create window, make OpenGL context current, request v-sync
   window = glfwCreateWindow(1200, 900, "Demo", NULL, NULL);
+
   glfwMakeContextCurrent(window);
+
   glfwSwapInterval(1);
 
   // initialize visualization data structures
@@ -137,7 +141,7 @@ void MujocoBridge::Init(double x_adj_) {
   glfwSetScrollCallback(window, scroll);
 
   // run main loop, target real-time simulation and 60 fps rendering
-  timezero = d->time;
+  timezero = d_global->time;
   update_rate = dt;  // update rate is same as timestep size for now
 
   // making sure the first time step updates the ctrl previous_time
@@ -197,15 +201,15 @@ void MujocoBridge::Init(double x_adj_) {
   sh = 0;
 
   if (start == "start_sit") {  // the robot starts from a sitting position
-    d->qpos[0] = model.p0_sit(0);
-    d->qpos[1] = model.p0_sit(1);
-    d->qpos[2] = model.p0_sit(2);
-    d->qpos[7] = model.qla_sit(0) - qa_cal(0);  // joint 0
-    d->qpos[9] = model.qla_sit(1) - qa_cal(1);  // joint 2
+    d_global->qpos[0] = model.p0_sit(0);
+    d_global->qpos[1] = model.p0_sit(1);
+    d_global->qpos[2] = model.p0_sit(2);
+    d_global->qpos[7] = model.qla_sit(0) - qa_cal(0);  // joint 0
+    d_global->qpos[9] = model.qla_sit(1) - qa_cal(1);  // joint 2
   } else {
-    d->qpos[0] = model.p0(0);
-    d->qpos[1] = model.p0(1);
-    d->qpos[2] = model.p0(2);
+    d_global->qpos[0] = model.p0(0);
+    d_global->qpos[1] = model.p0(1);
+    d_global->qpos[2] = model.p0(2);
   }
 }
 
@@ -218,71 +222,77 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
     }
     // get dqa
     if (start == "fixed") {
-      dqa << d->qvel[0], d->qvel[2], d->qvel[4], d->qvel[5], d->qvel[6];
+      dqa << d_global->qvel[0], d_global->qvel[2], d_global->qvel[4], d_global->qvel[5], d_global->qvel[6];
     } else {
-      dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
+      dqa << d_global->qvel[6], d_global->qvel[8], d_global->qvel[10], d_global->qvel[11], d_global->qvel[12];
     }
 
     u *= -1;
     // std::cout << "u before =  " << u.transpose() << "\n";
-    mj_step1(m, d);  // mj_step(m, d);
+    mj_step1(m, d_global);  // mj_step(m, d);
     auto [tau0, i0, v0] = a0->Actuate(u(0), dqa(0));
     auto [tau1, i1, v1] = a1->Actuate(u(1), dqa(1));
     auto [tau2, i2, v2] = a2->Actuate(u(2), dqa(2));
     auto [tau3, i3, v3] = a3->Actuate(u(3), dqa(3));
     auto [tau4, i4, v4] = a4->Actuate(u(4), dqa(4));
-    d->ctrl[0] = tau0;  // moves joint 0
-    d->ctrl[1] = tau1;  // moves joint 2
-    d->ctrl[2] = tau2;  // moves rw0
-    d->ctrl[3] = tau3;  // moves rw1
-    d->ctrl[4] = tau4;  // moves rwz
-    mj_step2(m, d);
+    d_global->ctrl[0] = tau0;  // moves joint 0
+    d_global->ctrl[1] = tau1;  // moves joint 2
+    d_global->ctrl[2] = tau2;  // moves rw0
+    d_global->ctrl[3] = tau3;  // moves rw1
+    d_global->ctrl[4] = tau4;  // moves rwz
+    mj_step2(m, d_global);
     // std::cout << "tau = " << tau0 << ", " << tau1 << ", " << tau2 << ", " << tau3 << ", " << tau4 << "\n";
 
     // get measurements
     if (start == "fixed") {
-      qa_raw << d->qpos[0], d->qpos[2], d->qpos[4], d->qpos[5], d->qpos[6];
-      dqa << d->qvel[0], d->qvel[2], d->qvel[4], d->qvel[5], d->qvel[6];
+      qa_raw << d_global->qpos[0], d_global->qpos[2], d_global->qpos[4], d_global->qpos[5], d_global->qpos[6];
+      dqa << d_global->qvel[0], d_global->qvel[2], d_global->qvel[4], d_global->qvel[5], d_global->qvel[6];
     } else {
-      qa_raw << d->qpos[7], d->qpos[9], d->qpos[11], d->qpos[12], d->qpos[13];
-      dqa << d->qvel[6], d->qvel[8], d->qvel[10], d->qvel[11], d->qvel[12];
+      qa_raw << d_global->qpos[7], d_global->qpos[9], d_global->qpos[11], d_global->qpos[12], d_global->qpos[13];
+      dqa << d_global->qvel[6], d_global->qvel[8], d_global->qvel[10], d_global->qvel[11], d_global->qvel[12];
       // first seven indices are for base pos and quat in floating body mode
       // for velocities, it's the first six indices
     }
 
     qa = qa_raw + qa_cal;  // Correct the angle. Make sure this only happens once per time step
     // TODO: Should sensor stuff go after the integrate?
-    p << d->sensordata[0], d->sensordata[1], d->sensordata[2];
+    p << d_global->sensordata[0], d_global->sensordata[1], d_global->sensordata[2];
 
-    if (d->time == 0.001) {
+    if (d_global->time == 0.001) {
       Q.setIdentity();  // sensordata quaternion initializes as all zeros which is invalid
     } else {
-      Q.w() = d->sensordata[3];
-      Q.x() = d->sensordata[4];
-      Q.y() = d->sensordata[5];
-      Q.z() = d->sensordata[6];
+      Q.w() = d_global->sensordata[3];
+      Q.x() = d_global->sensordata[4];
+      Q.y() = d_global->sensordata[5];
+      Q.z() = d_global->sensordata[6];
     }
 
-    v << d->sensordata[7], d->sensordata[8], d->sensordata[9];
+    v << d_global->sensordata[7], d_global->sensordata[8], d_global->sensordata[9];
 
-    wb << d->sensordata[10], d->sensordata[11], d->sensordata[12];
+    wb << d_global->sensordata[10], d_global->sensordata[11], d_global->sensordata[12];
 
-    grf_normal = d->sensordata[13];
+    grf_normal = d_global->sensordata[13];
     sh = grf_normal >= 60 ? true : false;  // check if contact is legit
 
-    tau << d->sensordata[14], d->sensordata[15], d->sensordata[16], d->sensordata[17], d->sensordata[18];
+    tau << d_global->sensordata[14], d_global->sensordata[15], d_global->sensordata[16], d_global->sensordata[17], d_global->sensordata[18];
     tau_ref = u;
 
-    rf_x << d->sensordata[19], d->sensordata[22], d->sensordata[25], d->sensordata[28], d->sensordata[31];
-    rf_y << d->sensordata[20], d->sensordata[23], d->sensordata[26], d->sensordata[29], d->sensordata[32];
-    rf_z << d->sensordata[21], d->sensordata[24], d->sensordata[27], d->sensordata[30], d->sensordata[33];
+    rf_x << d_global->sensordata[19], d_global->sensordata[22], d_global->sensordata[25], d_global->sensordata[28],
+        d_global->sensordata[31];
+    rf_y << d_global->sensordata[20], d_global->sensordata[23], d_global->sensordata[26], d_global->sensordata[29],
+        d_global->sensordata[32];
+    rf_z << d_global->sensordata[21], d_global->sensordata[24], d_global->sensordata[27], d_global->sensordata[30],
+        d_global->sensordata[33];
 
-    ab << d->sensordata[34], d->sensordata[35], d->sensordata[36];   // base accelerometer
-    aef << d->sensordata[37], d->sensordata[38], d->sensordata[39];  // foot accelerometer
+    ab << d_global->sensordata[34], d_global->sensordata[35], d_global->sensordata[36];   // base accelerometer
+    aef << d_global->sensordata[37], d_global->sensordata[38], d_global->sensordata[39];  // foot accelerometer
 
-    rt_x << d->sensordata[40], d->sensordata[43], d->sensordata[46], d->sensordata[49], d->sensordata[52];
-    rt_y << d->sensordata[41], d->sensordata[44], d->sensordata[47], d->sensordata[50], d->sensordata[53];
-    rt_z << d->sensordata[42], d->sensordata[45], d->sensordata[48], d->sensordata[51], d->sensordata[54];
+    rt_x << d_global->sensordata[40], d_global->sensordata[43], d_global->sensordata[46], d_global->sensordata[49],
+        d_global->sensordata[52];
+    rt_y << d_global->sensordata[41], d_global->sensordata[44], d_global->sensordata[47], d_global->sensordata[50],
+        d_global->sensordata[53];
+    rt_z << d_global->sensordata[42], d_global->sensordata[45], d_global->sensordata[48], d_global->sensordata[51],
+        d_global->sensordata[54];
 
     t_refresh += 1;
     if (t_refresh > refresh_rate) {
@@ -294,7 +304,7 @@ retVals MujocoBridge::SimRun(Eigen::Matrix<double, 5, 1> u, Eigen::Matrix<double
       glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
 
       // update scene and render
-      mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
+      mjv_updateScene(m, d_global, &opt, NULL, &cam, mjCAT_ALL, &scn);
       mjr_render(viewport, &scn, &con);
 
       // swap OpenGL buffers (blocking call due to v-sync)
@@ -317,7 +327,7 @@ void MujocoBridge::End() {
   mjr_freeContext(&con);
 
   // free MuJoCo model and data, deactivate
-  mj_deleteData(d);
+  mj_deleteData(d_global);
   mj_deleteModel(m);
   mj_deactivate();
 
