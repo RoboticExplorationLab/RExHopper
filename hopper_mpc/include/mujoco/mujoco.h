@@ -23,15 +23,16 @@ extern "C" {
 #endif
 
 // header version; should match the library version as returned by mj_version()
-#define mjVERSION_HEADER 220
+#define mjVERSION_HEADER 232
 
 // needed to define size_t, fabs and log10
-#include "math.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdlib.h>
 
 // type definitions
 #include <mujoco/mjdata.h>
 #include <mujoco/mjmodel.h>
+#include <mujoco/mjplugin.h>
 #include <mujoco/mjrender.h>
 #include <mujoco/mjtnum.h>
 #include <mujoco/mjui.h>
@@ -161,7 +162,7 @@ MJAPI void mj_deleteModel(mjModel* m);
 // Return size of buffer needed to hold model.
 MJAPI int mj_sizeModel(const mjModel* m);
 
-// Allocate mjData correponding to given model.
+// Allocate mjData corresponding to given model.
 // If the model buffer is unallocated the initial configuration will not be set.
 MJAPI mjData* mj_makeData(const mjModel* m);
 
@@ -226,7 +227,7 @@ MJAPI void mj_fwdVelocity(const mjModel* m, mjData* d);
 // Compute actuator force qfrc_actuator.
 MJAPI void mj_fwdActuation(const mjModel* m, mjData* d);
 
-// Add up all non-constraint forces, compute qacc_unc.
+// Add up all non-constraint forces, compute qacc_smooth.
 MJAPI void mj_fwdAcceleration(const mjModel* m, mjData* d);
 
 // Run selected constraint solver.
@@ -324,7 +325,7 @@ MJAPI void mj_collision(const mjModel* m, mjData* d);
 // Construct constraints.
 MJAPI void mj_makeConstraint(const mjModel* m, mjData* d);
 
-// Compute inverse constaint inertia efc_AR.
+// Compute inverse constraint inertia efc_AR.
 MJAPI void mj_projectConstraint(const mjModel* m, mjData* d);
 
 // Compute efc_vel, efc_aref.
@@ -363,6 +364,9 @@ MJAPI void mj_jacBody(const mjModel* m, const mjData* d, mjtNum* jacp, mjtNum* j
 // Compute body center-of-mass end-effector Jacobian.
 MJAPI void mj_jacBodyCom(const mjModel* m, const mjData* d, mjtNum* jacp, mjtNum* jacr, int body);
 
+// Compute subtree center-of-mass end-effector Jacobian.
+MJAPI void mj_jacSubtreeCom(const mjModel* m, mjData* d, mjtNum* jacp, int body);
+
 // Compute geom end-effector Jacobian.
 MJAPI void mj_jacGeom(const mjModel* m, const mjData* d, mjtNum* jacp, mjtNum* jacr, int geom);
 
@@ -373,10 +377,10 @@ MJAPI void mj_jacSite(const mjModel* m, const mjData* d, mjtNum* jacp, mjtNum* j
 MJAPI void mj_jacPointAxis(const mjModel* m, mjData* d, mjtNum* jacPoint, mjtNum* jacAxis, const mjtNum point[3], const mjtNum axis[3],
                            int body);
 
-// Get id of object with specified name, return -1 if not found; type is mjtObj.
+// Get id of object with the specified mjtObj type and name, returns -1 if id not found.
 MJAPI int mj_name2id(const mjModel* m, int type, const char* name);
 
-// Get name of object with specified id, return 0 if invalid type or id; type is mjtObj.
+// Get name of object with the specified mjtObj type and id, returns NULL if name not found.
 MJAPI const char* mj_id2name(const mjModel* m, int type, int id);
 
 // Convert sparse inertia matrix M into full (i.e. dense) matrix.
@@ -392,14 +396,14 @@ MJAPI void mj_mulM2(const mjModel* m, const mjData* d, mjtNum* res, const mjtNum
 // Destination can be sparse uncompressed, or dense when all int* are NULL
 MJAPI void mj_addM(const mjModel* m, mjData* d, mjtNum* dst, int* rownnz, int* rowadr, int* colind);
 
-// Apply cartesian force and torque (outside xfrc_applied mechanism).
+// Apply Cartesian force and torque (outside xfrc_applied mechanism).
 MJAPI void mj_applyFT(const mjModel* m, mjData* d, const mjtNum force[3], const mjtNum torque[3], const mjtNum point[3], int body,
                       mjtNum* qfrc_target);
 
-// Compute object 6D velocity in object-centered frame, world/local orientation.
+// Compute object 6D velocity (rot:lin) in object-centered frame, world/local orientation.
 MJAPI void mj_objectVelocity(const mjModel* m, const mjData* d, int objtype, int objid, mjtNum res[6], int flg_local);
 
-// Compute object 6D acceleration in object-centered frame, world/local orientation.
+// Compute object 6D acceleration (rot:lin) in object-centered frame, world/local orientation.
 MJAPI void mj_objectAcceleration(const mjModel* m, const mjData* d, int objtype, int objid, mjtNum res[6], int flg_local);
 
 // Extract 6D force:torque given contact id, in the contact frame.
@@ -424,6 +428,18 @@ MJAPI mjtNum mj_getTotalmass(const mjModel* m);
 // Scale body masses and inertias to achieve specified total mass.
 MJAPI void mj_setTotalmass(mjModel* m, mjtNum newmass);
 
+// Return a config attribute value of a plugin instance;
+// NULL: invalid plugin instance ID or attribute name
+MJAPI const char* mj_getPluginConfig(const mjModel* m, int plugin_id, const char* attrib);
+
+// Load a dynamic library. The dynamic library is assumed to register one or more plugins.
+MJAPI void mj_loadPluginLibrary(const char* path);
+
+// Scan a directory and load all dynamic libraries. Dynamic libraries in the specified directory
+// are assumed to register one or more plugins. Optionally, if a callback is specified, it is called
+// for each dynamic library encountered that registers plugins.
+MJAPI void mj_loadAllPluginLibraries(const char* directory, mjfPluginLibraryLoadCallback callback);
+
 // Return version number: 1.0.2 is encoded as 102.
 MJAPI int mj_version(void);
 
@@ -438,17 +454,17 @@ MJAPI const char* mj_versionString();
 MJAPI mjtNum mj_ray(const mjModel* m, const mjData* d, const mjtNum pnt[3], const mjtNum vec[3], const mjtByte* geomgroup,
                     mjtByte flg_static, int bodyexclude, int geomid[1]);
 
-// Interect ray with hfield, return nearest distance or -1 if no intersection.
+// Intersect ray with hfield, return nearest distance or -1 if no intersection.
 MJAPI mjtNum mj_rayHfield(const mjModel* m, const mjData* d, int geomid, const mjtNum pnt[3], const mjtNum vec[3]);
 
-// Interect ray with mesh, return nearest distance or -1 if no intersection.
+// Intersect ray with mesh, return nearest distance or -1 if no intersection.
 MJAPI mjtNum mj_rayMesh(const mjModel* m, const mjData* d, int geomid, const mjtNum pnt[3], const mjtNum vec[3]);
 
-// Interect ray with pure geom, return nearest distance or -1 if no intersection.
+// Intersect ray with pure geom, return nearest distance or -1 if no intersection.
 MJAPI mjtNum mju_rayGeom(const mjtNum pos[3], const mjtNum mat[9], const mjtNum size[3], const mjtNum pnt[3], const mjtNum vec[3],
                          int geomtype);
 
-// Interect ray with skin, return nearest distance or -1 if no intersection,
+// Intersect ray with skin, return nearest distance or -1 if no intersection,
 // and also output nearest vertex id.
 MJAPI mjtNum mju_raySkin(int nface, int nvert, const int* face, const float* vert, const mjtNum pnt[3], const mjtNum vec[3], int vertid[1]);
 
@@ -456,6 +472,9 @@ MJAPI mjtNum mju_raySkin(int nface, int nvert, const int* face, const float* ver
 
 // Set default camera.
 MJAPI void mjv_defaultCamera(mjvCamera* cam);
+
+// Set default free camera.
+MJAPI void mjv_defaultFreeCamera(const mjModel* m, mjvCamera* cam);
 
 // Set default perturbation.
 MJAPI void mjv_defaultPerturb(mjvPerturb* pert);
@@ -489,7 +508,7 @@ MJAPI void mjv_movePerturb(const mjModel* m, const mjData* d, int action, mjtNum
 MJAPI void mjv_moveModel(const mjModel* m, int action, mjtNum reldx, mjtNum reldy, const mjtNum roomup[3], mjvScene* scn);
 
 // Copy perturb pos,quat from selected body; set scale for perturbation.
-MJAPI void mjv_initPerturb(const mjModel* m, const mjData* d, const mjvScene* scn, mjvPerturb* pert);
+MJAPI void mjv_initPerturb(const mjModel* m, mjData* d, const mjvScene* scn, mjvPerturb* pert);
 
 // Set perturb pos,quat in d->mocap when selected body is mocap, and in d->qpos otherwise.
 // Write d->qpos only if flg_paused and subtree root for selected body has free joint.
@@ -801,6 +820,9 @@ MJAPI mjtNum mju_normalize4(mjtNum res[4]);
 // Set res = 0.
 MJAPI void mju_zero(mjtNum* res, int n);
 
+// Set res = val.
+MJAPI void mju_fill(mjtNum* res, mjtNum val, int n);
+
 // Set res = vec.
 MJAPI void mju_copy(mjtNum* res, const mjtNum* data, int n);
 
@@ -838,7 +860,7 @@ MJAPI mjtNum mju_normalize(mjtNum* res, int n);
 MJAPI mjtNum mju_norm(const mjtNum* res, int n);
 
 // Return dot-product of vec1 and vec2.
-MJAPI mjtNum mju_dot(const mjtNum* vec1, const mjtNum* vec2, const int n);
+MJAPI mjtNum mju_dot(const mjtNum* vec1, const mjtNum* vec2, int n);
 
 // Multiply matrix and vector: res = mat * vec.
 MJAPI void mju_mulMatVec(mjtNum* res, const mjtNum* mat, const mjtNum* vec, int nr, int nc);
@@ -846,8 +868,17 @@ MJAPI void mju_mulMatVec(mjtNum* res, const mjtNum* mat, const mjtNum* vec, int 
 // Multiply transposed matrix and vector: res = mat' * vec.
 MJAPI void mju_mulMatTVec(mjtNum* res, const mjtNum* mat, const mjtNum* vec, int nr, int nc);
 
+// Multiply square matrix with vectors on both sides: returns vec1' * mat * vec2.
+MJAPI mjtNum mju_mulVecMatVec(const mjtNum* vec1, const mjtNum* mat, const mjtNum* vec2, int n);
+
 // Transpose matrix: res = mat'.
 MJAPI void mju_transpose(mjtNum* res, const mjtNum* mat, int nr, int nc);
+
+// Symmetrize square matrix res = (mat + mat')/2.
+MJAPI void mju_symmetrize(mjtNum* res, const mjtNum* mat, int n);
+
+// Set mat to the identity matrix.
+MJAPI void mju_eye(mjtNum* mat, int n);
 
 // Multiply matrices: res = mat1 * mat2.
 MJAPI void mju_mulMatMat(mjtNum* res, const mjtNum* mat1, const mjtNum* mat2, int r1, int c1, int c2);
@@ -916,7 +947,7 @@ MJAPI void mju_negPose(mjtNum posres[3], mjtNum quatres[4], const mjtNum pos[3],
 // Transform vector by pose.
 MJAPI void mju_trnVecPose(mjtNum res[3], const mjtNum pos[3], const mjtNum quat[4], const mjtNum vec[3]);
 
-//--------------------------------- Decompositions -------------------------------------------------
+//--------------------------------- Decompositions / Solvers ---------------------------------------
 
 // Cholesky decomposition: mat = L*L'; return rank, decomposition performed in-place into mat.
 MJAPI int mju_cholFactor(mjtNum* mat, int n, mjtNum mindiag);
@@ -930,7 +961,35 @@ MJAPI int mju_cholUpdate(mjtNum* mat, mjtNum* x, int n, int flg_plus);
 // Eigenvalue decomposition of symmetric 3x3 matrix.
 MJAPI int mju_eig3(mjtNum eigval[3], mjtNum eigvec[9], mjtNum quat[4], const mjtNum mat[9]);
 
-//---------------------- Miscellaneous --------------------------------------------------
+// minimize 0.5*x'*H*x + x'*g  s.t. lower <= x <= upper, return rank or -1 if failed
+//   inputs:
+//     n           - problem dimension
+//     H           - SPD matrix                n*n
+//     g           - bias vector               n
+//     lower       - lower bounds              n
+//     upper       - upper bounds              n
+//     res         - solution warmstart        n
+//   return value:
+//     nfree <= n  - rank of unconstrained subspace, -1 if failure
+//   outputs (required):
+//     res         - solution                  n
+//     R           - subspace Cholesky factor  nfree*nfree    allocated: n*(n+7)
+//   outputs (optional):
+//     index       - set of free dimensions    nfree          allocated: n
+//   notes:
+//     the initial value of res is used to warmstart the solver
+//     R must have allocatd size n*(n+7), but only nfree*nfree values are used in output
+//     index (if given) must have allocated size n, but only nfree values are used in output
+//     only the lower triangles of H and R and are read from and written to, respectively
+//     the convenience function mju_boxQPmalloc allocates the required data structures
+MJAPI int mju_boxQP(mjtNum* res, mjtNum* R, int* index, const mjtNum* H, const mjtNum* g, int n, const mjtNum* lower, const mjtNum* upper);
+
+// allocate heap memory for box-constrained Quadratic Program
+//   as in mju_boxQP, index, lower, and upper are optional
+//   free all pointers with mju_free()
+MJAPI void mju_boxQPmalloc(mjtNum** res, mjtNum** R, int** index, mjtNum** H, mjtNum** g, int n, mjtNum** lower, mjtNum** upper);
+
+//---------------------- Miscellaneous -------------------------------------------------------------
 
 // Muscle active force, prm = (range[2], force, scale, lmin, lmax, vmax, fpmax, fvmax).
 MJAPI mjtNum mju_muscleGain(mjtNum len, mjtNum vel, const mjtNum lengthrange[2], mjtNum acc0, const mjtNum prm[9]);
@@ -956,6 +1015,9 @@ MJAPI mjtNum mju_min(mjtNum a, mjtNum b);
 // Return max(a,b) with single evaluation of a and b.
 MJAPI mjtNum mju_max(mjtNum a, mjtNum b);
 
+// Clip x to the range [min, max].
+MJAPI mjtNum mju_clip(mjtNum x, mjtNum min, mjtNum max);
+
 // Return sign of x: +1, -1 or 0.
 MJAPI mjtNum mju_sign(mjtNum x);
 
@@ -968,8 +1030,11 @@ MJAPI const char* mju_type2Str(int type);
 // Convert type name to type id (mjtObj).
 MJAPI int mju_str2Type(const char* str);
 
+// Return human readable number of bytes using standard letter suffix.
+MJAPI const char* mju_writeNumBytes(size_t nbytes);
+
 // Construct a warning message given the warning type and info.
-MJAPI const char* mju_warningText(int warning, int info);
+MJAPI const char* mju_warningText(int warning, size_t info);
 
 // Return 1 if nan or abs(x)>mjMAXVAL, 0 otherwise. Used by check functions.
 MJAPI int mju_isBad(mjtNum x);
@@ -1006,6 +1071,40 @@ MJAPI char* mju_strncpy(char* dst, const char* src, int n);
 
 // Sigmoid function over 0<=x<=1 constructed from half-quadratics.
 MJAPI mjtNum mju_sigmoid(mjtNum x);
+
+//---------------------- Derivatives ---------------------------------------------------------------
+
+// Finite differenced transition matrices (control theory notation)
+//   d(x_next) = A*dx + B*du
+//   d(sensor) = C*dx + D*du
+//   required output matrix dimensions:
+//      A: (2*nv+na x 2*nv+na)
+//      B: (2*nv+na x nu)
+//      D: (nsensordata x 2*nv+na)
+//      C: (nsensordata x nu)
+MJAPI void mjd_transitionFD(const mjModel* m, mjData* d, mjtNum eps, mjtByte centered, mjtNum* A, mjtNum* B, mjtNum* C, mjtNum* D);
+
+//---------------------- Plugins -------------------------------------------------------------------
+
+// Set default plugin definition.
+MJAPI void mjp_defaultPlugin(mjpPlugin* plugin);
+
+// Globally register a plugin. This function is thread-safe.
+// If an identical mjpPlugin is already registered, this function does nothing.
+// If a non-identical mjpPlugin with the same name is already registered, an mju_error is raised.
+// Two mjpPlugins are considered identical if all member function pointers and numbers are equal,
+// and the name and attribute strings are all identical, however the char pointers to the strings
+// need not be the same.
+MJAPI int mjp_registerPlugin(const mjpPlugin* plugin);
+
+// Return the number of globally registered plugins.
+MJAPI int mjp_pluginCount();
+
+// Look up a plugin by name. If slot is not NULL, also write its registered slot number into it.
+MJAPI const mjpPlugin* mjp_getPlugin(const char* name, int* slot);
+
+// Look up a plugin by the registered slot number that was returned by mjp_registerPlugin.
+MJAPI const mjpPlugin* mjp_getPluginAtSlot(int slot);
 
 #if defined(__cplusplus)
 }

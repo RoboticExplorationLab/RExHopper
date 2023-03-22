@@ -18,7 +18,7 @@
 #include <mujoco/mjmodel.h>
 #include <mujoco/mjtnum.h>
 
-#define mjNGROUP 6          // number of geom, site, joint groups with visflags
+#define mjNGROUP 6          // number of geom, site, joint, skin groups with visflags
 #define mjMAXLIGHT 100      // maximum number of lights in a scene
 #define mjMAXOVERLAY 500    // maximum number of characters in overlay text
 #define mjMAXLINE 100       // maximum number of lines per plot
@@ -70,6 +70,7 @@ typedef enum mjtLabel_ {  // object labeling
   mjLABEL_SKIN,           // skin labels
   mjLABEL_SELECTION,      // selected object
   mjLABEL_SELPNT,         // coordinates of selection point
+  mjLABEL_CONTACTPOINT,   // contact information
   mjLABEL_CONTACTFORCE,   // magnitude of contact force
 
   mjNLABEL  // number of label types
@@ -125,7 +126,8 @@ typedef enum mjtRndFlag_ {  // flags enabling rendering effects
   mjRND_FOG,                // fog
   mjRND_HAZE,               // haze
   mjRND_SEGMENT,            // segmentation with random color
-  mjRND_IDCOLOR,            // segmentation with segid color
+  mjRND_IDCOLOR,            // segmentation with segid+1 color
+  mjRND_CULL_FACE,          // cull backward faces
 
   mjNRNDFLAG  // number of rendering flags
 } mjtRndFlag;
@@ -138,15 +140,17 @@ typedef enum mjtStereo_ {  // type of stereo rendering
 
 //---------------------------------- mjvPerturb ----------------------------------------------------
 
-struct mjvPerturb_ {   // object selection and perturbation
-  int select;          // selected body id; non-positive: none
-  int skinselect;      // selected skin id; negative: none
-  int active;          // perturbation bitmask (mjtPertBit)
-  int active2;         // secondary perturbation bitmask (mjtPertBit)
-  mjtNum refpos[3];    // desired position for selected object
-  mjtNum refquat[4];   // desired orientation for selected object
-  mjtNum localpos[3];  // selection point in object coordinates
-  mjtNum scale;        // relative mouse motion-to-space scaling (set by initPerturb)
+struct mjvPerturb_ {    // object selection and perturbation
+  int select;           // selected body id; non-positive: none
+  int skinselect;       // selected skin id; negative: none
+  int active;           // perturbation bitmask (mjtPertBit)
+  int active2;          // secondary perturbation bitmask (mjtPertBit)
+  mjtNum refpos[3];     // reference position for selected object
+  mjtNum refquat[4];    // reference orientation for selected object
+  mjtNum refselpos[3];  // reference position for selection point
+  mjtNum localpos[3];   // selection point in object coordinates
+  mjtNum localmass;     // spatial inertia at selection point
+  mjtNum scale;         // relative mouse motion-to-space scaling (set by initPerturb)
 };
 typedef struct mjvPerturb_ mjvPerturb;
 
@@ -243,6 +247,7 @@ struct mjvOption_ {                 // abstract visualization options
   mjtByte jointgroup[mjNGROUP];     // joint visualization by group
   mjtByte tendongroup[mjNGROUP];    // tendon visualization by group
   mjtByte actuatorgroup[mjNGROUP];  // actuator visualization by group
+  mjtByte skingroup[mjNGROUP];      // skin visualization by group
   mjtByte flags[mjNVISFLAG];        // visualization flags (indexed by mjtVisFlag)
 };
 typedef struct mjvOption_ mjvOption;
