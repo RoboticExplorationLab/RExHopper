@@ -1,10 +1,10 @@
 #pragma once
+#include <GLFW/glfw3.h>
 #include <mujoco/mujoco.h>
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "hopper_mpc/actuator.h"
 #include "hopper_mpc/bridge.h"
-#include "hopper_mpc/glfw3.h"
 #include "hopper_mpc/model.h"
 #include "hopper_mpc/pid.h"
 #include "string"
