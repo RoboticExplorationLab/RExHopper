@@ -1,6 +1,5 @@
 #include "hopper_mpc/bridge_mujoco.h"
-#include "mujoco/glfw3.h"
-#include "mujoco/mujoco.h"
+#include <mujoco/mujoco.h>
 // for sleep timers
 
 #include <chrono>
